@@ -1,8 +1,8 @@
 # Atlas Reference — Extraction Field Set
 
-Reproduces PRD §8.2's policy data dictionary verbatim. Used by [`Field Extraction & Validation Routing.md`](../a.%20Agents/Field%20Extraction%20%26%20Validation%20Routing.md) (which now also owns intake/classification and enrichment/posting, formerly separate workflows) to define what `atlas_extract_fields` must extract and score at Flow B, and what its Flow H writes a field-level source-location pointer for (FR3.6) once posted.
+Reproduces PRD §8.2's policy data dictionary verbatim. Used by [`Insurance DocAnalyst.md`](../a.%20Agents/Insurance%20DocAnalyst.md) (which now also owns intake/classification and enrichment/posting, formerly separate workflows) to define what `atlas_extract_fields` must extract and score at Flow B, and what its Flow H writes a field-level source-location pointer for (FR3.6) once posted.
 
-M = Mandatory, O = Optional. SOV = Statement of Values. Typical source shows the document type ingestion mapping expects; see [`../a.%20Agents/Field%20Extraction%20%26%20Validation%20Routing.md`](../a.%20Agents/Field%20Extraction%20%26%20Validation%20Routing.md) §11 for the six policy-side document classes this table covers, and §11a for the four contract-requirement classes covered by the separate table below.
+M = Mandatory, O = Optional. SOV = Statement of Values. Typical source shows the document type ingestion mapping expects; see [`../a.%20Agents/Insurance%20DocAnalyst.md`](../a.%20Agents/Insurance%20DocAnalyst.md) §11 for the six policy-side document classes this table covers, and §11a for the four contract-requirement classes covered by the separate table below.
 
 | Group / field | Type | M/O | Typical source |
 | :--- | :--- | :--- | :--- |
@@ -30,10 +30,10 @@ A separate field set, extracted only from the four contract-requirement classes 
 | **Term validity** — obligation effective date, expiry/renewal date | Date | M | Same four |
 | **Governance & lineage** — source doc type, extraction confidence, validated-by, validated-on | Meta | M | System |
 
-Mandatory-field convergence, confidence thresholding, and the human validation gate all apply identically to this field set regardless of counterparty type — see [`Field Extraction & Validation Routing.md`](../a.%20Agents/Field%20Extraction%20%26%20Validation%20Routing.md) §11a.
+Mandatory-field convergence, confidence thresholding, and the human validation gate all apply identically to this field set regardless of counterparty type — see [`Insurance DocAnalyst.md`](../a.%20Agents/Insurance%20DocAnalyst.md) §11a.
 
 ## Notes
 - **SOV** = Statement of Values — the asset schedule a broker or insured provides listing sites, occupancy, and declared values; the primary source for the Exposure/asset row alongside the policy schedule itself.
-- **Exposure/asset fallback (FR3.9):** when no schedule or SOV exists for an asset, the assigned user completes the in-system manual questionnaire (§9.1) to capture this row's mandatory fields directly. Manual entries are tagged 'manual entry — no source document' and pass through the same validation gate, versioning, and audit trail as extracted fields — see [`Field Extraction & Validation Routing.md`](../a.%20Agents/Field%20Extraction%20%26%20Validation%20Routing.md) §5.
+- **Exposure/asset fallback (FR3.9):** when no schedule or SOV exists for an asset, the assigned user completes the in-system manual questionnaire (§9.1) to capture this row's mandatory fields directly. Manual entries are tagged 'manual entry — no source document' and pass through the same validation gate, versioning, and audit trail as extracted fields — see [`Insurance DocAnalyst.md`](../a.%20Agents/Insurance%20DocAnalyst.md) §5.
 - **Governance & lineage** is never itself sourced from a broker document — it is system-generated metadata attached during extraction (confidence, source pointer) and validation (validated-by, validated-on), not a field extracted from document text.
 - Every field in this table, once posted, is versioned rather than overwritten on change (FR3.7); a field stays `unconfirmed` and excluded from KPI calculation until a human validates it (§9.1).

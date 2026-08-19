@@ -1,6 +1,6 @@
 # Atlas Reference — Risk Score Drivers
 
-> **Reference, §10.** The full §10 driver table, scoring approach, outputs, and configuration change control. Computed by the Risk Scoring function of [`../a.%20Agents/Coverage%2C%20Risk%20%26%20Compliance%20Engines%20Agent.md`](../a.%20Agents/Coverage%2C%20Risk%20%26%20Compliance%20Engines%20Agent.md) §5 (formerly the standalone Risk Scoring Engine workflow). **Companion docs:** engine — same file, §5. Underlying KPIs — [`Atlas Reference - KPI Formulas.md`](Atlas%20Reference%20-%20KPI%20Formulas.md).
+> **Reference, §10.** The full §10 driver table, scoring approach, outputs, and configuration change control. Computed by the Risk Scoring function of [`../a.%20Agents/CoverageAnalyst.md`](../a.%20Agents/CoverageAnalyst.md) §5 (formerly the standalone Risk Scoring Engine workflow). **Companion docs:** engine — same file, §5. Underlying KPIs — [`Atlas Reference - KPI Formulas.md`](Atlas%20Reference%20-%20KPI%20Formulas.md).
 
 ## Driver table (§10)
 Default weights are proposed; all configurable (FR4.5) and every score is explainable (FR4.4).
@@ -13,12 +13,12 @@ Default weights are proposed; all configurable (FR4.5) and every score is explai
 | Political / sanctions / country risk | Country-risk rating and sanctions exposure | 10% | `app:risk_indices` (external) |
 | Adverse claims history | Claims frequency × severity | 9% | Coverage & Ratio Engine (KPI) |
 | Carrier credit quality & concentration | Sub-investment-grade and single-carrier reliance | 8% | Coverage & Ratio Engine (KPI) |
-| Emerging risk signal (news-driven) | Sector/geography news signals affecting the asset (§6.6) | 8% | `app:news_signals` (external, V2) |
+| Emerging risk signal (news-driven) | Sector/geography news signals affecting the asset (§6.6) | 8% | `app:news_signals` (external, RiskScanner Stretch/V2) |
 | Mandatory-cover non-compliance | Missing statutory/board-mandated covers | 5% | Coverage & Ratio Engine (KPI) |
 
-Weights sum to 100%. Five drivers are KPIs the Coverage & Ratio function already computes; only nat-cat, political/country risk, and the news signal are externally sourced with their own refresh cadence — see [`Coverage, Risk & Compliance Engines Agent.md`](../a.%20Agents/Coverage%2C%20Risk%20%26%20Compliance%20Engines%20Agent.md) §5.
+Weights sum to 100%. Five drivers are KPIs the Coverage & Ratio function already computes; only nat-cat, political/country risk, and the news signal are externally sourced with their own refresh cadence — see [`CoverageAnalyst.md`](../a.%20Agents/CoverageAnalyst.md) §5.
 
-The emerging-risk-signal weight (8%) links the V2 News & Sector Intelligence capability (§6.6) into the score. It is configurable and may be set to zero for entities or lines with sparse news coverage — the composite score still computes on the remaining seven drivers, re-normalised is not required since weights are additive.
+The emerging-risk-signal weight (8%) links RiskScanner's Stretch/V2 impact-scoring capability (§6.6) into the score — RiskScanner itself ships at MVP (baseline tier), but this specific weighted-input capability (FR6.4–FR6.6) remains Stretch/V2 (RiskScanner.md §6). It is configurable and may be set to zero for entities or lines with sparse news coverage — the composite score still computes on the remaining seven drivers, re-normalised is not required since weights are additive.
 
 ## §10.1 Scoring approach
 1. Normalise each driver to a 0–100 sub-score using a defined band (e.g. coverage gap % mapped to a curve).

@@ -2,7 +2,7 @@
 
 > **Reference · guardrail** — PRD §4.2 role-capability matrix and §4.1 personas, reproduced faithfully; source of truth for role-based access across all twelve components. Not a description of any single component's behaviour.
 >
-> **Companion docs:** access-scope gate — [`Atlas Assistant Orchestrator.md`](../a.%20Agents/Atlas%20Assistant%20Orchestrator.md)§8. State schema — [`Atlas - Google ADK State Reference.md`](../c.%20State/Atlas%20-%20Google%20ADK%20State%20Reference.md). Audit read access — [`Reporting & Audit Agent.md`](../a.%20Agents/Reporting%20%26%20Audit%20Agent.md)§4.3 (Audit & Access Log function).
+> **Companion docs:** access-scope gate — [`Atlas Orchestrator.md`](../a.%20Agents/Atlas%20Orchestrator.md)§8. State schema — [`Atlas - Google ADK State Reference.md`](../c.%20State/Atlas%20-%20Google%20ADK%20State%20Reference.md). Audit read access — [`InsuranceCustodian.md`](../a.%20Agents/InsuranceCustodian.md)§4.3 (Audit & Access Log function).
 
 ## 1. Personas (§4.1)
 Six in-scope personas back the matrix in §2. (Broker (external) — V2 is a seventh §4.1 persona, out of scope here: it has no access to Group data and sits outside this matrix.)
@@ -34,12 +34,12 @@ Six in-scope personas back the matrix in §2. (Broker (external) — V2 is a sev
 **\*** Entity Risk Champion access is restricted to their assigned entity/site only — every `*`-marked cell above is entity/site-scoped, not Group-wide, even though the letter grant matches other roles.
 
 ## 3. Scope Mechanics — `app:user_scope_registry` → `access_scope`
-`app:user_scope_registry` is integration-sourced (Entra ID / SSO), application-scoped, persistent — the authoritative record of each user's role and assigned entity/site, provisioned outside Atlas. Three readers only: **Atlas Assistant Orchestrator** (access gate), **Reporting & Export**, **Audit & Access Log**. No component writes to it.
+`app:user_scope_registry` is integration-sourced (Entra ID / SSO), application-scoped, persistent — the authoritative record of each user's role and assigned entity/site, provisioned outside Atlas. Three readers only: **Atlas Orchestrator** (access gate), **Reporting & Export**, **Audit & Access Log**. No component writes to it.
 
 The Orchestrator resolves this registry entry into its own session key, `access_scope`, at the point a query needs gating — a caller-specific, per-session binding of role + entity/site, not a cached copy of the registry itself. `access_scope` is one of three terms in Answer Convergence (see the Orchestrator doc §5): an answer cannot compose without it resolved.
 
 ## 4. Scope-the-Request Rule (Guardrail 3)
-Filter the *request* by the caller's role and assigned entity/site before it reaches a grounding service — not the response after the fact (§4.2). An out-of-scope answer is never generated in the first place; it is not filtered, redacted, or hidden post-hoc at the UI layer. This binds every grounding-service query the Orchestrator issues (Coverage & Ratio Engine, Risk Scoring Engine, Contract Compliance Engine, News & Sector Intelligence) and every export Reporting & Export generates.
+Filter the *request* by the caller's role and assigned entity/site before it reaches a grounding service — not the response after the fact (§4.2). An out-of-scope answer is never generated in the first place; it is not filtered, redacted, or hidden post-hoc at the UI layer. This binds every grounding-service query the Orchestrator issues (Coverage & Ratio Engine, Risk Scoring Engine, Contract Compliance Engine, RiskScanner) and every export Reporting & Export generates.
 
 ## 5. Role-Based PII Redaction & Source-Document Export (§13)
 Policy documents (D&O, GPA, workmen's compensation) carry named individuals' personal data. Two distinct controls apply on top of the matrix in §2, per §13 "Personal data handling":

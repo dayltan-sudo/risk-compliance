@@ -87,5 +87,5 @@ Backing state key: `app:config_versions` (sole writer: Config Change-Control).
 Resolved (sponsor, 21 Jul 2026) — all four items previously listed here:
 - Regulatory-retention duration → retain indefinitely (Retention Clocks, above).
 - Configuration Version as a first-class entity → formally named (Formally Named Entities, above).
-- Dismissed news-signal retention → retained indefinitely, archived from the active watchlist — see [News & Sector Intelligence Agent](../a.%20Agents/News%20%26%20Sector%20Intelligence%20Agent%20-%20V2.md) §5.
+- Dismissed news-signal retention → retained indefinitely, archived from the active watchlist — see [RiskScanner](../a.%20Agents/RiskScanner.md) §5.
 - Claim data ownership after policy retirement → tracking continues to settlement, independent of policy expiry (Entity Lifecycle Classification, above).

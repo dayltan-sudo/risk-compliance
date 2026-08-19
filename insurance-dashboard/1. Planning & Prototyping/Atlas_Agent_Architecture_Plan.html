@@ -77,15 +77,19 @@
   }
   h2 .secno{ font-family:ui-monospace,"SF Mono",monospace; font-size:13px; font-weight:600; color:var(--accent); }
   h2 + .section-dek{ font-size:13.5px; color:var(--muted); margin:0 0 20px; max-width:66ch; }
-  h3{ font-size:15.5px; font-weight:700; margin:26px 0 8px; }
+  h3{ font-size:16px; font-weight:700; margin:30px 0 4px; display:flex; align-items:baseline; gap:10px; }
+  h3 .subno{ font-family:ui-monospace,monospace; font-size:11.5px; font-weight:700; color:var(--muted); }
+  h3 + .sub-dek{ font-size:12.5px; color:var(--muted); margin:0 0 10px; max-width:64ch; }
 
   p{ font-size:14.5px; max-width:68ch; }
   a{ color:var(--accent-deep); }
+  code{ font-family:ui-monospace,"SF Mono",monospace; font-size:12.5px; background:var(--v3-bg); padding:1px 5px; border-radius:4px; }
 
   .toc{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:18px 22px; }
   .toc-label{ font-family:ui-monospace,monospace; font-size:10.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin:0 0 10px; }
   .toc ol{ margin:0; padding-left:0; list-style:none; columns:2; column-gap:28px; }
   .toc li{ font-size:13px; padding:4px 0; break-inside:avoid; }
+  .toc li.sub{ padding-left:16px; font-size:12px; color:var(--muted); }
   .toc a{ text-decoration:none; color:var(--ink); }
   .toc a:hover{ color:var(--accent-deep); text-decoration:underline; }
   @media (max-width:640px){ .toc ol{ columns:1; } }
@@ -120,12 +124,16 @@
   .tag-workflow{ background:var(--v3-bg); color:var(--v3); }
   .tag-hybrid{ background:var(--high-bg); color:var(--high); }
   .tag-infra{ background:var(--v3-bg); color:var(--muted); }
+  .tag-orch{ background:var(--v-mvp-bg); color:var(--v-mvp); }
+  .tag-sub{ background:var(--v2-bg); color:var(--v2); }
 
   .agent-card{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px 18px; margin:12px 0; }
   .agent-card-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:6px; }
   .agent-card-head h4{ margin:0; font-size:14.5px; font-weight:700; }
   .agent-card p{ margin:4px 0 0; font-size:13px; color:var(--ink); }
   .agent-card .refline{ font-family:ui-monospace,monospace; font-size:11px; color:var(--muted); margin-top:8px; }
+
+  .level2-wrap{ border-left:2px solid var(--line); padding-left:18px; margin:8px 0 20px 4px; }
 
   .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
   @media (max-width:640px){ .grid2{ grid-template-columns:1fr; } }
@@ -137,12 +145,12 @@
 
 <div class="eyebrow">Atlas &middot; Agent Architecture Plan</div>
 <h1>Orchestrator, Agent &amp; Workflow Architecture for Atlas</h1>
-<p class="subtitle">A working plan for the conversational assistant, the document-extraction pipeline, and the supporting components needed to deliver the Keppel Global Insurance Monitoring System end to end &mdash; grounded in PRD v0.8 and the current UI prototype (v0.5). Only some of these components are agents; &sect;02 draws the line.</p>
+<p class="subtitle">A working plan for the conversational assistant, the document-extraction pipeline, and the supporting components needed to deliver the Keppel Global Insurance Monitoring System end to end &mdash; grounded in PRD v0.8 and the current UI prototype (v0.5). Structured to mirror the actual deployable roster: one orchestrator plus four subagents (&sect;03). Only some of the functions inside them are agentic; &sect;02 draws that line separately from the file boundary.</p>
 <div class="meta-row">
   <span><b>Source PRD</b> &nbsp;Keppel_Atlas_PRD_v0_8.docx (content v0.8, 21 Jul 2026)</span>
   <span><b>Source prototype</b> &nbsp;Atlas_App_UI_Scope_Toggle.html (current) &mdash; in-page line refs below cite the archived Atlas_App_UI v0.5.html snapshot in Superseded/</span>
-  <span><b>Scope</b> &nbsp;Orchestrator, document-analysis pipeline, full component roster (agents &amp; workflows)</span>
-  <span><b>Rev.</b> &nbsp;v1.5 &mdash; reclassified Assistant live-answering (FR8.3&ndash;FR8.5) V2&rarr;MVP per PRD v0.8; 12 components, 2 agents + 1 hybrid</span>
+  <span><b>Scope</b> &nbsp;1 orchestrator + 4 subagents, full function roster, level-2 breakdown per subagent</span>
+  <span><b>Rev.</b> &nbsp;v2.1 &mdash; resolved v2.0's audit-log scope-risk by splitting InsuranceCustodian's release instead of reverting it: 07.2 Audit &amp; Access Log back to MVP, 07.1 Reporting &amp; Export stays V2 (&sect;07). RiskScanner's baseline tier reclassified V2&rarr;MVP, Stretch tier (FR6.4&ndash;6.6) stays V2 (&sect;08, rev 1.9). Rev 1.8 (subagent renaming) carried forward unchanged.</span>
 </div>
 
 <div class="toc">
@@ -150,38 +158,43 @@
   <ol>
     <li>01 &nbsp;<a href="#summary">Summary of the approach</a></li>
     <li>02 &nbsp;<a href="#classification">Agent vs. workflow</a></li>
-    <li>03 &nbsp;<a href="#diagram">System diagram</a></li>
+    <li>03 &nbsp;<a href="#architecture">System architecture: 1 orchestrator + 4 subagents</a></li>
     <li>04 &nbsp;<a href="#orchestrator">The orchestrator</a></li>
-    <li>05 &nbsp;<a href="#ingestion">Document-analysis components</a></li>
-    <li>06 &nbsp;<a href="#grounding">Domain grounding components</a></li>
-    <li>07 &nbsp;<a href="#governance">Background &amp; governance components</a></li>
-    <li>08 &nbsp;<a href="#guardrails">Cross-cutting guardrails</a></li>
-    <li>09 &nbsp;<a href="#state">State &amp; data lifecycle</a></li>
-    <li>10 &nbsp;<a href="#sequence">Build sequence vs. the roadmap</a></li>
+    <li class="sub">&nbsp;&nbsp;04.1&ndash;04.2 &nbsp;Core orchestration &middot; Alerts &amp; Notification</li>
+    <li>05 &nbsp;<a href="#sub1">Subagent 1 &mdash; Insurance DocAnalyst</a></li>
+    <li class="sub">&nbsp;&nbsp;05.1&ndash;05.3 &nbsp;Intake &middot; Extraction/Validation &middot; Enrichment &amp; Posting</li>
+    <li>06 &nbsp;<a href="#sub2">Subagent 2 &mdash; CoverageAnalyst</a></li>
+    <li class="sub">&nbsp;&nbsp;06.1&ndash;06.4 &nbsp;Coverage &amp; Ratio &middot; Risk Scoring &middot; Contract Compliance &middot; Config Change-Control</li>
+    <li>07 &nbsp;<a href="#sub3">Subagent 3 &mdash; InsuranceCustodian</a></li>
+    <li class="sub">&nbsp;&nbsp;07.1&ndash;07.2 &nbsp;Reporting &amp; Export &middot; Audit &amp; Access Log</li>
+    <li>08 &nbsp;<a href="#sub4">Subagent 4 &mdash; RiskScanner</a></li>
+    <li>09 &nbsp;<a href="#guardrails">Cross-cutting guardrails</a></li>
+    <li>10 &nbsp;<a href="#state">State &amp; data lifecycle</a></li>
+    <li>11 &nbsp;<a href="#sequence">Build sequence vs. the roadmap</a></li>
   </ol>
 </div>
 
 <h2 id="summary"><span class="secno">01</span> Summary of the approach</h2>
-<p>The prototype already implies the shape of this system: a persistent chat panel with page-aware suggested prompts (<code>promptsByPage</code>, Atlas_App_UI v0.5.html:1678) that currently answers from a hard-coded lookup (<code>chatExactReplies</code>, :1734), and a page-scoped Action Items rail (<code>actionItems</code>, :1640) that is likewise static. The PRD specifies what both should become: a conversational assistant that answers only from live Atlas data and is fully traceable (FR8.3&ndash;FR8.4), fed by a document pipeline that turns broker/policy paperwork into validated records (FR3, &sect;9), a ratio engine (FR2), a risk score (FR4, &sect;10), and three newer registers &mdash; Contract Requirements (FR7), Insurance Exclusions (FR9), and News &amp; Sector Intelligence (FR6).</p>
-<p>That maps naturally onto one <b>orchestrator</b> that owns intent-routing, access control, and answer composition, plus three tiers of supporting <b>components</b>: a document-ingestion pipeline (event-driven, not conversational), a set of domain grounding services the orchestrator queries to answer questions, and a set of background/governance services that run on schedule or on data-change rather than in response to a prompt. Not all twelve are &ldquo;agents&rdquo; in the sense of something that reasons over ambiguous input &mdash; see &sect;02.</p>
-<div class="callout"><b>Consolidation review (v1.1):</b> the first pass over-separated several steps that were pipeline hops, not decision points. Three genuine merges bring the roster from 19 components to 12: the ingestion pipeline &mdash; PRD &sect;9's seven stages, plus an eighth &ldquo;Manual Questionnaire&rdquo; item this plan's own v1.0 draft added on top &mdash; collapses to three (&sect;05), Contract Requirements and Exclusion Conflict merge into one Contract Compliance Engine since the exclusion check is an override on the requirement's own status rather than an independent register (&sect;06), and the Document/Validation Status component folds into the ingestion pipeline instead of standing alone. Coverage &amp; Ratio vs. Risk Scoring, and Alerts vs. Reporting, and Config Change-Control vs. Audit were each considered and kept separate &mdash; different upstream dependencies or trigger models in every case, noted inline below.</div>
+<p>The prototype already implies the shape of this system: a persistent chat panel with page-aware suggested prompts (<code>promptsByPage</code>, Atlas_App_UI v0.5.html:1678) that currently answers from a hard-coded lookup (<code>chatExactReplies</code>, :1734), and a page-scoped Action Items rail (<code>actionItems</code>, :1640) that is likewise static. The PRD specifies what both should become: a conversational assistant that answers only from live Atlas data and is fully traceable (FR8.3&ndash;FR8.4), fed by a document pipeline that turns broker/policy paperwork into validated records (FR3, &sect;9), a ratio engine (FR2), a risk score (FR4, &sect;10), and three newer registers &mdash; Contract Requirements (FR7), Insurance Exclusions (FR9), and RiskScanner (FR6).</p>
+<p>That maps onto <b>one orchestrator</b> that owns intent-routing, access control, alerting, and answer composition, plus <b>four subagents</b> it queries or that feed it: a document-ingestion &amp; extraction pipeline, a bundle of three computation engines plus the config governance that gates them, a reporting-and-audit pair, and a standalone news-intelligence agent. &sect;03 lays out exactly how those four subagents were arrived at and shows the full diagram; &sect;04&ndash;08 give each one its own section, broken into the workflows/functions folded into it. Not all of these functions are &ldquo;agents&rdquo; in the sense of something that reasons over ambiguous input &mdash; see &sect;02.</p>
+<div class="callout"><b>Consolidation review (v1.1, historical):</b> the first pass over-separated several steps that were pipeline hops, not decision points. Three genuine merges brought the roster from 19 functions to 12: the ingestion pipeline &mdash; PRD &sect;9's seven stages, plus an eighth &ldquo;Manual Questionnaire&rdquo; item this plan's own v1.0 draft added on top &mdash; collapsed to three, Contract Requirements and Exclusion Conflict merged into one Contract Compliance Engine since the exclusion check is an override on the requirement's own status rather than an independent register, and the Document/Validation Status function folded into the ingestion pipeline instead of standing alone. That 12-function roster is still exactly right at the functional level (&sect;02) &mdash; what changed later (v1.6/v1.7, &sect;03) is purely how those 12 functions are packaged into deployable files.</div>
 
 <h2 id="classification"><span class="secno">02</span> Agent vs. workflow &mdash; what actually needs an LLM</h2>
-<p class="section-dek">Every component in &sect;01 got called an &ldquo;agent&rdquo; in the first pass of this plan. Most of them aren't &mdash; they're deterministic pipelines that happen to be triggered by one. Worth separating cleanly, because the two categories have different engineering needs: agents need prompt design, evaluation, and human-in-the-loop guardrails; workflows just need to be correct and fast.</p>
-<p>The test: does this component have to exercise judgement over ambiguous or unstructured input &mdash; infer intent, choose between options, interpret free text &mdash; or is it a fixed sequence of steps with one correct answer given the input? The second kind doesn't need an LLM in the loop at all, and for several of these components (the ratio and risk-score engines especially) that's a feature, not a gap: FR2.4 requires exact, reproducible calculation lineage, which is an argument <i>against</i> putting a non-deterministic model anywhere near the math.</p>
+<p class="section-dek">Every function in &sect;01 got called an &ldquo;agent&rdquo; in the first pass of this plan. Most of them aren't &mdash; they're deterministic pipelines that happen to be triggered by one. Worth separating cleanly, because the two categories have different engineering needs: agents need prompt design, evaluation, and human-in-the-loop guardrails; workflows just need to be correct and fast. This classification is a property of the <i>function</i>, not of which file it ships in &mdash; &sect;03 shows the packaging.</p>
+<p>The test: does this function have to exercise judgement over ambiguous or unstructured input &mdash; infer intent, choose between options, interpret free text &mdash; or is it a fixed sequence of steps with one correct answer given the input? The second kind doesn't need an LLM in the loop at all, and for several of these functions (the ratio and risk-score engines especially) that's a feature, not a gap: FR2.4 requires exact, reproducible calculation lineage, which is an argument <i>against</i> putting a non-deterministic model anywhere near the math.</p>
 
 <div class="table-wrap">
 <table>
-<thead><tr><th>Component</th><th>Type</th><th>Why</th></tr></thead>
+<thead><tr><th>Function</th><th>Type</th><th>Why</th></tr></thead>
 <tbody>
-<tr><td class="agent-name">Atlas Assistant Orchestrator</td><td><span class="tag tag-agent">Agent</span></td><td>Free-text input every time; has to infer intent, choose which grounding service(s) to call, and compose a cited answer &mdash; or admit it doesn't know. Judgement under ambiguity is the whole job.</td></tr>
+<tr><td class="agent-name">Atlas Orchestrator</td><td><span class="tag tag-agent">Agent</span></td><td>Free-text input every time; has to infer intent, choose which subagent(s) to call, and compose a cited answer &mdash; or admit it doesn't know. Judgement under ambiguity is the whole job.</td></tr>
 <tr><td class="agent-name">Intake &amp; Classification</td><td><span class="tag tag-workflow">Workflow</span></td><td>Virus-scan/store/ID is plumbing. Document-type detection is one bounded classifier call &mdash; no multi-step reasoning, no tool choice.</td></tr>
-<tr><td class="agent-name">Field Extraction &amp; Validation Routing</td><td><span class="tag tag-hybrid">Hybrid</span></td><td>Extraction from messy, inconsistent broker formats is real document understanding (&sect;15.1 names &ldquo;bespoke broker formats&rdquo; as the hard part). Validation routing bolted onto it afterward is one threshold rule: <code>if confidence &lt; X: queue else: accept</code>.</td></tr>
+<tr><td class="agent-name">Insurance DocAnalyst (core)</td><td><span class="tag tag-hybrid">Hybrid</span></td><td>Extraction from messy, inconsistent broker formats is real document understanding (&sect;15.1 names &ldquo;bespoke broker formats&rdquo; as the hard part). Validation routing bolted onto it afterward is one threshold rule: <code>if confidence &lt; X: queue else: accept</code>.</td></tr>
 <tr><td class="agent-name">Enrichment &amp; Posting</td><td><span class="tag tag-workflow">Workflow</span></td><td>FX lookup, geocode call, DB write, versioning &mdash; deterministic ETL. No judgement calls anywhere in it.</td></tr>
 <tr><td class="agent-name">Coverage &amp; Ratio Engine</td><td><span class="tag tag-workflow">Workflow</span></td><td>The formulas in &sect;7 applied to already-structured data. FR2.4's lineage requirement is an argument against agentic reasoning here, not for it.</td></tr>
 <tr><td class="agent-name">Risk Scoring Engine</td><td><span class="tag tag-workflow">Workflow</span></td><td>&sect;10.1 specifies the algorithm exactly &mdash; normalise, weighted-sum, band. Same reproducibility argument as the Ratio Engine.</td></tr>
-<tr><td class="agent-name">Contract Compliance Engine</td><td><span class="tag tag-workflow">Workflow</span></td><td>Required-vs-placed comparison is a threshold rule; the exclusion override is too. FR7.2 only asks the system to <i>record</i> the required limit and its contractual source &mdash; the PRD doesn't specify automated extraction from the underlying lease/facility agreement (those document types are outside the ingestion pipeline's scope per &sect;5.1), so today this is manual data entry by Group Insurance/R&amp;C, not an agentic task hiding in this engine.</td></tr>
-<tr><td class="agent-name">News &amp; Sector Intelligence Agent</td><td><span class="tag tag-agent">Agent</span></td><td>Unstructured news in; judgement calls the whole way through (does this affect this asset? how severe? does projected exposure breach appetite?). Explicitly built to be uncertain &mdash; hence the mandatory human confirm/dismiss step (FR6.9).</td></tr>
+<tr><td class="agent-name">Contract Compliance Engine</td><td><span class="tag tag-workflow">Workflow</span></td><td>Required-vs-placed comparison is a threshold rule; the exclusion override is too. FR7.2 only asks the system to <i>record</i> the required limit and its contractual source &mdash; it doesn't itself require automated extraction. <b>Updated, rev 1.6:</b> the ingestion pipeline's scope (&sect;5.1) was extended to cover this &mdash; four new document classes (customer contract, JV partner contract, lender agreement, government concession agreement) now feed a contractual-requirement field set through the identical extraction/confidence/validation path as policy documents, writing a new register (<code>app:contract_requirement_inputs</code>) this engine reads for all four counterparty types. Manual entry remains the fallback only where no such document was ever uploaded, not the default path. See &sect;05.3 and Insurance DocAnalyst.md &sect;11a.</td></tr>
+<tr><td class="agent-name">RiskScanner</td><td><span class="tag tag-agent">Agent</span></td><td>Unstructured news in; judgement calls the whole way through (does this affect this asset? how severe? does projected exposure breach appetite?). Explicitly built to be uncertain &mdash; hence the mandatory human confirm/dismiss step (FR6.9).</td></tr>
 <tr><td class="agent-name">Alerts &amp; Notification</td><td><span class="tag tag-workflow">Workflow</span></td><td>Trigger-table lookup plus recipient/channel routing. A rules engine.</td></tr>
 <tr><td class="agent-name">Reporting &amp; Export</td><td><span class="tag tag-workflow">Workflow</span></td><td>Template fill, render to PDF/Excel.</td></tr>
 <tr><td class="agent-name">Config Change-Control</td><td><span class="tag tag-workflow">Workflow</span></td><td>An approval state machine: propose &rarr; review &rarr; approve &rarr; version.</td></tr>
@@ -189,29 +202,59 @@
 </tbody>
 </table>
 </div>
-<div class="callout"><b>Net:</b> 2 real agents, 1 hybrid, 9 deterministic components. Renamed throughout the rest of this plan to match &mdash; &ldquo;Agent&rdquo; is now reserved for the two places that actually need one; everything else is called an Engine, Pipeline, Workflow, Service, or Log. The naming isn't cosmetic: it signals which components need prompt design, evaluation harnesses, and human-in-the-loop review, and which just need to be correct, fast, and covered by ordinary tests.</div>
+<div class="callout"><b>Net:</b> 2 real agents, 1 hybrid, 9 deterministic functions &mdash; 12 in total, packaged into 5 files (&sect;03). &ldquo;Agent&rdquo; is reserved for the two functions that actually need one; everything else is called an Engine, Pipeline, Workflow, Service, or Log inside whichever subagent file now hosts it. The naming isn't cosmetic: it signals which functions need prompt design, evaluation harnesses, and human-in-the-loop review, and which just need to be correct, fast, and covered by ordinary tests &mdash; regardless of which file they're written into.</div>
 
-<h2 id="diagram"><span class="secno">03</span> System diagram</h2>
+<h2 id="architecture"><span class="secno">03</span> System architecture: 1 orchestrator + 4 subagents</h2>
+<p class="section-dek">The 12 functions in &sect;02 are still the right functional boundaries. What this section fixes is packaging: instead of 12 separate documents (3 in an agents folder, 9 in a workflows folder), the deployable roster is now <b>1 orchestrator + 4 subagents</b> &mdash; 5 files total, all in one agents folder. A standalone workflows tier stopped earning its keep once every one of the 9 deterministic functions turned out to sit immediately upstream, downstream, or dependency-adjacent to an existing agent, or to another workflow it shares a trigger with. The rest of this plan (&sect;04&ndash;08) is organised by this same roster, one section per deployable, with each subagent's absorbed workflows shown as its own numbered level-2 subsection &mdash; exactly matching how the specs themselves are written in <code>2. Agents &amp; Workflows/a. Agents/</code>.</p>
+
+<div class="callout"><b>Two kinds of merge, not one:</b> three functions (Intake &amp; Classification, Enrichment &amp; Posting, Alerts &amp; Notification) folded directly into an existing agent because they are that agent's own entry stage, exit stage, or a second delivery surface for logic the agent already computes (Action Items rail and Alerts evaluate the same &sect;12.1 trigger table &mdash; running that evaluation twice, in two components, was a duplicate-computation risk with no upside). The other six (the three engines, Config Change-Control, Reporting &amp; Export, Audit &amp; Access Log) had no natural agent host, so they consolidated into two new deterministic-only subagents instead, grouped by shared dependency: the three engines share one config-version dependency and one snapshot-writing discipline, so Config Change-Control &mdash; which exists solely to gate that dependency &mdash; joined them as Subagent 2; Reporting &amp; Export and Audit &amp; Access Log share the fact that one of Reporting's four outputs is a direct read of Audit's own log, so they became Subagent 3.</div>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>Function (&sect;02)</th><th>Deployable</th><th>Why this grouping</th></tr></thead>
+<tbody>
+<tr><td class="agent-name">Atlas Orchestrator</td><td rowspan="2"><b>Orchestrator</b> <span class="tag tag-orch">Agent</span> &mdash; &sect;04</td><td rowspan="2">Alerts is a second delivery surface (push) for the same trigger evaluation the Orchestrator's Action Items rail already does (pull) &mdash; one evaluation step now feeds both, not two independent ones that could disagree.</td></tr>
+<tr><td class="agent-name">Alerts &amp; Notification</td></tr>
+<tr><td class="agent-name">Intake &amp; Classification</td><td rowspan="3"><b>Subagent 1</b> <span class="tag tag-sub">Hybrid</span> &mdash; &sect;05<br>Insurance DocAnalyst</td><td rowspan="3">Entry stage, core, and exit stage of one pipeline that already had to hand off in strict sequence with no branching between deployable services.</td></tr>
+<tr><td class="agent-name">Insurance DocAnalyst (core)</td></tr>
+<tr><td class="agent-name">Enrichment &amp; Posting</td></tr>
+<tr><td class="agent-name">Coverage &amp; Ratio Engine</td><td rowspan="4"><b>Subagent 2</b> <span class="tag tag-sub">Deterministic</span> &mdash; &sect;06<br>CoverageAnalyst</td><td rowspan="4">All three engines read the config version Config Change-Control writes and follow the identical Snapshot Convergence discipline (&sect;10); Config Change-Control computes nothing itself, it only gates the other three &mdash; packaging it apart from what it gates was the artificial boundary.</td></tr>
+<tr><td class="agent-name">Risk Scoring Engine</td></tr>
+<tr><td class="agent-name">Contract Compliance Engine</td></tr>
+<tr><td class="agent-name">Config Change-Control</td></tr>
+<tr><td class="agent-name">Reporting &amp; Export</td><td rowspan="2"><b>Subagent 3</b> <span class="tag tag-sub">Deterministic / Infra</span> &mdash; &sect;07<br>InsuranceCustodian <span class="tag tag-mvp">Mixed</span></td><td rowspan="2">The audit lineage report (one of Reporting's four output types) is a direct read of Audit &amp; Access Log's own state &mdash; merging removed a call that crossed a component boundary for no reason. The two functions carry different release tags (&sect;07: Reporting V2, Audit MVP) despite sharing a file.</td></tr>
+<tr><td class="agent-name">Audit &amp; Access Log</td></tr>
+<tr><td class="agent-name">RiskScanner</td><td><b>Subagent 4</b> <span class="tag tag-sub">Agent</span> &mdash; &sect;08<br>RiskScanner</td><td>Nothing else shares its external-news-judgement shape &mdash; stayed standalone, no level-2 breakdown needed. (MVP as of this rev; see &sect;08 for the Stretch/V2 capability tier that survives inside it.)</td></tr>
+</tbody>
+</table>
+</div>
+
 <div class="diagram-wrap">
 <pre class="mermaid">
 flowchart TB
   U["User prompt<br/>chat panel, any page"]
 
-  subgraph ORCH["Orchestrator &mdash; Atlas Assistant (agent)"]
+  subgraph ORCH["ORCHESTRATOR — Atlas Orchestrator (agent) — §04<br/>level 2: 04.1 Core orchestration · 04.2 Alerts & Notification"]
     direction TB
-    RTR["Intent + page-context router"]
-    GATE["RBAC / entity-scope gate"]
-    COMP["Response composer<br/>(cites source record)"]
+    RTR["04.1 Intent + page-context router"]
+    GATE["04.1 RBAC / entity-scope gate"]
+    COMP["04.1 Response composer<br/>(cites source record)"]
+    AL["04.2 Trigger evaluation +<br/>Alert dispatch<br/>(absorbed workflow)"]
   end
 
   U --> RTR --> GATE
 
-  subgraph GROUND["Grounding services &mdash; orchestrator selects among these per query"]
+  subgraph GROUND["SUBAGENT 2 — CoverageAnalyst (deterministic) — §06<br/>level 2: 06.1 Coverage & Ratio · 06.2 Risk Scoring · 06.3 Contract Compliance · 06.4 Config Change-Control"]
     direction TB
-    CR["Coverage &amp; Ratio Engine (workflow)"]
-    RS["Risk Scoring Engine (workflow)"]
-    CC["Contract Compliance Engine (workflow)<br/>requirements + exclusions"]
-    NI["News &amp; Sector Intelligence (agent)"]
+    CR["06.1 Coverage & Ratio Engine"]
+    RS["06.2 Risk Scoring Engine"]
+    CC["06.3 Contract Compliance Engine<br/>requirements + exclusions"]
+    CFG["06.4 Config Change-Control<br/>(gates 06.1–06.3)"]
+  end
+
+  subgraph NEWS["SUBAGENT 4 — RiskScanner (agent) — §08<br/>no level-2 breakdown, single function"]
+    direction TB
+    NI["RiskScanner"]
   end
 
   GATE -.selects among.-> CR & RS & CC & NI
@@ -219,11 +262,11 @@ flowchart TB
   FCV -.status query.-> COMP
   COMP --> U
 
-  subgraph INGEST["Document ingestion pipeline &mdash; event-driven"]
+  subgraph INGEST["SUBAGENT 1 — Insurance DocAnalyst (hybrid) — §05<br/>level 2: 05.1 Intake & Classification · 05.2 Extraction/Validation core · 05.3 Enrichment & Posting"]
     direction LR
-    UP["Upload / manual<br/>questionnaire"] --> IFC["Intake &amp; Classification<br/>(workflow)"]
-    IFC --> FCV["Field Extraction &amp; Validation<br/>Routing (hybrid)"]
-    FCV --> EP["Enrichment &amp; Posting<br/>(workflow — writes + recalcs)"]
+    UP["Upload / manual<br/>questionnaire"] --> IFC["05.1 Intake & Classification<br/>(Flow A)"]
+    IFC --> FCV["05.2 Extraction & Validation<br/>core (Flow B–G)"]
+    FCV --> EP["05.3 Enrichment & Posting<br/>(Flow H — writes + recalcs)"]
   end
 
   GATE -.status query.-> FCV
@@ -231,13 +274,12 @@ flowchart TB
   EP -.triggers.-> CR
   EP -.triggers.-> RS
   EP -.triggers.-> CC
+  FCV -.triggers, contract-requirement path.-> CC
 
-  subgraph GOV["Background &amp; governance services"]
+  subgraph GOV["SUBAGENT 3 — InsuranceCustodian (deterministic / infra) — §07<br/>level 2: 07.1 Reporting & Export · 07.2 Audit & Access Log"]
     direction TB
-    AL["Alerts &amp; Notification (workflow)"]
-    RP["Reporting &amp; Export (workflow)"]
-    CFG["Config Change-Control (workflow)"]
-    AU["Audit &amp; Access Log (infra)"]
+    RP["07.1 Reporting & Export"]
+    AU["07.2 Audit & Access Log"]
   end
 
   CR & RS & CC & NI -.feeds.-> AL
@@ -250,109 +292,141 @@ flowchart TB
   EP -.logs to.-> AU
   CFG -.logs to.-> AU
   RP -.logs to.-> AU
+  RP -.reads.-> AU
 </pre>
 </div>
-<div class="diagram-cap">Solid arrows = request/response path. Dotted arrows = event, governance, or selective-routing relationship. RTR selects which grounding service(s) a given query reaches; when none can answer, the composer returns the FR8.5 fallback rather than guessing.</div>
+<div class="diagram-cap">Solid arrows = request/response path. Dotted arrows = event, governance, or selective-routing relationship. Five subgraphs = five deployable files: 1 orchestrator + 4 subagents. Boxes inside a subgraph are level-2 functions within that one file, not separate deployables &mdash; numbered to match each subagent's own section below.</div>
+<p>Every cross-component contract this plan already specifies &mdash; who triggers whom, which register each function owns, the convergence gates in &sect;10 &mdash; is unchanged by this packaging. What one file boundary used to enforce (you can only call this component's tool, not reach into its state), a section boundary inside the merged file enforces instead.</p>
 
 <h2 id="orchestrator"><span class="secno">04</span> The orchestrator</h2>
-<p class="section-dek">Owns the always-on assistant panel (&sect;6.8, FR8) and the page-scoped Action Items rail (FR1.5). It never edits data &mdash; it is a read path only.</p>
+<p class="section-dek">Owns the always-on assistant panel (&sect;6.8, FR8), the page-scoped Action Items rail (FR1.5), and &mdash; as of rev 1.6 &mdash; alert dispatch. It never edits data &mdash; it is a read path only.</p>
 
+<h3><span class="subno">04.1</span> Core orchestration</h3>
+<div class="level2-wrap">
 <div class="agent-card">
-  <div class="agent-card-head"><h4>Atlas Assistant Orchestrator</h4><span><span class="tag tag-agent">Agent</span> <span class="tag tag-must">Must</span> <span class="tag tag-mvp">MVP</span></span></div>
-  <p><b>Intent + page-context routing</b> &mdash; the prototype already scopes suggested prompts and Action Items by the page in view (<code>currentPage</code>, :1657; <code>promptsByPage</code>, :1678); the orchestrator formalises this by using page context as a prior on top of NL intent classification, so &ldquo;which sites are under-insured&rdquo; asked from Coverage Adequacy and from Global Map can route to the same Coverage &amp; Ratio Engine with different default framing.</p>
-  <p><b>Access-scope gate</b> &mdash; every query is filtered through the caller&rsquo;s role and entity/site scope (&sect;4.2) before it reaches a grounding service, so an Entity Risk Champion never receives an answer outside their assigned entity.</p>
+  <div class="agent-card-head"><h4>Atlas Orchestrator</h4><span><span class="tag tag-agent">Agent</span> <span class="tag tag-must">Must</span> <span class="tag tag-mvp">MVP</span></span></div>
+  <p><b>Intent + page-context routing</b> &mdash; the prototype already scopes suggested prompts and Action Items by the page in view (<code>currentPage</code>, :1657; <code>promptsByPage</code>, :1678); the orchestrator formalises this by using page context as a prior on top of NL intent classification, so &ldquo;which sites are under-insured&rdquo; asked from Coverage Adequacy and from Global Map can route to the same Coverage &amp; Ratio Engine (&sect;06.1) with different default framing.</p>
+  <p><b>Access-scope gate</b> &mdash; every query is filtered through the caller&rsquo;s role and entity/site scope (&sect;4.2) before it reaches a subagent, so an Entity Risk Champion never receives an answer outside their assigned entity.</p>
   <p><b>Answer composition with citations</b> &mdash; every answer must trace back to the KPI, policy, or requirement record it came from (FR8.4). This replaces the prototype's static <code>chatExactReplies</code> strings (:1734) with live lookups plus a citation.</p>
-  <p><b>Explicit fallback</b> &mdash; when no grounding service can answer, say so rather than guess (FR8.5) &mdash; the prototype's <code>botReplyFor</code> fallback string (:1780) is the right instinct and should carry forward verbatim as a behaviour, not just a copy string.</p>
-  <p><b>Hard constraint</b> &mdash; decision-support only. No orchestrator path writes to a policy, coverage, requirement, or exclusion record; only the ingestion pipeline (&sect;05) and a human validator can do that.</p>
+  <p><b>Explicit fallback</b> &mdash; when no subagent can answer, say so rather than guess (FR8.5) &mdash; the prototype's <code>botReplyFor</code> fallback string (:1780) is the right instinct and should carry forward verbatim as a behaviour, not just a copy string.</p>
+  <p><b>Hard constraint</b> &mdash; decision-support only. No orchestrator path writes to a policy, coverage, requirement, or exclusion record; only Subagent 1 (&sect;05) and a human validator can do that.</p>
   <p class="refline">PRD &sect;6.8, FR8.1&ndash;FR8.5 &middot; Prototype :1678&ndash;1798</p>
 </div>
-
-<h2 id="ingestion"><span class="secno">05</span> Document-analysis components</h2>
-<p class="section-dek">This is the literal &ldquo;analyse documents and extract key information&rdquo; pipeline &mdash; PRD &sect;9's seven stages plus the manual fallback in FR3.9, consolidated to three deployable components. Only the extraction step inside the second one is actually agentic (&sect;02). None post to the live database on their own; every path ends at a human validator.</p>
-
-<div class="callout"><b>Consolidated from 8 components to 3:</b> the branching that exists (pass a document through, or fork it into the exception queue on failed classification/extraction, per &sect;9.1) happens <i>within</i> a component's own confidence-threshold logic, not <i>between</i> deployable services &mdash; so most of the original stage-by-stage boundaries (Intake, Classification, Extraction, Validation Routing, Manual Questionnaire, Enrichment, Posting &amp; Versioning, Recalculation) were hops, not independent decision points. Enrichment, Posting, and Recalculation in particular must fire together for every record with no exceptions (FR2.3 requires recalculation to follow a data change automatically) &mdash; splitting them risked a posted record whose KPIs silently failed to refresh if a message between components were lost. (Intake/Extraction/Validation do have different scaling profiles &mdash; I/O-bound upload, compute-heavy IDP, headcount-bound human review, all bursty at renewal season per the &sect;13 scalability NFR &mdash; but that argues for independent scaling <i>inside</i> these three components, not for splitting them back into more deployable services.)</div>
-
-<div class="table-wrap">
-<table>
-<thead><tr><th>Component</th><th>Type</th><th>Absorbs (§9 stage)</th><th>What it does</th><th>PRD ref</th></tr></thead>
-<tbody>
-<tr><td class="agent-name">Intake &amp; Classification</td><td><span class="tag tag-workflow">Workflow</span></td><td>1, 2</td><td>Accepts single/bulk uploads of PDF, scanned image, Word, and Excel documents; virus-scans, stores immutably, assigns an ingestion ID; detects document type &mdash; slip, wording, schedule, endorsement, debit note, renewal &mdash; to select the right extraction model. Both stages are mechanical, with no reasoning boundary between them.</td><td class="ref">&sect;9 St.1&ndash;2, FR3.1, FR3.2</td></tr>
-<tr><td class="agent-name">Field Extraction &amp; Validation Routing</td><td><span class="tag tag-hybrid">Hybrid</span></td><td>3, 4</td><td>The agentic half: OCR/NLP/IDP extraction of the &sect;8.2 field set (confidence score + source pointer per field, so every stored value can be traced back to its exact location in the source document per FR3.6, likely split per document type internally) &mdash; genuine document understanding over inconsistent broker formats. The workflow half bolted on afterward: pre-accept high-confidence fields, route the rest to the human review queue with a reason code and owner (the Document Inbox in the prototype, :749&ndash;771) &mdash; a fixed threshold rule, not a decision. Also the entry point for the no-source-document questionnaire path (FR3.9, prototype modal, :845&ndash;900, <code>openQuestionnaire()</code> :1512) &mdash; FR3.9 requires manual entries to hit the same validation and audit trail as extracted ones, so both sources feed one routing path rather than two. Re-running a document after model improvements (FR3.8, Could/V2) re-enters at this component, producing a new version without losing history (&sect;9.1).</td><td class="ref">FR3.3, FR3.4, FR3.6, FR3.8, FR3.9, &sect;9.1</td></tr>
-<tr><td class="agent-name">Enrichment &amp; Posting</td><td><span class="tag tag-workflow">Workflow</span></td><td>5, 6, 7</td><td>Normalises currency (dated FX), geocodes sites, attaches carrier credit rating and country-risk index, maps to entity/site master; writes the validated record &mdash; preserving the source-document link and field-level location pointer captured at extraction (FR3.6) &mdash; versions any change (never silently overwrites &mdash; audit entry every time); triggers recalculation in the grounding services. Enrichment's external calls (FX, geocode, carrier rating) are retried/cached internally within this stage &mdash; that's the flakiest part of the chain &mdash; but a record is only posted once enrichment succeeds; this doesn't mean posting an un-enriched record to avoid blocking.</td><td class="ref">&sect;9 St.5&ndash;7, FR3.6, FR3.7, FR2.2, FR2.3, FR3.5</td></tr>
-</tbody>
-</table>
-</div>
-<div class="callout"><b>Note on data migration:</b> back-book policies load through this exact same pipeline &mdash; there is deliberately no shortcut bypassing human validation for historical records (&sect;9.2). The pipeline should be designed once and reused for both new intake and migration, sequenced by entity/BU. Two migration-specific rules the pipeline needs to enforce, not just the ordinary validation gate: a migrated record must clear the same completeness floor as the Data Completeness &amp; Confidence KPI (&sect;7.6) before it's treated as &ldquo;live&rdquo; &mdash; records below the floor stay in the exception queue rather than being silently included &mdash; and each entity runs Atlas in parallel with its existing local tracker for at least one renewal cycle before that tracker is retired, to catch migration gaps (&sect;9.2).</div>
-
-<h2 id="grounding"><span class="secno">06</span> Domain grounding components</h2>
-<p class="section-dek">These are what the orchestrator actually queries to answer a question or populate a dashboard view. Each owns one register from the data model (&sect;8.1) and is the single place that register's business logic lives. Renamed from &ldquo;Agent&rdquo; to &ldquo;Engine&rdquo; below wherever &sect;02 found no agentic reasoning in it &mdash; only News &amp; Sector Intelligence keeps the name.</p>
-
-<div class="callout"><b>Merged:</b> Contract Requirements and Exclusion Conflict are now one Contract Compliance Engine. &sect;6.9 doesn't describe two independent registers that happen to interact &mdash; it describes one status decision (Met / At-risk / Gap / <b>Excluded</b>) where the exclusion check is an override on the requirement check. As two separate components this needs strict ordering (exclusions must always evaluate after every requirement recalc) and a tie-break rule for who wins on disagreement; as one component with one status field, that race condition doesn't exist. The Document/Validation Status component is also gone from this tier &mdash; it never owned a register, it read the ingestion pipeline's own queue state, so the orchestrator now queries the pipeline (&sect;05) directly instead of through a second, potentially-stale copy.</div>
-
-<div class="table-wrap">
-<table>
-<thead><tr><th>Component</th><th>Type</th><th>Owns</th><th>Core logic</th><th>Release</th><th>PRD ref</th></tr></thead>
-<tbody>
-<tr><td class="agent-name">Coverage &amp; Ratio Engine</td><td><span class="tag tag-workflow">Workflow</span></td><td>KPIs in &sect;7.1&ndash;7.6</td><td>Computes ITV, Limit-to-PML, Coverage Gap%, BI Adequacy, RoL, TCOR, Loss Ratio, Claims Frequency/Severity, Carrier Concentration/Credit Quality, Mandatory Cover Compliance %, etc. on FX-normalised values, with full input/formula/timestamp lineage &mdash; and writes an immutable, dated snapshot of every value it computes, not just the current figure (&sect;09). Kept separate from Risk Scoring below despite feeding it most of its drivers &mdash; a merge would pull nat-cat, political-risk, and news dependencies (genuinely external to this engine) into what is otherwise a clean financial-ratio calculator.</td><td><span class="tag tag-mvp">MVP</span></td><td class="ref">FR2</td></tr>
-<tr><td class="agent-name">Risk Scoring Engine</td><td><span class="tag tag-workflow">Workflow</span></td><td>Composite 0&ndash;100 score</td><td>Weighted blend of 8 drivers (&sect;10) &mdash; five of which (coverage gap severity, uninsured TIV, adverse claims history, carrier credit quality &amp; concentration, mandatory-cover non-compliance) are already KPIs the Ratio Engine computes; only nat-cat exposure, political/country risk, and the news-driven signal are genuinely external, separately-sourced indices with their own refresh cadence. Explains every score's driver breakdown; recomputes automatically on underlying data change (MVP) &mdash; recomputing on a <i>weight</i> change is a separate, V2 capability (FR4.5). Every recompute writes a dated snapshot tagged to the weight-configuration version that produced it, so a later reweight never rewrites what a score <i>was</i> (&sect;10.3, &sect;09).</td><td><span class="tag tag-mvp">MVP</span></td><td class="ref">FR4, &sect;10</td></tr>
-<tr><td class="agent-name">Contract Compliance Engine<br><span style="font-weight:400;color:var(--muted);">(requirements + exclusions)</span></td><td><span class="tag tag-workflow">Workflow</span></td><td>Third-party obligations register + policy exclusions/sub-limits register</td><td>Compares required vs. placed limit per counterparty (customer/tenant, lender, JV partner, government), then applies the exclusion cross-check as an override, producing one status: Met / At-risk / Gap / Excluded (FR7.1&ndash;FR7.5, FR9.1&ndash;FR9.3, FR9.5&ndash;FR9.6, all Must/MVP), each status change versioned rather than overwritten (&sect;09). <i>Automatic</i> recalculation whenever placed coverage changes is a separate, Should/<b>V2</b> capability (FR7.6) &mdash; at MVP, a coverage change needs to trigger this engine's recompute the same way it triggers the Ratio and Risk engines, or the merge's own race-condition fix (below) only half-holds.</td><td><span class="tag tag-mvp">MVP</span></td><td class="ref">FR7, FR9, &sect;6.7, &sect;6.9</td></tr>
-<tr><td class="agent-name">News &amp; Sector Intelligence Agent</td><td><span class="tag tag-agent">Agent</span></td><td>News items &amp; emerging-risk signals</td><td>Ingests/classifies/tags external news by sector, geography, peril, severity; entity-links to assets; scores directional impact; compares projected exposure vs. risk appetite. Human-in-the-loop confirm/dismiss &mdash; never auto-changes coverage or KPI data.</td><td><span class="tag tag-v2">V2</span></td><td class="ref">FR6, &sect;6.6</td></tr>
-</tbody>
-</table>
-</div>
-<div class="callout"><b>Reclassified in PRD v0.8:</b> FR8.3&ndash;FR8.5 (answering from live data, source-tracing, and free-text fallback) moved from Should/Must-<b>V2</b> to Must/<b>MVP</b> &mdash; the drafting split between &ldquo;ship the panel&rdquo; and &ldquo;ship the answers&rdquo; was a PRD sequencing artifact, not an intended product cut. The orchestrator now ships answering from live data at MVP, not just routing to page-relevant prompts. That makes it the one MVP-critical agentic capability outside document extraction (&sect;05) &mdash; it needs prompt design, an evaluation harness, and tested human-fallback behaviour (FR8.5) built and proven before go-live, not deferred to a later release. News &amp; Sector Intelligence (FR6) is now the only remaining agent gated to V2; V2 there is otherwise a mix of newly-agentic work and newly-configurable/automated work layered onto MVP's deterministic core (configurable thresholds and weights, FR2.5/FR2.6/FR4.5/FR4.6; automatic recalculation on coverage change, FR7.6; bulk/multi-language reprocessing, FR3.8; saved filter presets, FR5.5).</div>
-
-<h2 id="governance"><span class="secno">07</span> Background &amp; governance components</h2>
-<p class="section-dek">These don't respond to a chat prompt &mdash; they run on a schedule or fire on a data event, and several of them are gates the other components must pass through rather than destinations in their own right. Unlike &sect;05 and &sect;06, none of these four merge with each other &mdash; and none of them are agents.</p>
-
-<div class="callout"><b>Two merges considered and rejected here:</b> Alerts vs. Reporting look similar (both &ldquo;outbound&rdquo;) but one is event-triggered/near-real-time and the other is scheduled/on-demand document generation &mdash; different latency profile, different output shape. Config Change-Control vs. Audit also look similar (both &ldquo;governance&rdquo;) but Config Change-Control is active, business-specific workflow (propose &rarr; review &rarr; approve &rarr; version) while Audit is passive, universal infrastructure every component writes to &mdash; collapsing them would bury generic audit logging inside one workflow's approval logic. Both pairs stay separate.</div>
-
-<div class="grid2">
-  <div class="agent-card">
-    <div class="agent-card-head"><h4>Alerts &amp; Notification</h4><span><span class="tag tag-workflow">Workflow</span> <span class="tag tag-must">Must*</span></span></div>
-    <p>Evaluates the &sect;12.1 trigger table &mdash; renewal due, coverage gap, low-confidence extraction, carrier downgrade, aggregate erosion, new hotspot, emerging-risk breach, contractual gap, exclusion conflict &mdash; and routes to the right recipient over the right channel (in-app, email, Teams). *§12.1's trigger table itself carries no per-row MoSCoW/release tags; only the contractual-gap (FR7.5) and exclusion-conflict (FR9.5) triggers are directly traceable to a Must/MVP requirement, and the emerging-risk trigger depends on FR6.8 (Must/V2). The component is MVP-relevant from day one, but not every trigger it evaluates ships at MVP &mdash; see &sect;09.</p>
-    <p class="refline">&sect;12.1&ndash;12.2</p>
-  </div>
-  <div class="agent-card">
-    <div class="agent-card-head"><h4>Reporting &amp; Export</h4><span><span class="tag tag-workflow">Workflow</span> <span class="tag tag-must">Must</span></span></div>
-    <p>Produces the Board/leadership insurance pack, renewal forecast, coverage-gap register, and audit lineage report, on demand or on schedule, to PDF/Excel.</p>
-    <p class="refline">&sect;12.2</p>
-  </div>
-  <div class="agent-card">
-    <div class="agent-card-head"><h4>Config Change-Control</h4><span><span class="tag tag-workflow">Workflow</span> <span class="tag tag-should">Should</span></span></div>
-    <p>Gates changes to KPI thresholds, risk-score weights, and risk-appetite thresholds behind a logged rationale, review, and approval; versions each change so historical scores keep the weights that were live when computed.</p>
-    <p class="refline">&sect;10.3, FR2.5, FR4.5</p>
-  </div>
-  <div class="agent-card">
-    <div class="agent-card-head"><h4>Audit &amp; Access Log</h4><span><span class="tag tag-infra">Infra</span> <span class="tag tag-guardrail">Guardrail</span></span></div>
-    <p>Immutable, time-stamped log of every data change, validation action, export, and access event &mdash; written to by every other component. Read access per &sect;4.2 is broader than just Auditors: Group Insurance, R&amp;C Manager, Treasury, and Auditor all have read access, Admin has full access, and Entity Risk Champion has none.</p>
-    <p class="refline">&sect;13, &sect;4.2</p>
-  </div>
+<div class="callout"><b>Reclassified in PRD v0.8:</b> FR8.3&ndash;FR8.5 (answering from live data, source-tracing, and free-text fallback) moved from Should/Must-<b>V2</b> to Must/<b>MVP</b> &mdash; the drafting split between &ldquo;ship the panel&rdquo; and &ldquo;ship the answers&rdquo; was a PRD sequencing artifact, not an intended product cut. The orchestrator now ships answering from live data at MVP, not just routing to page-relevant prompts. That makes it the one MVP-critical agentic capability outside document extraction (&sect;05) &mdash; it needs prompt design, an evaluation harness, and tested human-fallback behaviour (FR8.5) built and proven before go-live, not deferred to a later release.</div>
 </div>
 
-<h2 id="guardrails"><span class="secno">08</span> Cross-cutting guardrails</h2>
-<p>These apply to every component above, agent or not:</p>
-<div class="callout"><b>Validation gate:</b> a field stays &ldquo;unconfirmed&rdquo; and is excluded from every KPI calculation until a human validates it &mdash; no component may treat an unvalidated extraction as fact (&sect;9.1).</div>
-<div class="callout"><b>Never silently overwrite:</b> the Enrichment &amp; Posting workflow must version every change; prior values stay retrievable with an audit entry (FR3.7).</div>
-<div class="callout"><b>Entity/site scoping:</b> every query is filtered by the caller's role and assigned entity before it reaches a grounding service &mdash; scoping the request, not just filtering the response after the fact &mdash; so an out-of-scope answer is never generated in the first place, not applied as an afterthought at the UI layer (&sect;4.2).</div>
-<div class="callout"><b>News is advisory only:</b> the News &amp; Sector Intelligence Agent may propose a signal and feed it as an optional, weighted risk-score input (FR6.6), but it never changes coverage or KPI data without a human confirming it (FR6.9).</div>
-<div class="callout"><b>Personal data is redacted by role, not just access-controlled:</b> policy documents (D&amp;O, GPA, workmen's compensation, etc.) contain named individuals' personal data. Every surface that can expose document content &mdash; the orchestrator's composed answers, the ingestion pipeline's stored records, and Reporting &amp; Export's generated packs &mdash; applies role-based redaction/masking for non-essential viewers, and export of underlying source documents is restricted to authorised roles only (&sect;13, &ldquo;Personal data handling&rdquo;). No component in &sect;05&ndash;07 currently owns this end-to-end; it needs an explicit owner before build.</div>
+<h3><span class="subno">04.2</span> Alerts &amp; Notification <span class="tag tag-workflow">Workflow</span> <span class="tag tag-must">Must*</span></h3>
+<p class="sub-dek">Absorbed workflow &mdash; shares the orchestrator's own trigger-evaluation step with the Action Items rail (&sect;03) rather than running as an independent component.</p>
+<div class="level2-wrap">
+<p>Evaluates the &sect;12.1 trigger table &mdash; renewal due, coverage gap, low-confidence extraction, carrier downgrade, aggregate erosion, new hotspot, emerging-risk breach, contractual gap, exclusion conflict &mdash; and routes to the right recipient over the right channel (in-app, email, Teams). *&sect;12.1's trigger table itself carries no per-row MoSCoW/release tags; only the contractual-gap (FR7.5) and exclusion-conflict (FR9.5) triggers are directly traceable to a Must/MVP requirement, and the emerging-risk trigger's appetite-breach content depends on FR6.5 (Subagent 4's Stretch/V2 tier, &sect;08) even though Subagent 4 itself now ships at MVP. This function is MVP-relevant from day one, but not every trigger it evaluates ships at MVP &mdash; see &sect;11.</p>
+<p class="refline">&sect;12.1&ndash;12.2</p>
+</div>
 
-<h2 id="state"><span class="secno">09</span> State &amp; data lifecycle</h2>
+<h2 id="sub1"><span class="secno">05</span> Subagent 1 &mdash; Insurance DocAnalyst <span class="tag tag-hybrid">Hybrid</span></h2>
+<p class="section-dek">The literal &ldquo;analyse documents and extract key information&rdquo; pipeline &mdash; PRD &sect;9's seven stages plus the manual fallback in FR3.9, three level-2 workflows in one file. Only 05.2's extraction step is actually agentic (&sect;02). None post to the live database on their own; every path ends at a human validator.</p>
+
+<div class="callout"><b>Consolidated from 8 functions to 3, then packaged as 1 file:</b> the branching that exists (pass a document through, or fork it into the exception queue on failed classification/extraction, per &sect;9.1) happens <i>within</i> a function's own confidence-threshold logic, not <i>between</i> deployable services &mdash; so most of the original stage-by-stage boundaries (Intake, Classification, Extraction, Validation Routing, Manual Questionnaire, Enrichment, Posting &amp; Versioning, Recalculation) were hops, not independent decision points. Enrichment, Posting, and Recalculation in particular must fire together for every record with no exceptions (FR2.3 requires recalculation to follow a data change automatically) &mdash; splitting them risked a posted record whose KPIs silently failed to refresh if a message between components were lost.</div>
+
+<h3><span class="subno">05.1</span> Intake &amp; Classification <span class="tag tag-workflow">Workflow</span></h3>
+<div class="level2-wrap">
+<p>Accepts single/bulk uploads of PDF, scanned image, Word, and Excel documents; virus-scans, stores immutably, assigns an ingestion ID; detects document type across ten classes &mdash; six policy-side (slip, wording, schedule, endorsement, debit note, renewal) and, as of rev 1.6, four contract-requirement classes (customer contract, JV partner contract, lender agreement, government concession agreement) &mdash; to select the right extraction model. Both original stages are mechanical, with no reasoning boundary between them.</p>
+<p class="refline">&sect;9 St.1&ndash;2, FR3.1, FR3.2</p>
+</div>
+
+<h3><span class="subno">05.2</span> Insurance DocAnalyst (core) <span class="tag tag-hybrid">Hybrid</span></h3>
+<div class="level2-wrap">
+<p>The agentic half: OCR/NLP/IDP extraction of the &sect;8.2 field set (confidence score + source pointer per field, so every stored value can be traced back to its exact location in the source document per FR3.6) &mdash; genuine document understanding over inconsistent broker formats, now also covering the rev-1.6 contract-requirement field set for the four classes in 05.1. The workflow half bolted on afterward: pre-accept high-confidence fields, route the rest to the human review queue with a reason code and owner (the Document Inbox in the prototype, :749&ndash;771) &mdash; a fixed threshold rule, not a decision. Also the entry point for the no-source-document questionnaire path (FR3.9, prototype modal, :845&ndash;900, <code>openQuestionnaire()</code> :1512) &mdash; FR3.9 requires manual entries to hit the same validation and audit trail as extracted ones. Re-running a document after model improvements (FR3.8, Could/V2) re-enters here, producing a new version without losing history (&sect;9.1).</p>
+<p class="refline">FR3.3, FR3.4, FR3.6, FR3.8, FR3.9, &sect;9.1</p>
+</div>
+
+<h3><span class="subno">05.3</span> Enrichment &amp; Posting <span class="tag tag-workflow">Workflow</span></h3>
+<div class="level2-wrap">
+<p>Normalises currency (dated FX), geocodes sites, attaches carrier credit rating and country-risk index, maps to entity/site master; writes the validated record &mdash; preserving the source-document link and field-level location pointer captured at extraction (FR3.6) &mdash; versions any change (never silently overwrites &mdash; audit entry every time); triggers recalculation in Subagent 2 (&sect;06). External calls (FX, geocode, carrier rating) are retried/cached internally &mdash; that's the flakiest part of the chain &mdash; but a record is only posted once enrichment succeeds; this component never posts an un-enriched record to avoid blocking. The rev-1.6 contract-requirement path (05.1&rsquo;s four new classes) bypasses this stage entirely &mdash; a required-limit figure needs none of Enrichment's three external calls, so it posts directly to its own register instead (see Insurance DocAnalyst.md &sect;11a).</p>
+<p class="refline">&sect;9 St.5&ndash;7, FR3.6, FR3.7, FR2.2, FR2.3, FR3.5</p>
+</div>
+
+<div class="callout"><b>Note on data migration:</b> back-book policies load through this exact same pipeline &mdash; there is deliberately no shortcut bypassing human validation for historical records (&sect;9.2). The pipeline is designed once and reused for both new intake and migration, sequenced by entity/BU. Two migration-specific rules it needs to enforce, not just the ordinary validation gate: a migrated record must clear the same completeness floor as the Data Completeness &amp; Confidence KPI (&sect;7.6) before it's treated as &ldquo;live&rdquo; &mdash; records below the floor stay in the exception queue rather than being silently included &mdash; and each entity runs Atlas in parallel with its existing local tracker for at least one renewal cycle before that tracker is retired, to catch migration gaps (&sect;9.2).</div>
+
+<h2 id="sub2"><span class="secno">06</span> Subagent 2 &mdash; CoverageAnalyst <span class="tag tag-workflow">Deterministic</span></h2>
+<p class="section-dek">What the orchestrator actually queries to answer a coverage, risk, or compliance question, plus the governance workflow that gates all three. Each of the three engines owns one register from the data model (&sect;8.1) and is the single place that register's business logic lives; none of the four functions below need an LLM.</p>
+
+<div class="callout"><b>Merged (historical, v1.1):</b> Contract Requirements and Exclusion Conflict are one Contract Compliance Engine (06.3) because &sect;6.9 describes one status decision (Met / At-risk / Gap / <b>Excluded</b>), not two independent registers that happen to interact &mdash; the exclusion check is an override on the requirement check. As two separate functions this needs strict ordering and a tie-break rule for disagreement; as one function with one status field, that race condition doesn't exist. The Document/Validation Status function is also gone from this tier &mdash; it never owned a register, it read the ingestion pipeline's own queue state, so the orchestrator queries Subagent 1 (&sect;05) directly instead of through a second, potentially-stale copy.</div>
+<div class="callout"><b>Packaged, rev 1.6:</b> 06.1&ndash;06.3 share one config-version dependency and one Snapshot Convergence discipline (&sect;10); 06.4 (Config Change-Control) exists solely to gate that dependency and computes nothing itself, so packaging it apart from what it gates was the artificial boundary &mdash; it joined this subagent rather than Subagent 3, even though both look like &ldquo;governance.&rdquo;</div>
+
+<h3><span class="subno">06.1</span> Coverage &amp; Ratio Engine <span class="tag tag-workflow">Workflow</span> <span class="tag tag-mvp">MVP</span></h3>
+<div class="level2-wrap">
+<p>Computes ITV, Limit-to-PML, Coverage Gap%, BI Adequacy, RoL, TCOR, Loss Ratio, Claims Frequency/Severity, Carrier Concentration/Credit Quality, Mandatory Cover Compliance %, etc. on FX-normalised values, with full input/formula/timestamp lineage &mdash; and writes an immutable, dated snapshot of every value it computes, not just the current figure (&sect;10). Kept as a separate level-2 function from Risk Scoring (06.2) below despite feeding it most of its drivers &mdash; a further merge would pull nat-cat, political-risk, and news dependencies (genuinely external to this engine) into what is otherwise a clean financial-ratio calculator.</p>
+<p class="refline">FR2</p>
+</div>
+
+<h3><span class="subno">06.2</span> Risk Scoring Engine <span class="tag tag-workflow">Workflow</span> <span class="tag tag-mvp">MVP</span></h3>
+<div class="level2-wrap">
+<p>Weighted blend of 8 drivers (&sect;10, PRD) &mdash; five of which (coverage gap severity, uninsured TIV, adverse claims history, carrier credit quality &amp; concentration, mandatory-cover non-compliance) are already KPIs 06.1 computes; only nat-cat exposure, political/country risk, and the news-driven signal (from Subagent 4, &sect;08) are genuinely external, separately-sourced indices with their own refresh cadence. Explains every score's driver breakdown; recomputes automatically on underlying data change (MVP) &mdash; recomputing on a <i>weight</i> change is a separate, V2 capability (FR4.5). Every recompute writes a dated snapshot tagged to the weight-configuration version that produced it, so a later reweight never rewrites what a score <i>was</i>.</p>
+<p class="refline">FR4, &sect;10</p>
+</div>
+
+<h3><span class="subno">06.3</span> Contract Compliance Engine <span class="tag tag-workflow">Workflow</span> <span class="tag tag-mvp">MVP</span></h3>
+<div class="level2-wrap">
+<p style="font-weight:400;color:var(--muted);margin-bottom:6px;">Requirements + exclusions, one merged register.</p>
+<p>Compares required vs. placed limit per counterparty (customer/tenant, lender, JV partner, government/concession), then applies the exclusion cross-check as an override, producing one status: Met / At-risk / Gap / Excluded (FR7.1&ndash;FR7.5, FR9.1&ndash;FR9.3, FR9.5&ndash;FR9.6, all Must/MVP), each status change versioned rather than overwritten. As of rev 1.6, the required-limit side of the comparison sources from a validated, extracted document for all four counterparty types (Subagent 1 &sect;05.1/05.2's four new classes), not admin-configured input alone &mdash; see &sect;02's updated row. <i>Automatic</i> recalculation whenever placed coverage changes is a separate, Should/<b>V2</b> capability (FR7.6) &mdash; at MVP, a coverage change triggers this engine's recompute the same way it triggers 06.1 and 06.2, or the merge's own race-condition fix only half-holds.</p>
+<p class="refline">FR7, FR9, &sect;6.7, &sect;6.9</p>
+</div>
+
+<h3><span class="subno">06.4</span> Config Change-Control <span class="tag tag-workflow">Workflow</span> <span class="tag tag-should">Should</span></h3>
+<div class="level2-wrap">
+<p>Gates changes to KPI thresholds, risk-score weights, and risk-appetite thresholds behind a logged rationale, review, and approval; versions each change so historical scores (06.1&ndash;06.3) keep the weights that were live when computed.</p>
+<p class="refline">&sect;10.3, FR2.5, FR4.5</p>
+</div>
+
+<h2 id="sub3"><span class="secno">07</span> Subagent 3 &mdash; InsuranceCustodian <span class="tag tag-infra">Deterministic / Infra</span> <span class="tag tag-mvp">Mixed</span></h2>
+<p class="section-dek">Two functions that don't respond to a chat prompt &mdash; one runs on a schedule or on demand, the other is a passive log every other component writes to. Packaged together because one of Reporting's four outputs is a direct read of Audit's own state. <b>Split release, this rev:</b> a brief pass reclassified both functions to V2 together and flagged the resulting audit-log gap as an open item; this rev resolves it by splitting instead &mdash; 07.2 (Audit &amp; Access Log) is back to MVP, 07.1 (Reporting &amp; Export) stays V2.</p>
+<div class="callout"><b>Why split, not revert both to MVP:</b> 07.2 is the one piece every other MVP function already assumes exists &mdash; append-only writes, no rendering/scheduling complexity, and every other spec in this plan states it writes <code>atlas_write_audit</code> unconditionally. 07.1 never had that kind of load-bearing dependency: it never carried an explicit &sect;6 PRD tag to begin with, and nothing else in the roster structurally needs its rendered output to exist. The two functions still share one file &mdash; the &sect;1 shared-dependency rationale (one of Reporting's four outputs reads Audit's own log) doesn't require them to share a release tag, the same way CoverageAnalyst's 06.1&ndash;06.3/06.4 split or RiskScanner's baseline/stretch split don't.</div>
+<div class="callout"><b>Two merges considered and rejected (historical):</b> Alerts vs. Reporting look similar (both &ldquo;outbound&rdquo;) but one is event-triggered/near-real-time and the other is scheduled/on-demand document generation &mdash; different latency profile, different output shape; Alerts stayed with the orchestrator (&sect;04.2) instead. Config Change-Control vs. Audit also look similar (both &ldquo;governance&rdquo;) but Config Change-Control is active, business-specific workflow while Audit is passive, universal infrastructure &mdash; collapsing them would bury generic audit logging inside one workflow's approval logic; Config Change-Control joined Subagent 2 instead (&sect;06.4). Neither rejected pairing is what actually happened at the file level &mdash; the real groupings ran along the shared-dependency axis in &sect;03's table.</div>
+
+<h3><span class="subno">07.1</span> Reporting &amp; Export <span class="tag tag-workflow">Workflow</span> <span class="tag tag-v2">V2</span></h3>
+<div class="level2-wrap">
+<p>Produces the Board/leadership insurance pack, renewal forecast, coverage-gap register, and audit lineage report (a direct read of 07.2), on demand or on schedule, to PDF/Excel. No explicit &sect;6 PRD release tag &mdash; earlier revs inferred an MVP placement from the &ldquo;Decision speed&rdquo; success metric (&sect;3, PRD) and from being meaningless without Subagent 2 (&sect;06) feeding it; this rev keeps it at V2. Its rendered audit lineage output is unavailable until then even though 07.2's underlying log is populated from MVP.</p>
+<p class="refline">&sect;12.2</p>
+</div>
+
+<h3><span class="subno">07.2</span> Audit &amp; Access Log <span class="tag tag-infra">Infra</span> <span class="tag tag-guardrail">Guardrail</span> <span class="tag tag-mvp">MVP</span></h3>
+<div class="level2-wrap">
+<p>Immutable, time-stamped log of every data change, validation action, export, and access event &mdash; written to by every other function in this plan (&sect;04&ndash;08), including this subagent's own 07.1. Read access per &sect;4.2 is broader than just Auditors: Group Insurance, R&amp;C Manager, Treasury, and Auditor all have read access, Admin has full access, and Entity Risk Champion has none. Back to MVP this rev, restoring its original day-one-NFR status.</p>
+<p class="refline">&sect;13, &sect;4.2</p>
+</div>
+
+<h2 id="sub4"><span class="secno">08</span> Subagent 4 &mdash; RiskScanner <span class="tag tag-agent">Agent</span> <span class="tag tag-mvp">MVP</span></h2>
+<p class="section-dek">Standalone, single function &mdash; no level-2 breakdown, unlike &sect;05&ndash;07. Nothing else in the roster shares its shape (external, unstructured, judgement-under-uncertainty), so it never merged with anything at either the v1.1 function-consolidation pass or the rev-1.6 file-packaging pass. <b>Reclassified this rev:</b> baseline tier (FR6.1&ndash;6.3, 6.7&ndash;6.10) moved from V2 to MVP; impact scoring, appetite comparison, and the weighted risk-score input (FR6.4&ndash;6.6) stay Stretch/V2 &mdash; see RiskScanner.md &sect;6.</p>
+<div class="agent-card">
+  <div class="agent-card-head"><h4>RiskScanner</h4><span><span class="tag tag-agent">Agent</span> <span class="tag tag-mvp">MVP</span></span></div>
+  <p>Ingests/classifies/tags external news by sector, geography, peril, severity; entity-links to assets (all MVP baseline) &mdash; scores directional impact and compares projected exposure vs. risk appetite remain Stretch/V2. Human-in-the-loop confirm/dismiss &mdash; never auto-changes coverage or KPI data. Feeds Subagent 2's Risk Scoring function (&sect;06.2) as an optional, weighted input once its Stretch tier lands, and the orchestrator's Alerts function (&sect;04.2, emerging-risk trigger) &mdash; that trigger's appetite-breach content is likewise gated on the Stretch tier, not on this agent's own MVP baseline.</p>
+  <p class="refline">FR6, &sect;6.6</p>
+</div>
+<div class="callout"><b>No longer &ldquo;the only V2 agent&rdquo;:</b> with RiskScanner's baseline reclassified to MVP this rev, both agents in this plan (&sect;04, &sect;08) now ship at MVP. What remains V2 is RiskScanner's own Stretch tier (FR6.4&ndash;6.6) &mdash; a capability-tier distinction inside one MVP agent, the same shape as Config Change-Control (06.4) or FR7.6/FR4.5 inside Subagent 2, not a whole agent gated behind a release.</div>
+
+<h2 id="guardrails"><span class="secno">09</span> Cross-cutting guardrails</h2>
+<p>These apply to every function above, agent or not, regardless of which of the five files it lives in:</p>
+<div class="callout"><b>Validation gate:</b> a field stays &ldquo;unconfirmed&rdquo; and is excluded from every KPI calculation until a human validates it &mdash; no function may treat an unvalidated extraction as fact (&sect;9.1).</div>
+<div class="callout"><b>Never silently overwrite:</b> Subagent 1's Enrichment &amp; Posting function (&sect;05.3) must version every change; prior values stay retrievable with an audit entry (FR3.7). Subagent 3's Audit &amp; Access Log function (&sect;07.2), owner of <code>app:audit_log</code>, is MVP, so this guardrail holds in full from go-live.</div>
+<div class="callout"><b>Entity/site scoping:</b> every query is filtered by the caller's role and assigned entity before it reaches a subagent &mdash; scoping the request, not just filtering the response after the fact &mdash; so an out-of-scope answer is never generated in the first place, not applied as an afterthought at the UI layer (&sect;4.2).</div>
+<div class="callout"><b>News is advisory only:</b> Subagent 4 (&sect;08) may propose a signal and feed it as an optional, weighted risk-score input (FR6.6), but it never changes coverage or KPI data without a human confirming it (FR6.9).</div>
+<div class="callout"><b>Personal data is redacted by role, not just access-controlled:</b> policy documents (D&amp;O, GPA, workmen's compensation, etc.) contain named individuals' personal data. Every surface that can expose document content &mdash; the orchestrator's composed answers (&sect;04), Subagent 1's stored/posted records (&sect;05), and Subagent 3's generated packs (&sect;07.1) &mdash; applies role-based redaction/masking for non-essential viewers, and export of underlying source documents is restricted to authorised roles only (&sect;13, &ldquo;Personal data handling&rdquo;). No function in &sect;04&ndash;08 currently owns this end-to-end; it needs an explicit owner before build.</div>
+
+<h2 id="state"><span class="secno">10</span> State &amp; data lifecycle</h2>
 <p class="section-dek">Atlas is closer to a ledger than a workflow tracker. Its &ldquo;current&rdquo; state is just the latest slice of an append-only history that has to stay reconstructable at any prior point in time &mdash; for a period tied to policy renewal and records-retention, not task completion. That's a different state-management burden than a shorter-lived case-workflow system, where state mostly matters while the case is open and can be archived once it closes.</p>
 
-<div class="callout"><b>The concrete risk this guards against:</b> &sect;10.3 is explicit &mdash; &ldquo;historical KPI and risk-score values retain the weights/thresholds in effect when they were calculated ... so a later reweighting does not silently rewrite history.&rdquo; A risk-score weight changed in Config Change-Control eight months from now must never retroactively alter what a score <i>was</i> in March. That means Coverage &amp; Ratio Engine, Risk Scoring Engine, and Contract Compliance Engine (&sect;06) can't just be &ldquo;read current data, compute, return an answer&rdquo; &mdash; each one has to write an immutable, dated snapshot every time it computes, tagged to the configuration version that produced it (FR2.6, Should/V2, formalises this: &ldquo;support point-in-time / historical KPI snapshots for trend and audit&rdquo;).</div>
+<div class="callout"><b>The concrete risk this guards against:</b> &sect;10.3 (PRD) is explicit &mdash; &ldquo;historical KPI and risk-score values retain the weights/thresholds in effect when they were calculated ... so a later reweighting does not silently rewrite history.&rdquo; A risk-score weight changed in Subagent 2's Config Change-Control function (&sect;06.4) eight months from now must never retroactively alter what a score <i>was</i> in March. That means 06.1&ndash;06.3 can't just be &ldquo;read current data, compute, return an answer&rdquo; &mdash; each one has to write an immutable, dated snapshot every time it computes, tagged to the configuration version that produced it (FR2.6, Should/V2, formalises this: &ldquo;support point-in-time / historical KPI snapshots for trend and audit&rdquo;).</div>
 
 <div class="table-wrap">
 <table>
-<thead><tr><th>State category</th><th>Example</th><th>Mutable until</th><th>Retention clock</th><th>Owning component</th></tr></thead>
+<thead><tr><th>State category</th><th>Example</th><th>Mutable until</th><th>Retention clock</th><th>Owning function</th></tr></thead>
 <tbody>
-<tr><td class="agent-name">In-flight draft</td><td>Extracted or manually-entered fields awaiting review</td><td>Human validation (&sect;9 stage 4) &mdash; the one genuinely mutable, short-lived state in the whole system</td><td>N/A &mdash; becomes a version once posted</td><td class="ref">Field Extraction &amp; Validation Routing</td></tr>
-<tr><td class="agent-name">Versioned field-level record</td><td>Any posted policy, coverage, requirement, or exclusion field</td><td>Never overwritten &mdash; new versions append, old ones stay retrievable (FR3.7)</td><td>Renewal-cycle + regulatory retention</td><td class="ref">Enrichment &amp; Posting</td></tr>
-<tr><td class="agent-name">Point-in-time KPI / risk-score snapshot</td><td>A computed ITV, coverage gap, or composite score as of a given date</td><td>Never &mdash; frozen at the config version live when computed (&sect;10.3, FR2.6)</td><td>Regulatory retention</td><td class="ref">Coverage &amp; Ratio Engine, Risk Scoring Engine, Contract Compliance Engine</td></tr>
-<tr><td class="agent-name">Configuration version</td><td>KPI thresholds, risk-score weights, risk-appetite thresholds</td><td>Never &mdash; superseded, not overwritten (&sect;10.3)</td><td>Indefinite &mdash; referenced by every snapshot computed under it</td><td class="ref">Config Change-Control</td></tr>
-<tr><td class="agent-name">Claim record</td><td>Claim status, reserves, settlement date (&sect;7.4, &sect;8.1)</td><td>Open until settled &mdash; can outlive the policy period it was filed against entirely</td><td>Regulatory retention, independent of policy renewal</td><td class="ref">Coverage &amp; Ratio Engine (data capture only, per &sect;5.1 scope)</td></tr>
-<tr><td class="agent-name">Audit log entry</td><td>Every data change, validation action, export, and access event</td><td>Never</td><td>Effectively permanent &mdash; subject only to eventual records-retention disposal</td><td class="ref">Audit &amp; Access Log</td></tr>
+<tr><td class="agent-name">In-flight draft</td><td>Extracted or manually-entered fields awaiting review</td><td>Human validation (&sect;9 stage 4) &mdash; the one genuinely mutable, short-lived state in the whole system</td><td>N/A &mdash; becomes a version once posted</td><td class="ref">Subagent 1 &sect;05.2</td></tr>
+<tr><td class="agent-name">Versioned field-level record</td><td>Any posted policy, coverage, requirement, or exclusion field</td><td>Never overwritten &mdash; new versions append, old ones stay retrievable (FR3.7)</td><td>Renewal-cycle + regulatory retention</td><td class="ref">Subagent 1 &sect;05.3</td></tr>
+<tr><td class="agent-name">Point-in-time KPI / risk-score snapshot</td><td>A computed ITV, coverage gap, or composite score as of a given date</td><td>Never &mdash; frozen at the config version live when computed (&sect;10.3, FR2.6)</td><td>Regulatory retention</td><td class="ref">Subagent 2 &sect;06.1&ndash;06.3</td></tr>
+<tr><td class="agent-name">Configuration version</td><td>KPI thresholds, risk-score weights, risk-appetite thresholds</td><td>Never &mdash; superseded, not overwritten (&sect;10.3)</td><td>Indefinite &mdash; referenced by every snapshot computed under it</td><td class="ref">Subagent 2 &sect;06.4</td></tr>
+<tr><td class="agent-name">Claim record</td><td>Claim status, reserves, settlement date (&sect;7.4, &sect;8.1)</td><td>Open until settled &mdash; can outlive the policy period it was filed against entirely</td><td>Regulatory retention, independent of policy renewal</td><td class="ref">Subagent 2 &sect;06.1 (data capture only, per &sect;5.1 scope)</td></tr>
+<tr><td class="agent-name">Audit log entry</td><td>Every data change, validation action, export, and access event</td><td>Never</td><td>Effectively permanent &mdash; subject only to eventual records-retention disposal</td><td class="ref">Subagent 3 &sect;07.2 (MVP)</td></tr>
 </tbody>
 </table>
 </div>
@@ -361,20 +435,21 @@ flowchart TB
 
 <div class="callout"><b>Migration is a fourth, temporary clock:</b> &sect;9.2's parallel-run requirement means Atlas's own state has to stay coherent and correct, unsupervised, for at least one full renewal cycle per entity before that entity's legacy tracker retires &mdash; a migration validation window measured in a policy term, not a sprint.</div>
 
-<h2 id="sequence"><span class="secno">10</span> Build sequence vs. the roadmap</h2>
-<p class="section-dek">Sequencing follows the MoSCoW/release tags in PRD &sect;6 wherever a component maps to a numbered FR, and the &sect;16 roadmap theme otherwise &mdash; not every component has a direct &sect;6 tag (Audit &amp; Access Log and Reporting &amp; Export are sourced from &sect;13/&sect;12.2, which carry no MoSCoW/Release columns at all), so those two placements are this plan's own inference, flagged below.</p>
+<h2 id="sequence"><span class="secno">11</span> Build sequence vs. the roadmap</h2>
+<p class="section-dek">Sequencing follows the MoSCoW/release tags in PRD &sect;6 wherever a function maps to a numbered FR, and the &sect;16 roadmap theme otherwise &mdash; not every function has a direct &sect;6 tag (Audit &amp; Access Log and Reporting &amp; Export are sourced from &sect;13/&sect;12.2, which carry no MoSCoW/Release columns at all), so those two placements are this plan's own inference, flagged below. The &ldquo;Functions&rdquo; column names level-2 items, not files &mdash; several land in the same subagent (&sect;03) but still sequence independently by their own dependency, since a shared file doesn't change which upstream data a given function needs to exist first.</p>
 <div class="table-wrap">
 <table>
-<thead><tr><th>Order</th><th>Components</th><th>Why this order</th></tr></thead>
+<thead><tr><th>Order</th><th>Functions</th><th>Why this order</th></tr></thead>
 <tbody>
-<tr><td><span class="tag tag-mvp">MVP&nbsp;1</span></td><td>Intake &amp; Classification &rarr; Field Extraction &amp; Validation Routing &rarr; Enrichment &amp; Posting</td><td>Nothing else has data to work with until this exists; it's also the largest share of Must/MVP requirements (FR3). This is where the one MVP-critical agentic capability (document extraction) has to be built early &mdash; everything else in MVP is deterministic.</td></tr>
-<tr><td><span class="tag tag-mvp">MVP&nbsp;2</span></td><td>Coverage &amp; Ratio Engine, Risk Scoring Engine, Contract Compliance Engine</td><td>These back the MVP dashboards (Group Overview, Coverage Adequacy, Risk Hotspots, Contract Requirements, Insurance Exclusions) and their core comparison/scoring logic is Must/MVP. Two exceptions inside this group: Contract Compliance's automatic recalculation-on-change (FR7.6) and Risk Scoring's recompute-on-weight-change (FR4.5) are both Should/V2, not MVP &mdash; see the V2 row. Document/validation status is answered directly from the ingestion pipeline above, not a separate build item. None of these three need an LLM.</td></tr>
-<tr><td><span class="tag tag-mvp">MVP&nbsp;3</span></td><td>Alerts &amp; Notification (MVP-relevant triggers only), Reporting &amp; Export, Audit &amp; Access Log</td><td>Contractual-gap and exclusion-conflict alerts are Must/MVP. Reporting &amp; Export has no explicit &sect;6 release tag, but its content (Board pack, renewal forecast, coverage-gap register, audit lineage report) is meaningless without the MVP-2 engines feeding it, and the &ldquo;Decision speed&rdquo; success metric (&sect;3) implies it's wanted from go-live. Audit logging is a day-one NFR, not something to retrofit.</td></tr>
-<tr><td><span class="tag tag-mvp">MVP&nbsp;4</span></td><td>Atlas Assistant Orchestrator &mdash; live-data answering, citations, free-text fallback (FR8.3&ndash;FR8.5)</td><td>Reclassified from V2 to MVP in PRD v0.8 (&sect;06 callout). Sequenced last within MVP because it's the one build item here that needs prompt design and an evaluation harness rather than just correct code, and because it has nothing to query until MVP&nbsp;1&ndash;3 exist &mdash; it grounds its answers in the Coverage &amp; Ratio, Risk Scoring, and Contract Compliance engines (MVP&nbsp;2) and cites the records those and the ingestion pipeline (MVP&nbsp;1) produced.</td></tr>
-<tr><td><span class="tag tag-v2">V2</span></td><td>News &amp; Sector Intelligence Agent, Config Change-Control, Contract Compliance's auto-recalc-on-change (FR7.6), Risk Scoring's recompute-on-weight-change (FR4.5), remaining Alerts triggers, higher-automation extraction (bulk/multi-language/reprocessing, FR3.8)</td><td>Matches all of FR6, FR7.6, and FR4.5/FR2.5 being tagged V2. With the orchestrator's live-answering now MVP (&sect;06), News &amp; Sector Intelligence is the only remaining agent gated to V2 &mdash; the rest of this row is deterministic engines gaining configurability (thresholds, weights, auto-recalc) they launch without.</td></tr>
-<tr><td><span class="tag tag-v3">V3</span></td><td>Predictive/forecasting extensions to the Coverage &amp; Ratio and Risk Scoring engines; automated renewal workflow; broker self-service intake</td><td>Explicitly &ldquo;Predict &amp; extend&rdquo; scope in &sect;16 &mdash; not required for Atlas to function as a monitoring platform.</td></tr>
+<tr><td><span class="tag tag-mvp">MVP&nbsp;1</span></td><td>Subagent 1, in order: 05.1 Intake &amp; Classification &rarr; 05.2 Extraction &amp; Validation Routing &rarr; 05.3 Enrichment &amp; Posting</td><td>Nothing else has data to work with until this exists; it's also the largest share of Must/MVP requirements (FR3). This is where the one MVP-critical agentic capability (document extraction) has to be built early &mdash; everything else in MVP is deterministic.</td></tr>
+<tr><td><span class="tag tag-mvp">MVP&nbsp;2</span></td><td>Subagent 2, functions 06.1&ndash;06.3: Coverage &amp; Ratio, Risk Scoring, Contract Compliance</td><td>These back the MVP dashboards (Group Overview, Coverage Adequacy, Risk Hotspots, Contract Requirements, Insurance Exclusions) and their core comparison/scoring logic is Must/MVP. Two exceptions inside this group: Contract Compliance's automatic recalculation-on-change (FR7.6) and Risk Scoring's recompute-on-weight-change (FR4.5) are both Should/V2, not MVP &mdash; see the V2 row. Document/validation status is answered directly from Subagent 1, not a separate build item. None of these three need an LLM.</td></tr>
+<tr><td><span class="tag tag-mvp">MVP&nbsp;3</span></td><td>Orchestrator function 04.2 (Alerts, MVP-relevant triggers only), Subagent 3 function 07.2 (Audit &amp; Access Log)</td><td>Contractual-gap and exclusion-conflict alerts are Must/MVP. Audit logging is restored to MVP this rev (&sect;07) after a brief V2 reclassification exposed the gap it would leave &mdash; every other MVP function's unconditional <code>atlas_write_audit</code> call needs this in place from go-live. Subagent 3's other function, 07.1 (Reporting &amp; Export), stays out of this row &mdash; see the V2 row.</td></tr>
+<tr><td><span class="tag tag-mvp">MVP&nbsp;4</span></td><td>Orchestrator function 04.1 &mdash; live-data answering, citations, free-text fallback (FR8.3&ndash;FR8.5)</td><td>Reclassified from V2 to MVP in PRD v0.8 (&sect;04.1 callout). Sequenced last within MVP because it's the one build item here that needs prompt design and an evaluation harness rather than just correct code, and because it has nothing to query until MVP&nbsp;1&ndash;3 exist &mdash; it grounds its answers in Subagent 2 (MVP&nbsp;2) and cites the records Subagent 1 (MVP&nbsp;1) produced.</td></tr>
+<tr><td><span class="tag tag-mvp">MVP&nbsp;5</span></td><td>Subagent 4 (RiskScanner) baseline tier &mdash; FR6.1&ndash;6.3, 6.7&ndash;6.10 (ingestion, tagging, entity-linking, curated feed, confirm/dismiss)</td><td>Reclassified from V2 to MVP this rev (&sect;08 callout). Needs prompt design and an evaluation harness like MVP&nbsp;4, but has no dependency on Subagents 1&ndash;3 or the Orchestrator's core Q&amp;A &mdash; it can build in parallel with any of MVP&nbsp;1&ndash;4, sequenced last here only because it's newly promoted, not because anything blocks it.</td></tr>
+<tr><td><span class="tag tag-v2">V2</span></td><td>Subagent 3 function 07.1 (Reporting &amp; Export) &mdash; never had a &sect;6 PRD tag, kept at V2 this rev while 07.2 moved to MVP above; Subagent 4 (RiskScanner) Stretch tier &mdash; FR6.4&ndash;6.6 (impact scoring, appetite comparison, weighted risk-score input), Subagent 2 function 06.4 (Config Change-Control), Contract Compliance's auto-recalc-on-change (FR7.6), Risk Scoring's recompute-on-weight-change (FR4.5), remaining Alerts triggers (04.2) &mdash; including Alert #7's appetite-breach content, which needs this row's FR6.5 &mdash; higher-automation extraction (bulk/multi-language/reprocessing, FR3.8, Subagent 1)</td><td>Matches FR6.4&ndash;6.6, FR7.6, and FR4.5/FR2.5 being tagged V2/Stretch. RiskScanner's baseline (MVP&nbsp;5) no longer gates this row &mdash; only its Stretch-tier capability does, so RiskScanner is no longer &ldquo;the only V2 agent&rdquo;: it's an MVP agent with a V2 capability tier, same shape as several deterministic functions in this row. InsuranceCustodian's 07.1 is the same shape now too &mdash; a V2 function inside an otherwise-MVP subagent, not a whole subagent gated behind a release.</td></tr>
+<tr><td><span class="tag tag-v3">V3</span></td><td>Predictive/forecasting extensions to Subagent 2's 06.1 and 06.2; automated renewal workflow; broker self-service intake</td><td>Explicitly &ldquo;Predict &amp; extend&rdquo; scope in &sect;16 &mdash; not required for Atlas to function as a monitoring platform.</td></tr>
 </tbody>
 </table>
 </div>
 
-<div class="footline">Atlas Agent Architecture Plan &middot; derived from Keppel_Atlas_PRD_v0_8.docx (v0.8) and Atlas_App_UI_Scope_Toggle.html (superseding Atlas_App_UI v0.5.html, archived in Superseded/) &middot; prepared for internal review</div>
+<div class="footline">Atlas Agent Architecture Plan &middot; derived from Keppel_Atlas_PRD_v0_8.docx (v0.8) and Atlas_App_UI_Scope_Toggle.html (superseding Atlas_App_UI v0.5.html, archived in Superseded/) &middot; rev 1.7 restructured this document's own section hierarchy to match the deployable roster &mdash; 1 orchestrator + 4 subagents, level-2 workflows per subagent &mdash; implemented in <code>2. Agents &amp; Workflows/a. Agents/</code> (five files; no separate workflows folder) &middot; prepared for internal review</div>

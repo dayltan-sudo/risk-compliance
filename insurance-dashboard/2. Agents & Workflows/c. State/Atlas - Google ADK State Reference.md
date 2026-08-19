@@ -10,31 +10,31 @@ All `app:` keys — application scope, persistent.
 
 | Key | Written By | Read By |
 | :--- | :--- | :--- |
-| `app:entity_site_master` | *(integration — HR/entity master)* | Field Extraction & Validation Routing (Flow H), Orchestrator, News |
-| `app:document_store` | Field Extraction & Validation Routing (Flow A) | Field Extraction (internal, Flow B), Reporting & Audit Agent |
-| `app:validation_queue` | Field Extraction & Validation Routing | Field Extraction, Orchestrator (status read + alert dispatch) |
-| `app:contract_requirement_inputs` | Field Extraction & Validation Routing (Flow G, §11a there) | Coverage, Risk & Compliance Engines Agent (Contract Compliance function — Required Limit input, all four counterparty types) |
-| `app:policy_registry` | Field Extraction & Validation Routing (Flow H) **only** | Orchestrator, Coverage, Risk & Compliance Engines Agent, Reporting & Audit Agent |
-| `app:kpi_snapshot_store` | Coverage, Risk & Compliance Engines Agent (all three engine functions) | Orchestrator, Reporting & Audit Agent |
-| `app:contract_requirements_register` | Coverage, Risk & Compliance Engines Agent (Contract Compliance function) | Orchestrator, Reporting & Audit Agent |
-| `app:exclusions_register` | Coverage, Risk & Compliance Engines Agent (Contract Compliance function) | Orchestrator, Reporting & Audit Agent |
-| `app:config_versions` | Coverage, Risk & Compliance Engines Agent (Config Change-Control function) **only** | Same agent's three engine functions, Orchestrator |
-| `app:fx_rates` | *(integration — FX service; append-only)* | Field Extraction & Validation Routing (Flow H), Coverage, Risk & Compliance Engines Agent (Coverage & Ratio function) |
-| `app:risk_indices` | *(integration — nat-cat/country-risk/sanctions/carrier ratings)* | Coverage, Risk & Compliance Engines Agent (Risk Scoring function), Field Extraction & Validation Routing (Flow H) |
-| `app:alert_trigger_table` | *(configured — §12.1)* | Atlas Assistant Orchestrator (Flow F/G) |
-| `app:news_signals` | News & Sector Intelligence Agent | Coverage, Risk & Compliance Engines Agent (Risk Scoring function, optional weighted input, FR6.6), Orchestrator |
-| `app:user_scope_registry` | *(integration — Entra ID/SSO)* | Orchestrator (access gate), Reporting & Audit Agent (both functions) |
-| `app:audit_log` | **Every component** (append-only) — owned by Reporting & Audit Agent | Auditor, Treasury, R&C, Group Insurance per §4.2 |
+| `app:entity_site_master` | *(integration — HR/entity master)* | Insurance DocAnalyst (Flow H), Orchestrator, News |
+| `app:document_store` | Insurance DocAnalyst (Flow A) | Insurance DocAnalyst (internal, Flow B), InsuranceCustodian |
+| `app:validation_queue` | Insurance DocAnalyst | Insurance DocAnalyst, Orchestrator (status read + alert dispatch) |
+| `app:contract_requirement_inputs` | Insurance DocAnalyst (Flow G, §11a there) | CoverageAnalyst (Contract Compliance function — Required Limit input, all four counterparty types) |
+| `app:policy_registry` | Insurance DocAnalyst (Flow H) **only** | Orchestrator, CoverageAnalyst, InsuranceCustodian |
+| `app:kpi_snapshot_store` | CoverageAnalyst (all three engine functions) | Orchestrator, InsuranceCustodian |
+| `app:contract_requirements_register` | CoverageAnalyst (Contract Compliance function) | Orchestrator, InsuranceCustodian |
+| `app:exclusions_register` | CoverageAnalyst (Contract Compliance function) | Orchestrator, InsuranceCustodian |
+| `app:config_versions` | CoverageAnalyst (Config Change-Control function) **only** | Same agent's three engine functions, Orchestrator |
+| `app:fx_rates` | *(integration — FX service; append-only)* | Insurance DocAnalyst (Flow H), CoverageAnalyst (Coverage & Ratio function) |
+| `app:risk_indices` | *(integration — nat-cat/country-risk/sanctions/carrier ratings)* | CoverageAnalyst (Risk Scoring function), Insurance DocAnalyst (Flow H) |
+| `app:alert_trigger_table` | *(configured — §12.1)* | Atlas Orchestrator (Flow F/G) |
+| `app:news_signals` | RiskScanner | CoverageAnalyst (Risk Scoring function, optional weighted input, FR6.6), Orchestrator |
+| `app:user_scope_registry` | *(integration — Entra ID/SSO)* | Orchestrator (access gate), InsuranceCustodian (both functions) |
+| `app:audit_log` | **Every component** (append-only) — owned by InsuranceCustodian's Audit & Access Log function, **MVP** | Auditor, Treasury, R&C, Group Insurance per §4.2 |
 
 `app:kpi_snapshot_store` backs the formal **KPI / Risk Score Snapshot** entity; `app:config_versions` backs the formal **Configuration Version** entity — field lists: [`Atlas - Data Lifecycle & Versioning Reference.md`](Atlas%20-%20Data%20Lifecycle%20%26%20Versioning%20Reference.md).
 
 **Two structural rules, no exceptions:**
-1. `app:policy_registry` has exactly one writer — Field Extraction & Validation Routing, and only via its Flow H. No engine function, no Orchestrator path, no other flow anywhere ever writes it.
+1. `app:policy_registry` has exactly one writer — Insurance DocAnalyst, and only via its Flow H. No engine function, no Orchestrator path, no other flow anywhere ever writes it.
 2. `app:audit_log` is append-only. Every component writes to it via `atlas_write_audit` (no exceptions), but **no component has an UPDATE or DELETE path** to it — enforced structurally, not by convention.
 
 ## Agent & Hybrid State Schemas
 
-### Atlas Assistant Orchestrator (+ Alerts & Notification)
+### Atlas Orchestrator (+ Alerts & Notification)
 
 | Key | Scope & Lifetime | Description |
 | :--- | :--- | :--- |
@@ -45,7 +45,7 @@ All `app:` keys — application scope, persistent.
 
 Reads `app:policy_registry`, `app:kpi_snapshot_store`, `app:contract_requirements_register`, `app:exclusions_register`, `app:news_signals`, `app:user_scope_registry`, `app:alert_trigger_table`, `app:validation_queue` per index above. Read path only — writes only `atlas_raise_alert` dispatch events (logged to `app:audit_log`, not a state key of its own).
 
-### Field Extraction & Validation Routing (+ Intake & Classification, + Enrichment & Posting)
+### Insurance DocAnalyst (+ Intake & Classification, + Enrichment & Posting)
 
 | Key | Scope & Lifetime | Description |
 | :--- | :--- | :--- |
@@ -60,7 +60,7 @@ Reads `app:policy_registry`, `app:kpi_snapshot_store`, `app:contract_requirement
 
 Reads `app:fx_rates`, `app:risk_indices`, `app:entity_site_master` (Flow H enrichment inputs).
 
-### News & Sector Intelligence Agent (V2)
+### RiskScanner (MVP baseline; Stretch/V2 for impact scoring & appetite comparison, §6 there)
 
 | Key | Scope & Lifetime | Description |
 | :--- | :--- | :--- |
@@ -74,18 +74,18 @@ Reads `app:entity_site_master` for entity-linking. No `temp:` key.
 
 | Component | Key(s) | Notes |
 | :--- | :--- | :--- |
-| Coverage, Risk & Compliance Engines Agent — Coverage & Ratio, Risk Scoring, Contract Compliance functions | Session (shared pattern, one instance per function): `computation_inputs`, `computed_snapshot`, `config_version_id` | All three read `app:config_versions` and write `app:kpi_snapshot_store`; Contract Compliance additionally writes `app:contract_requirements_register` and `app:exclusions_register`, and reads `app:contract_requirement_inputs` (required-limit input for all four counterparty types, written by Field Extraction Flow G). |
-| Coverage, Risk & Compliance Engines Agent — Config Change-Control function | Shares `config_version_id` with the three functions above | Sole writer of `app:config_versions`. No unique session key of its own — it writes the version the engine functions subsequently reference. |
-| Reporting & Audit Agent — Reporting & Export function | `temp:render_buffer` | No persistent session key; reads `user:reporting_templates`. |
-| Reporting & Audit Agent — Audit & Access Log function | — | No session-state key at all; owns `app:audit_log` directly (rule 2 above). |
+| CoverageAnalyst — Coverage & Ratio, Risk Scoring, Contract Compliance functions | Session (shared pattern, one instance per function): `computation_inputs`, `computed_snapshot`, `config_version_id` | All three read `app:config_versions` and write `app:kpi_snapshot_store`; Contract Compliance additionally writes `app:contract_requirements_register` and `app:exclusions_register`, and reads `app:contract_requirement_inputs` (required-limit input for all four counterparty types, written by Insurance DocAnalyst Flow G). |
+| CoverageAnalyst — Config Change-Control function | Shares `config_version_id` with the three functions above | Sole writer of `app:config_versions`. No unique session key of its own — it writes the version the engine functions subsequently reference. |
+| InsuranceCustodian — Reporting & Export function | `temp:render_buffer` | No persistent session key; reads `user:reporting_templates`. |
+| InsuranceCustodian — Audit & Access Log function | — | No session-state key at all; owns `app:audit_log` directly (rule 2 above). |
 
 ## `user:` Keys — User Scope, Persistent, Configured
 
-Never agent-written. `user:assistant_response_rules` (Orchestrator) · `user:notification_preferences` (Orchestrator, Alerts function) · `user:extraction_confidence_config` (Field Extraction) · `user:news_relevance_config` (News) · `user:reporting_templates` (Reporting & Audit Agent, Reporting & Export function).
+Never agent-written. `user:assistant_response_rules` (Orchestrator) · `user:notification_preferences` (Orchestrator, Alerts function) · `user:extraction_confidence_config` (Insurance DocAnalyst) · `user:news_relevance_config` (News) · `user:reporting_templates` (InsuranceCustodian, Reporting & Export function).
 
 ## `temp:` Keys — Discarded After Turn
 
-`temp:grounding_payloads` (Orchestrator) · `temp:extraction_raw` (Field Extraction) · `temp:fx_lookup` (Field Extraction, Flow H) · `temp:driver_breakdown` (Coverage, Risk & Compliance Engines Agent, Risk Scoring function) · `temp:conflict_candidates` (Coverage, Risk & Compliance Engines Agent, Contract Compliance function) · `temp:render_buffer` (Reporting & Audit Agent, Reporting & Export function).
+`temp:grounding_payloads` (Orchestrator) · `temp:extraction_raw` (Insurance DocAnalyst) · `temp:fx_lookup` (Insurance DocAnalyst, Flow H) · `temp:driver_breakdown` (CoverageAnalyst, Risk Scoring function) · `temp:conflict_candidates` (CoverageAnalyst, Contract Compliance function) · `temp:render_buffer` (InsuranceCustodian, Reporting & Export function).
 
 ## Convergence Formulas
 

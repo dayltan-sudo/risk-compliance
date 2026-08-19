@@ -4,9 +4,9 @@
 >
 > **Companion docs:** [`Atlas - Google ADK State Reference.md`](Atlas%20-%20Google%20ADK%20State%20Reference.md) · [`Atlas - Data Lifecycle & Versioning Reference.md`](Atlas%20-%20Data%20Lifecycle%20%26%20Versioning%20Reference.md)
 
-## Atlas Assistant Answer
+## Atlas Orchestrator Answer
 
-Two variants: a grounded answer with citations (FR8.4), and the no-answer fallback (FR8.5). Produced by Atlas Assistant Orchestrator on Answer Convergence (State Reference).
+Two variants: a grounded answer with citations (FR8.4), and the no-answer fallback (FR8.5). Produced by Atlas Orchestrator on Answer Convergence (State Reference).
 
 **Grounded answer:**
 
@@ -30,7 +30,7 @@ Every grounded answer traces to a KPI, policy, or requirement record (FR8.4); th
 
 ## Validation Exception-Queue Entry
 
-Worklist row produced by Field Extraction & Validation Routing, written to `app:validation_queue` (§9.1).
+Worklist row produced by Insurance DocAnalyst, written to `app:validation_queue` (§9.1).
 
 | Field | Value |
 | :--- | :--- |

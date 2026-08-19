@@ -137,8 +137,8 @@
 <p class="subtitle">A dedicated companion to the <a href="https://claude.ai/code/artifact/8d62cea6-47b5-436b-92d5-2ad423c271bc" target="_blank" rel="noopener">Agent Architecture Plan</a> &sect;09. Atlas's state has to remain reconstructable across a renewal cycle that can run a year or more, and legally retrievable well past that &mdash; a fundamentally different permanence requirement than a case-workflow system whose state mostly matters while a case is open.</p>
 <div class="meta-row">
   <span><b>Source PRD</b> &nbsp;Keppel_Atlas_PRD_v0_8.docx (content v0.8, 21 Jul 2026), &sect;8, &sect;9.2, &sect;10.3, &sect;13</span>
-  <span><b>Companion to</b> &nbsp;Atlas_Agent_Architecture_Plan.html &sect;09</span>
-  <span><b>Rev.</b> &nbsp;v1.0</span>
+  <span><b>Companion to</b> &nbsp;Atlas_Agent_Architecture_Plan.html &sect;10 (see also &sect;03, the 1-orchestrator-+-4-subagent packaging, and &sect;04&ndash;08 for each subagent's current name)</span>
+  <span><b>Rev.</b> &nbsp;v1.0 &mdash; entity lifecycle classification below is by function and unaffected by the Architecture Plan's file consolidation or subagent renaming; a component name here (e.g. &ldquo;Coverage &amp; Ratio Engine,&rdquo; &ldquo;Config Change-Control&rdquo;) is a level-2 function name, now packaged inside CoverageAnalyst</span>
 </div>
 
 <div class="toc">
@@ -211,7 +211,7 @@
 <pre class="mermaid">
 timeline
     title A single policy's state, from placement to next renewal
-    Placement and intake : Document uploaded and classified : Field Extraction runs, human validates : Posted as v1 by Enrichment and Posting
+    Placement and intake : Document uploaded and classified : Insurance DocAnalyst runs, human validates : Posted as v1 by Enrichment and Posting
     Mid-term, months 2 to 10 : Endorsement changes a limit, v2 posted, v1 retained : Claim filed, independent lifecycle begins : Exclusion discovered, Contract Compliance version updates : Every KPI or score recompute writes a dated snapshot tagged to the config version live at the time
     Renewal window, day 90 to 30 pre-expiry : Renewal Pipeline KPI tracks lapse risk (Section 7.6) : Alerts fire at 90, 60, and 30 days
     Renewal : New policy period placed, new Policy and Coverage versions : Prior period's versions never deleted, still queryable for trend, audit, and any claim still open against it

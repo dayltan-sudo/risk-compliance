@@ -1,6 +1,6 @@
 # Atlas Reference — KPI Formulas
 
-> **Reference, §7.** The full PRD §7 KPI specification, reproduced faithfully. Computed by the Coverage & Ratio function of [`../a.%20Agents/Coverage%2C%20Risk%20%26%20Compliance%20Engines%20Agent.md`](../a.%20Agents/Coverage%2C%20Risk%20%26%20Compliance%20Engines%20Agent.md) §4 (formerly the standalone Coverage & Ratio Engine workflow) on FX-normalised values with full lineage (FR2.1–FR2.4). **Companion docs:** engine — same file, §4. Risk drivers built on these — [`Atlas Reference - Risk Score Drivers.md`](Atlas%20Reference%20-%20Risk%20Score%20Drivers.md).
+> **Reference, §7.** The full PRD §7 KPI specification, reproduced faithfully. Computed by the Coverage & Ratio function of [`../a.%20Agents/CoverageAnalyst.md`](../a.%20Agents/CoverageAnalyst.md) §4 (formerly the standalone Coverage & Ratio Engine workflow) on FX-normalised values with full lineage (FR2.1–FR2.4). **Companion docs:** engine — same file, §4. Risk drivers built on these — [`Atlas Reference - Risk Score Drivers.md`](Atlas%20Reference%20-%20Risk%20Score%20Drivers.md).
 
 All thresholds below are proposed defaults for sponsor confirmation, configurable per KPI per FR2.5 (Should/V2 — fixed at MVP).
 
@@ -60,7 +60,7 @@ All thresholds below are proposed defaults for sponsor confirmation, configurabl
 | Contractual Requirement Coverage Ratio | Placed Limit ÷ Contractually Required Limit (per requirement) | 100%; flag <100% Gap, 90–100% At-risk |
 | Open Contractual Gaps | Count and S$ value of requirements below 100% of required limit | Zero open gaps |
 
-Computed by the Contract Compliance function of [`Coverage, Risk & Compliance Engines Agent.md`](../a.%20Agents/Coverage%2C%20Risk%20%26%20Compliance%20Engines%20Agent.md) §6, not the Coverage & Ratio function — listed here for §7 completeness only.
+Computed by the Contract Compliance function of [`CoverageAnalyst.md`](../a.%20Agents/CoverageAnalyst.md) §6, not the Coverage & Ratio function — listed here for §7 completeness only.
 
 ## §7.8 Exclusion & conflict detection
 | Ratio | Formula | Target / threshold |
@@ -68,4 +68,4 @@ Computed by the Contract Compliance function of [`Coverage, Risk & Compliance En
 | Exclusion Conflict Count | Count of exclusions flagged as conflicting with an open Contract Requirement | Zero open conflicts |
 | Full-Exclusion Share | Full exclusions ÷ total exclusions tracked | Monitor; investigate concentration by peril |
 
-Also computed by the Contract Compliance function of [`Coverage, Risk & Compliance Engines Agent.md`](../a.%20Agents/Coverage%2C%20Risk%20%26%20Compliance%20Engines%20Agent.md) §6 — listed here for §7 completeness only.
+Also computed by the Contract Compliance function of [`CoverageAnalyst.md`](../a.%20Agents/CoverageAnalyst.md) §6 — listed here for §7 completeness only.
