@@ -1,0 +1,636 @@
+<title>Credit Assessment State Management Plan</title>
+<style>
+  :root{
+    --ink:#1C1712; --paper:#F6F2EA; --card:#FFFFFF; --line:#E4DCC9; --muted:#756B58;
+    --accent:#3D4C93; --accent-deep:#2B3771; --accent-tint:#E2E4F3;
+    --low:#1F7A5C; --low-bg:#E3F1E9;
+    --med:#A97417; --med-bg:#F8EDD8;
+    --high:#B0552A; --high-bg:#F8E7D9;
+    --crit:#8B2E22; --crit-bg:#F3DFD6;
+    --v-mvp:#3D6B8C; --v-mvp-bg:#E3EDF3;
+    --v2:#7A5AA8; --v2-bg:#EEE7F5;
+    --v3:#756B58; --v3-bg:#EFE9DA;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --ink:#F1ECE0; --paper:#15120E; --card:#1E1913; --line:#3A3226; --muted:#A79C86;
+      --accent:#9AA9F0; --accent-deep:#BAC5FA; --accent-tint:rgba(154,169,240,.14);
+      --low:#5FCB9C; --low-bg:rgba(95,203,156,.14);
+      --med:#E3B24E; --med-bg:rgba(227,178,78,.14);
+      --high:#E38A54; --high-bg:rgba(227,138,84,.14);
+      --crit:#E8776A; --crit-bg:rgba(232,119,106,.16);
+      --v-mvp:#7FB3D9; --v-mvp-bg:rgba(127,179,217,.14);
+      --v2:#B79EE0; --v2-bg:rgba(183,158,224,.14);
+      --v3:#A79C86; --v3-bg:rgba(167,156,134,.14);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ink:#F1ECE0; --paper:#15120E; --card:#1E1913; --line:#3A3226; --muted:#A79C86;
+    --accent:#9AA9F0; --accent-deep:#BAC5FA; --accent-tint:rgba(154,169,240,.14);
+    --low:#5FCB9C; --low-bg:rgba(95,203,156,.14);
+    --med:#E3B24E; --med-bg:rgba(227,178,78,.14);
+    --high:#E38A54; --high-bg:rgba(227,138,84,.14);
+    --crit:#E8776A; --crit-bg:rgba(232,119,106,.16);
+    --v-mvp:#7FB3D9; --v-mvp-bg:rgba(127,179,217,.14);
+    --v2:#B79EE0; --v2-bg:rgba(183,158,224,.14);
+    --v3:#A79C86; --v3-bg:rgba(167,156,134,.14);
+  }
+  :root[data-theme="light"]{
+    --ink:#1C1712; --paper:#F6F2EA; --card:#FFFFFF; --line:#E4DCC9; --muted:#756B58;
+    --accent:#3D4C93; --accent-deep:#2B3771; --accent-tint:#E2E4F3;
+    --low:#1F7A5C; --low-bg:#E3F1E9;
+    --med:#A97417; --med-bg:#F8EDD8;
+    --high:#B0552A; --high-bg:#F8E7D9;
+    --crit:#8B2E22; --crit-bg:#F3DFD6;
+    --v-mvp:#3D6B8C; --v-mvp-bg:#E3EDF3;
+    --v2:#7A5AA8; --v2-bg:#EEE7F5;
+    --v3:#756B58; --v3-bg:#EFE9DA;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{ background:var(--paper); }
+  body{
+    color:var(--ink); font-family:-apple-system,"Segoe UI",system-ui,sans-serif;
+    max-width:900px; margin:0 auto; padding:56px 28px 100px; line-height:1.55;
+  }
+  ::selection{ background:var(--accent-tint); }
+
+  .eyebrow{
+    font-family:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+    font-size:11px; font-weight:600; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--accent); margin:0 0 10px;
+  }
+  h1{
+    font-family:ui-serif,"Iowan Old Style","Palatino Linotype",Georgia,serif;
+    font-size:clamp(28px,4vw,38px); font-weight:600; letter-spacing:-.01em; margin:0 0 10px;
+    text-wrap:balance;
+  }
+  .subtitle{ font-size:15px; color:var(--muted); max-width:62ch; margin:0 0 30px; }
+  .meta-row{ display:flex; flex-wrap:wrap; gap:8px 18px; font-size:11.5px; color:var(--muted);
+    font-family:ui-monospace,"SF Mono",monospace; padding:14px 0; border-top:1px solid var(--line); border-bottom:1px solid var(--line); margin-bottom:34px; }
+  .meta-row b{ color:var(--ink); font-weight:600; }
+
+  h2{
+    font-family:ui-serif,"Iowan Old Style","Palatino Linotype",Georgia,serif;
+    font-size:22px; font-weight:600; margin:56px 0 6px; letter-spacing:-.005em; text-wrap:balance;
+    display:flex; align-items:baseline; gap:12px;
+  }
+  h2 .secno{ font-family:ui-monospace,"SF Mono",monospace; font-size:13px; font-weight:600; color:var(--accent); }
+  h2 + .section-dek{ font-size:13.5px; color:var(--muted); margin:0 0 20px; max-width:66ch; }
+  h3{ font-size:15.5px; font-weight:700; margin:26px 0 8px; }
+
+  p{ font-size:14.5px; max-width:68ch; }
+  a{ color:var(--accent-deep); }
+
+  .toc{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:18px 22px; }
+  .toc-label{ font-family:ui-monospace,monospace; font-size:10.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin:0 0 10px; }
+  .toc ol{ margin:0; padding-left:0; list-style:none; columns:2; column-gap:28px; }
+  .toc li{ font-size:13px; padding:4px 0; break-inside:avoid; }
+  .toc a{ text-decoration:none; color:var(--ink); }
+  .toc a:hover{ color:var(--accent-deep); text-decoration:underline; }
+  @media (max-width:640px){ .toc ol{ columns:1; } }
+
+  .callout{
+    background:var(--card); border:1px solid var(--line); border-left:3px solid var(--accent);
+    border-radius:0 8px 8px 0; padding:14px 18px; font-size:13.5px; margin:18px 0; color:var(--ink);
+  }
+  .callout b{ color:var(--accent-deep); }
+
+  .diagram-wrap{ background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px; overflow-x:auto; margin:16px 0 8px; }
+  .diagram-cap{ font-size:11.5px; color:var(--muted); text-align:center; margin-top:4px; }
+
+  table{ width:100%; border-collapse:collapse; font-size:13px; margin:14px 0 6px; }
+  .table-wrap{ overflow-x:auto; }
+  th{ text-align:left; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--muted);
+    padding:8px 10px; border-bottom:1px solid var(--line); white-space:nowrap; }
+  td{ padding:11px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+  tr:last-child td{ border-bottom:none; }
+  td.agent-name{ font-weight:600; white-space:nowrap; }
+  td.ref{ font-family:ui-monospace,monospace; font-size:11px; color:var(--muted); white-space:nowrap; }
+
+  .tag{ display:inline-flex; align-items:center; font-family:ui-monospace,monospace; font-size:10.5px; font-weight:700;
+    padding:2px 8px; border-radius:20px; white-space:nowrap; }
+  .tag-mvp{ background:var(--v-mvp-bg); color:var(--v-mvp); }
+  .tag-v2{ background:var(--v2-bg); color:var(--v2); }
+  .tag-v3{ background:var(--v3-bg); color:var(--v3); }
+  .tag-must{ background:var(--crit-bg); color:var(--crit); }
+  .tag-should{ background:var(--med-bg); color:var(--med); }
+  .tag-guardrail{ background:var(--low-bg); color:var(--low); }
+  .tag-agent{ background:var(--accent-tint); color:var(--accent-deep); }
+  .tag-workflow{ background:var(--v3-bg); color:var(--v3); }
+  .tag-hybrid{ background:var(--high-bg); color:var(--high); }
+  .tag-infra{ background:var(--v3-bg); color:var(--muted); }
+  .tag-open{ background:var(--med-bg); color:var(--med); }
+
+  .agent-card{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px 18px; margin:12px 0; }
+  .agent-card-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:6px; }
+  .agent-card-head h4{ margin:0; font-size:14.5px; font-weight:700; }
+  .agent-card p{ margin:4px 0 0; font-size:13px; color:var(--ink); }
+  .agent-card .refline{ font-family:ui-monospace,monospace; font-size:11px; color:var(--muted); margin-top:8px; }
+
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media (max-width:640px){ .grid2{ grid-template-columns:1fr; } }
+
+  .footline{ margin-top:70px; padding-top:18px; border-top:1px solid var(--line); font-size:11.5px; color:var(--muted); font-family:ui-monospace,monospace; }
+
+  .mermaid{ font-size:14px !important; }
+</style>
+
+<div class="eyebrow">Credit Assessment &middot; State Management Plan</div>
+<h1>Three Top-Level Modes, the Assessment Lifecycle &amp; Cross-Assessment Comparison</h1>
+<p class="subtitle">The behavioural half of the architecture: which states exist, what moves between them, and which component owns each move &mdash; built around PRD v0.10's three ways into the system and the one role-gated route between them, the New-vs-Refresh entry point (FR8.3&ndash;FR8.4), and the read-only comparison across two finished assessments (FR8.8&ndash;FR8.9).</p>
+<div class="meta-row">
+  <span><b>Source PRD</b> &nbsp;Credit_Assessment_PRD_v0.10.md (v0.10 draft, 4 Aug 2026) &mdash; FR8.11 gains the <b>Refresh this customer</b> action into FR8.3's Refresh Assessment flow, closing the browse-to-refresh question this plan raised against v0.9. Carries forward v0.9's FR8.10&ndash;FR8.11 Customer Directory and detail view, FR1.9's document browsing, and the <code>source_assessment_id</code> gap raised against v0.7 and closed at v0.8 (&sect;09)</span>
+  <span><b>Companion</b> &nbsp;<code>1. Planning &amp; Prototyping/Credit_Assessment_Agent_Architecture_Plan.html</code> v1.9 &mdash; 13 components, resynced to the same PRD version. That document names the components; this one names the modes and transitions and maps them back (&sect;08)</span>
+  <span><b>Scope</b> &nbsp;Top-level mode and assessment-lifecycle state. Field, ratio, screening, and config state are inventoried in &sect;02 and owned elsewhere &mdash; see the pointer table in &sect;01</span>
+  <span><b>Rev.</b> &nbsp;v1.3 &mdash; the browse-to-refresh transition is confirmed by PRD v0.10 and modelled as a permanent, role-gated edge with defined pre-selection (&sect;03, &sect;08). It is an action-availability gate, distinct from v1.2's data-scoping RBAC convention, and &sect;03 now states both. &sect;10 drops to three branches</span>
+</div>
+
+<div class="toc">
+  <div class="toc-label">On this page</div>
+  <ol>
+    <li>01 &nbsp;<a href="#scope">What this document owns</a></li>
+    <li>02 &nbsp;<a href="#surfaces">State surfaces inventory</a></li>
+    <li>03 &nbsp;<a href="#entry">Three top-level modes &amp; the assessment entry point</a></li>
+    <li>04 &nbsp;<a href="#lifecycle">Assessment lifecycle, both paths</a></li>
+    <li>05 &nbsp;<a href="#init">Refresh initialisation sequence</a></li>
+    <li>06 &nbsp;<a href="#compare">Comparison data flow</a></li>
+    <li>07 &nbsp;<a href="#distinct">Six paths that cross an assessment boundary</a></li>
+    <li>08 &nbsp;<a href="#ownership">Component ownership per transition</a></li>
+    <li>09 &nbsp;<a href="#failure">Failure modes and escalation</a></li>
+    <li>10 &nbsp;<a href="#branches">Open questions, modelled both ways</a></li>
+  </ol>
+</div>
+
+<h2 id="scope"><span class="secno">01</span> What this document owns</h2>
+<p class="section-dek">The architecture plan answers &ldquo;which component does this?&rdquo; This one answers &ldquo;what state is the assessment in, and what moved it there?&rdquo; Neither restates the other; &sect;08 is the joint where they meet.</p>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>Question</th><th>Answered in</th></tr></thead>
+<tbody>
+<tr><td>Which components exist, why each is a component, and in what order they build</td><td class="ref">Architecture plan &sect;02, &sect;04&ndash;&sect;06, &sect;10</td></tr>
+<tr><td>Which entity is mutable until when, its versioning rule, and its retention clock</td><td class="ref">Architecture plan &sect;08</td></tr>
+<tr><td>Cross-cutting invariants every component obeys</td><td class="ref">Architecture plan &sect;07</td></tr>
+<tr><td>Which of the three top-level modes a user is in, what each mode reaches, and how they connect</td><td class="ref">This document &sect;03 &mdash; new at v1.2, transition confirmed at v1.3</td></tr>
+<tr><td>What states an assessment passes through, and what triggers each transition</td><td class="ref">This document &sect;03&ndash;&sect;05</td></tr>
+<tr><td>When the FR8.8&ndash;FR8.9 comparison becomes available, what it reads, and when it must suppress</td><td class="ref">This document &sect;06</td></tr>
+<tr><td>Which component owns each transition</td><td class="ref">This document &sect;08 &mdash; the single reconciliation point between the two</td></tr>
+<tr><td>How the state model changes under each answer to the three open branches &mdash; PRD v0.7's two and PRD v0.9's Auditor scope</td><td class="ref">This document &sect;10</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="callout"><b>The reading applied to FR8.3, stated once here.</b> FR8.3 defines New Assessment against &ldquo;an existing Customer with no prior Assessment, or&hellip; a new Customer record,&rdquo; and Refresh Assessment against &ldquo;a Customer with one or more existing Assessments.&rdquo; The two conditions are exhaustive and mutually exclusive on prior-assessment count, so the entry point is <b>determined by the customer's record, not chosen by the analyst</b> &mdash; there is no path in FR8.3 to an unlinked version&nbsp;1 for a customer who already has assessments. &sect;03 models it that way. The residual case &mdash; an analyst deliberately wanting a clean-slate assessment with no refresh source for an existing customer &mdash; has no requirement behind it and needs none for MVP: FR8.3's optional historical-depth clause already covers widening a refresh's period set, and the refresh link is what FR8.8&ndash;FR8.9 need to exist at all. No component boundary moves under either reading.</div>
+
+<h2 id="surfaces"><span class="secno">02</span> State surfaces inventory</h2>
+<p class="section-dek">Every stored state in the system, and whether this document models its transitions. Lifecycle, versioning, and retention per entity sit in the architecture plan's &sect;08 and are not repeated.</p>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>State</th><th>Values</th><th>Carried on</th><th>Owning component</th><th>Modelled here</th></tr></thead>
+<tbody>
+<tr><td class="agent-name">Assessment state</td><td>Draft, Submitted, Approved, Rejected, Returned for Revision (FR7.1)</td><td class="ref">Assessment.state</td><td class="ref">Approval Workflow</td><td>&sect;04 &mdash; in full, both entry paths</td></tr>
+<tr><td class="agent-name">Top-level mode</td><td>Prepare Assessment (FR8.3), Approve (FR7), Browse History (FR8.10) &mdash; new at v1.2</td><td class="ref">Not stored &mdash; a navigation position, held only for the session. Nothing an assessment carries records which mode a user entered from</td><td class="ref">Customer &amp; Assessment Registry offers Prepare and Browse; Approval Workflow offers Approve</td><td>&sect;03 &mdash; in full</td></tr>
+<tr><td class="agent-name">Entry-point mode</td><td>New, Refresh (FR8.3) &mdash; a choice <i>within</i> Prepare Assessment, not a peer of it</td><td class="ref">Not stored &mdash; derived from the customer's prior-assessment count at entry, and thereafter from whether a refresh source link exists</td><td class="ref">Customer &amp; Assessment Registry</td><td>&sect;03, &sect;05</td></tr>
+<tr><td class="agent-name">Refresh source link</td><td>Null on a version&nbsp;1 assessment; an Assessment id on a refresh version (FR8.4)</td><td class="ref">Assessment &mdash; see the gap in &sect;09</td><td class="ref">Customer &amp; Assessment Registry</td><td>&sect;05, &sect;09</td></tr>
+<tr><td class="agent-name">Field review status</td><td>Unconfirmed, Confirmed, Amended, Not Present (FR3.7)</td><td class="ref">ExtractedField.status</td><td class="ref">Field Review, Confirmation &amp; Posting</td><td>Referenced only &mdash; &sect;05 covers what refresh sets it to, not the review cycle itself</td></tr>
+<tr><td class="agent-name">Ratio computability</td><td>Computed, Provisional, Not Calculable (FR3.8)</td><td class="ref">Ratio.provisional_flag, Ratio.not_calculable_flag</td><td class="ref">Ratio Engine</td><td>&sect;06 &mdash; as a comparison-suppression input only</td></tr>
+<tr><td class="agent-name">Comparison availability</td><td>Not yet available, Available, Unavailable with reason (FR8.8)</td><td class="ref">Not stored &mdash; evaluated at view time from both assessments' stored rows</td><td class="ref">Customer &amp; Assessment Registry</td><td>&sect;06 &mdash; in full</td></tr>
+<tr><td class="agent-name">Browse visibility scope</td><td>Analyst &mdash; own plus team; Auditor &mdash; completed only; Approver and Admin per the existing NFR rule (FR8.10) &mdash; new at v1.2</td><td class="ref">Not stored &mdash; a parameter on every browse query, applied before it reaches data (NFR Confidentiality/RBAC), never a filter over results</td><td class="ref">Customer &amp; Assessment Registry</td><td>&sect;03 &mdash; as a query parameter, not a state branch; the one genuine branch is in &sect;10 branch C</td></tr>
+<tr><td class="agent-name">Directory row completeness</td><td>Grade present or blank because FR5 has not run; limit and terms present or blank because no Approved assessment exists (FR8.10) &mdash; new at v1.2</td><td class="ref">Not stored &mdash; derived per customer at query time from the visible assessment set</td><td class="ref">Customer &amp; Assessment Registry</td><td>&sect;03; the two blanks must not render alike &mdash; &sect;09</td></tr>
+<tr><td class="agent-name">Screening subject status <span class="tag tag-v2">V2</span></td><td>Unconfirmed, Confirmed, Amended, Not Present (FR3.11)</td><td class="ref">ScreeningSubject.status</td><td class="ref">Screening Subject Register &amp; Review</td><td>Out of scope &mdash; customer-scoped, unaffected by refresh (&sect;07)</td></tr>
+<tr><td class="agent-name">Screening + finding state <span class="tag tag-v2">V2</span></td><td>Not yet run, run with no findings, run with findings (FR12.7); Unreviewed, Relevant, Not Relevant, Needs Follow-up (FR12.5)</td><td class="ref">ScreeningRun, AdverseFinding.review_status</td><td class="ref">Adverse Media Screening Agent</td><td>Out of scope &mdash; one open item touches refresh, tracked in the architecture plan &sect;09</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="entry"><span class="secno">03</span> Three top-level modes &amp; the assessment entry point</h2>
+<p class="section-dek">PRD v0.9 makes the system's shape explicit: three ways in, not two. Prepare an assessment (FR8.3), approve one (FR7), or browse what has already happened (FR8.10). The first two write; the third never does.</p>
+
+<h3>Three ways in</h3>
+
+<div class="callout"><b>Browse History is a mode, not a screen inside assessment preparation.</b> FR8.10 says so in its own text &mdash; &ldquo;a third top-level way into the system alongside FR8.3&hellip; and FR7&rdquo; &mdash; and defines it by the absence of intent: browsing historical activity &ldquo;with no intent to create or continue&rdquo; an assessment. That is a state-model claim, not a UI preference, and it has three consequences this document has to carry. <b>(1) No assessment is in scope.</b> Every state in &sect;04&ndash;&sect;06 presupposes an assessment that exists and is being worked on; browse presupposes none, and the user may leave without one ever existing. Modelling it as a Draft substate would be false on its face. <b>(2) It is entered by roles that cannot reach the other two modes.</b> An Auditor has no FR8.3 rights and no FR7 rights, so browse is the only mode that role has &mdash; which makes it a peer of the other two by necessity, not just by the PRD's wording. <b>(3) It writes nothing itself.</b> FR8.11 has no in-place edit of any field, ratio, rating, or document, so no state inside this mode mutates anything. PRD v0.10's Refresh this customer does not weaken that: it is a transition <i>out</i> of the mode, and the Assessment it leads to is minted in Prepare mode by the Registry (&sect;05), on the far side of the arrow. A user who stays in Browse mode leaves it exactly as they found it.</div>
+
+<div class="diagram-wrap">
+<pre class="mermaid">
+stateDiagram-v2
+  state "Signed in, no mode entered" as HOME
+  state "Prepare Assessment, FR8.3, detailed below" as PREP
+  state "Approve, FR7, approver only, see section 04" as APPR
+  state "Browse History, FR8.10, read only" as BROWSE
+
+  [*] --> HOME
+  HOME --> PREP: intent to create or continue an assessment
+  HOME --> APPR: an assessment is Submitted and this user did not prepare it, FR7.2 and FR7.5
+  HOME --> BROWSE: intent to browse only, no assessment in scope, FR8.10
+  BROWSE --> PREP: Refresh this customer, FR8.11, only for a user holding FR8.3 rights, customer pre-selected
+  PREP --> [*]
+  APPR --> [*]
+  BROWSE --> [*]
+</pre>
+</div>
+<div class="diagram-cap">The three modes are peers and are entered independently &mdash; there is no home state a user must pass through between them, only one they start from. Prepare and Approve are the two that write; the only transition between any pair of modes is the browse-to-prepare arrow, permanent and role-gated since PRD v0.10 (FR8.11). It carries a customer selection, and where the user drilled into one past assessment (FR8.5) a refresh-source selection too &mdash; the create itself still happens in Prepare mode under FR8.3's rules. The Approve mode's own states are the Submitted-onward half of &sect;04's machine and are not restated here.</div>
+
+<div class="callout"><b>Role-scoped state variation is new to this document, and the convention chosen is stated rather than assumed.</b> Through v1.1 no state in this model varied by who was looking at it. FR8.10's list does: an Analyst sees customers with an assessment they or their team own, an Auditor sees customers with at least one completed assessment, Approver and Admin inherit the existing NFR rule. <b>The convention: role scopes the query, it does not fork the state machine.</b> Browse History is one mode with one set of states for every role; what differs is the row set those states are computed over, which NFR Confidentiality/RBAC already requires be applied before the query reaches data rather than as a filter over its output. Modelling a machine per role would draw the same four states three times and put a security rule in a diagram that cannot enforce it. <b>The one genuine branch, and why it is a branch:</b> the Auditor's scope is an unresolved product question, not a parameter with a known value (&sect;10 branch C), and it is modelled there with the other open questions.</div>
+
+<div class="callout"><b>Two kinds of role dependence, and they are not one convention.</b> PRD v0.10's Refresh this customer gate is role-dependent, but not in the way FR8.10&ndash;FR8.11's RBAC is, and collapsing them would lose the distinction the PRD itself draws.
+<br><br><b>Data-scoping gate (FR8.10&ndash;FR8.11, NFR Confidentiality/RBAC):</b> governs <i>what rows are visible</i>. Applied inside the query, before it reaches data. Every role sees the same states over a different row set &mdash; the convention above.
+<br><br><b>Action-availability gate (FR8.11's Refresh this customer):</b> governs <i>what may be done with what is already visible</i>. Two users can hold identical browse scope and see the same customer, and only the one with FR8.3 rights is offered the transition. It cannot be expressed as a query parameter, because there is no row to filter &mdash; the object of the rule is an outgoing transition, not a record.
+<br><br><b>What they share, and where the shared part stops:</b> both read the role, neither forks the state machine. Browse History still has one set of states for every role; the Auditor simply has no arrow leaving it. <b>The consequence to build for:</b> a role gate on a transition is enforced where the transition is served (the Registry, &sect;08), not where the data is fetched &mdash; so passing the RBAC scope test says nothing about whether the action gate holds, and the two need separate tests. An Auditor correctly scoped to completed assessments who is nonetheless offered Refresh this customer is an access defect that no data-scope check would catch (&sect;09).</div>
+
+<h3>Browse History &mdash; FR8.10, FR8.11, FR1.9</h3>
+
+<div class="diagram-wrap">
+<pre class="mermaid">
+stateDiagram-v2
+  state "Customer Directory, every Customer with 1 or more Assessments, role scoped" as DIR
+  state "Prepare Assessment, refresh path, FR8.3, see below" as PREPR
+
+  [*] --> DIR
+  DIR --> Detail: select a customer row, FR8.11
+  Detail --> DIR: back to the list, nothing changed anywhere
+
+  state Detail {
+    state "Assessment history trend, FR8.6" as TREND
+    state "Prior assessment drill-down, FR8.5" as DRILL
+    state "Document list for this customer, FR1.9" as DOCS
+    state "One document, its version chain and every assessment referencing it" as VER
+
+    [*] --> TREND
+    TREND --> DRILL: open one past assessment
+    DRILL --> TREND
+    TREND --> DOCS
+    DOCS --> TREND
+    DOCS --> VER: open one document, no action taken on any assessment
+    VER --> DOCS
+  }
+
+  TREND --> PREPR: Refresh this customer, FR8.3 rights only, customer pre-selected
+  DRILL --> PREPR: Refresh this customer from a drill-down, this assessment pre-selected as refresh source
+  DIR --> [*]
+</pre>
+</div>
+<div class="diagram-cap">Every state here is read-only and every transition inside the detail view is navigation &mdash; no arrow within it writes a row. The two arrows to PREPR are the exception and the only way out toward a lifecycle state: they leave the mode, and the write happens on the far side, in FR8.3's flow. Which one a user takes decides what carries: from the trend, the customer alone; from a drill-down, the customer and that assessment as refresh source (FR8.11). <b>TREND and DRILL are each drawn once and defined once.</b> They are FR8.6 and FR8.5, the same two views the Prepare mode reaches during refresh-source selection, not browse-mode copies of them: one requirement, one implementation, two callers (&sect;07, &sect;08). The detail view is composite because FR8.11 assembles rather than replaces &mdash; a user moves between its three sections without leaving the customer.</div>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>Browse state</th><th>Reads</th><th>Writes</th><th>Source</th></tr></thead>
+<tbody>
+<tr><td class="agent-name">Customer Directory</td><td><code>Customer.name</code>; the most recent visible <code>Assessment</code>'s <code>created_at</code> and <code>state</code>; that assessment's <code>Rating</code> grade where one exists; the most recent <b>Approved</b> assessment's <code>Recommendation</code> limit and terms. Aggregated per customer at query time, over the visible assessment set only</td><td>Nothing</td><td class="ref">FR8.10; PRD &sect;4 v0.9 check</td></tr>
+<tr><td class="agent-name">Customer detail view</td><td>Nothing of its own &mdash; it assembles the three states below</td><td>Nothing. Offers <b>Refresh this customer</b> to a caller holding FR8.3 rights, which leaves this mode; the Assessment is minted in Prepare mode, not here</td><td class="ref">FR8.11</td></tr>
+<tr><td class="agent-name">Assessment history trend</td><td>Every visible assessment's <code>Rating</code> and <code>Recommendation</code> for this customer</td><td>Nothing</td><td class="ref">FR8.6, reached from two entry points</td></tr>
+<tr><td class="agent-name">Prior assessment drill-down</td><td>One assessment's full <code>ExtractedField</code>, <code>Ratio</code>, <code>Rating</code>, and <code>Recommendation</code> state as last recorded</td><td>Nothing &mdash; never reopens the assessment for editing (FR8.5, FR8.2)</td><td class="ref">FR8.5, reached from two entry points</td></tr>
+<tr><td class="agent-name">Document list</td><td>Per <code>Document</code>: type, period where it has one, and the customer scope</td><td>Nothing</td><td class="ref">FR1.9</td></tr>
+<tr><td class="agent-name">One document</td><td>The existing FR1.5 version chain &mdash; every version with upload date and uploader &mdash; and the existing FR1.6 many-to-many set of assessments currently referencing it</td><td>Nothing &mdash; opening a document takes no action on any assessment (FR1.9)</td><td class="ref">FR1.9, FR1.5, FR1.6</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="callout"><b>FR1.9 needs no entity that does not already exist, and the diagram is the check.</b> Both of its reads resolve against structures modelled since PRD v0.2: the version chain is <code>Document.version</code> plus <code>upload_date</code> and <code>uploader</code> (FR1.5), and the referencing-assessment list is the FR1.6 many-to-many relationship read from the assessment side. No join table beyond what FR1.6 already implies, no new attribute, and nothing on <code>Document</code> that browsing would have to set. This matches PRD &sect;4's own v0.9 conclusion &mdash; recorded here as verified against the read paths rather than carried over, because this plan raised the opposite finding against v0.7 and the check is not a formality (&sect;09). The property that makes it safe is that <code>Document</code> is immutable once stored (architecture plan &sect;08): there is no state on it for a read-only surface to fall out of date with.</div>
+
+<div class="callout"><b>Browse to Refresh &mdash; the one transition out of this mode, confirmed at PRD v0.10.</b> FR8.11's <b>Refresh this customer</b> takes a user from the customer detail view into FR8.3's Refresh Assessment flow. Four properties define it, and they are the whole rule.
+<br><br><b>(1) It is gated to FR8.3 rights holders.</b> The same boundary FR8.3 already enforces, not a new permission &mdash; a role with no legitimate path into FR8.3 by any route (Auditor, Approver) is offered no action at all. An action gate, not a data gate (callout above).
+<br><br><b>(2) The customer is always pre-selected.</b> FR8.3's search step is satisfied by a default rather than skipped, so the Registry still evaluates the entry-point condition exactly as it does on a direct entry &mdash; a user arriving from Browse is offered Refresh because the customer has priors, which is the only reason anyone is (&sect;03 below).
+<br><br><b>(3) The refresh source is pre-selected only when the view was reached through FR8.5.</b> Drilling into one specific past assessment carries that assessment across as the refresh source; viewing at customer level carries nothing, and FR8.3's default-to-most-recent rule applies unchanged. One conditional default on a step that exists either way &mdash; no second selection mechanism.
+<br><br><b>(4) The mode change must be visible.</b> The user crosses from a surface that writes nothing to one that mints an Assessment on entry (&sect;05). Pre-selection reduces the steps between browsing and a Draft, which is exactly why the boundary has to be explicit &mdash; a browse session must not end with a Draft the user did not know they created (&sect;09).
+<br><br><b>No component boundary moves and no state is stored.</b> The Registry serves both endpoints (&sect;08), and the top-level mode remains a navigation position, not a field &mdash; nothing records which mode an assessment was started from, and nothing needs to (&sect;02).</div>
+
+<h3>Prepare Assessment &mdash; New vs. Refresh</h3>
+<p>FR8.3. The decision is a read against the Registry before any assessment exists, which is why the Registry owns it: no pipeline component can count a customer's prior assessments, and no assessment exists yet to own the question.</p>
+
+<div class="diagram-wrap">
+<pre class="mermaid">
+stateDiagram-v2
+  state "Customer search" as SEARCH
+  state "New Customer minted" as CREATE
+  state "Customer with 0 prior Assessments" as ZERO
+  state "Customer with 1 or more prior Assessments" as PRIOR
+  state "Refresh source selected, default most recent" as SRC
+  state "Assessment v1 &mdash; New path" as V1
+  state "Assessment v(n+1) &mdash; Refresh path, source link set" as VN
+  state "Draft &mdash; see section 04" as DRAFT
+  state "Arrived from Browse mode, FR8.11 Refresh this customer" as FROMBROWSE
+
+  [*] --> SEARCH
+  [*] --> FROMBROWSE
+  FROMBROWSE --> PRIOR: customer pre-selected, viewed at customer level
+  FROMBROWSE --> SRC: customer and assessment pre-selected, reached via the FR8.5 drill-down
+  SEARCH --> CREATE: no matching Customer, analyst creates one
+  SEARCH --> ZERO: Customer found, prior count 0
+  SEARCH --> PRIOR: Customer found, prior count 1 or more
+  CREATE --> ZERO
+  ZERO --> V1: only New Assessment is offered, FR8.3
+  PRIOR --> SRC: only Refresh Assessment is offered, FR8.3
+  SRC --> VN: FR8.4 initialisation runs, see section 05
+  V1 --> DRAFT: empty field scope
+  VN --> DRAFT: field scope copied and reset to Unconfirmed, FR1.7
+  DRAFT --> [*]
+</pre>
+</div>
+<div class="diagram-cap">Both paths terminate at the same Draft state. Everything downstream of that point is common &mdash; &sect;04 does not fork. The two FROMBROWSE arrows are PRD v0.10's pre-selection: they enter this flow further along, at a step it already has, and never skip one. A customer arriving this way has priors by construction &mdash; FR8.10 lists only customers holding an assessment &mdash; so the ZERO branch is unreachable from Browse.</div>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>Precondition</th><th>Evaluated by</th><th>Offered</th><th>Consequence if violated</th></tr></thead>
+<tbody>
+<tr><td>Customer exists in the register</td><td class="ref">Registry, FR8.1</td><td>Either path</td><td>Create Customer first; no assessment may exist without one</td></tr>
+<tr><td>Prior Assessment count = 0</td><td class="ref">Registry, FR8.3</td><td><b>New</b> only &mdash; version 1, no source link</td><td>&mdash;</td></tr>
+<tr><td>Prior Assessment count &ge; 1</td><td class="ref">Registry, FR8.3</td><td><b>Refresh</b> only &mdash; version n+1, source link required</td><td>&mdash;</td></tr>
+<tr><td>A refresh source is selected</td><td class="ref">Registry, FR8.3</td><td>Defaults to the most recent; scope of the selectable set is <code>OPEN</code> (&sect;10, branch B)</td><td>No source, no FR8.8&ndash;FR8.9 comparison &mdash; the assessment is still valid, the comparison view is not</td></tr>
+<tr><td>No prior cycle still in flight</td><td class="ref">Registry &mdash; <code>OPEN</code>, &sect;10 branch A</td><td>Branch-dependent</td><td>Branch-dependent; see &sect;10</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="lifecycle"><span class="secno">04</span> Assessment lifecycle, both paths</h2>
+<p class="section-dek">One state machine, not two. FR8.3's two entry paths differ only in how the Draft's field scope is populated, and that difference is spent before the first review action.</p>
+
+<div class="diagram-wrap">
+<pre class="mermaid">
+stateDiagram-v2
+  [*] --> Draft: created by the Registry at entry, section 03
+
+  state Draft {
+    state "Field scope initialising" as INIT
+    state "Field scope populated" as SCOPED
+    state "Under review &mdash; field-period cells, FR3" as REVIEW
+    state "Ratios, Rating, Recommendation computed, FR4 to FR6" as COMPUTED
+    state "Comparison available, refresh path only, FR8.8 to FR8.9" as CMP
+
+    [*] --> INIT
+    INIT --> SCOPED: New path &mdash; extraction of uploaded periods completes, FR2
+    INIT --> SCOPED: Refresh path &mdash; FR1.7 copy plus extraction of the new period, section 05
+    SCOPED --> REVIEW: analyst confirms, amends, or marks Not Present, FR3.4 and FR3.7
+    REVIEW --> COMPUTED: ratios compute on any field carrying a value, FR4.1
+    COMPUTED --> REVIEW: later amendment triggers scoped recompute, FR4.3
+    COMPUTED --> CMP: refresh source has stored Ratio rows, section 06
+    CMP --> REVIEW: amendment invalidates the shown delta and recomputes, FR4.3
+  }
+
+  Draft --> Submitted: analyst submits &mdash; blocked while any Provisional result stands, FR3.10 and FR7.2
+  Submitted --> Approved: approver approves and locks limit and terms, FR7.4
+  Submitted --> Rejected: approver rejects with required reason, FR7.4
+  Submitted --> Returned: approver returns with comments, FR7.4
+  Returned --> Draft: re-enters at Field Review, FR7.4
+  Approved --> [*]
+  Rejected --> [*]
+</pre>
+</div>
+<div class="diagram-cap">Approved and Rejected are terminal (FR7.4). Returned for Revision is not &mdash; it re-enters Draft, so a single assessment may traverse the Draft substates repeatedly and accumulates one ApprovalDecision per approver action. The comparison substate is reachable only on the refresh path and is read-only: entering or leaving it writes nothing (&sect;06).</div>
+
+<div class="callout"><b>Two properties of this machine that FR8.3 does not change.</b> A refresh version is an ordinary assessment in every respect after initialisation &mdash; same submission gate (FR3.10), same segregation of duties (FR7.5), same never-overwrite guarantee (FR8.2). And the refresh source assessment is not a participant in this machine: it has its own, already-terminal state, and nothing in the new assessment's lifecycle transitions it. That is the structural form of FR8.8's &ldquo;touches neither assessment's fields or confirmation state&rdquo; &mdash; the source appears in &sect;06's sequence as a read target, and appears in no diagram here as a state holder.</div>
+
+<h2 id="init"><span class="secno">05</span> Refresh initialisation sequence</h2>
+<p class="section-dek">FR8.4 plus FR1.7, ordered precisely enough to implement. The Assessment record is created before the copy runs, not after &mdash; <code>ExtractedField.assessment_id</code> has nothing to point at otherwise.</p>
+
+<div class="diagram-wrap">
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  actor AN as Credit Analyst
+  participant REG as Customer &amp; Assessment Registry
+  participant IN as Document Intake &amp; Versioning
+  participant EX as Field Extraction &amp; Validation Routing
+  participant RV as Field Review, Confirmation &amp; Posting
+
+  AN->>REG: select Customer, choose refresh source, FR8.3
+  REG->>REG: mint Assessment v(n+1), state Draft, source link set
+  Note over REG: born in Draft with the link already set &mdash; the copy is a later step, not a precondition
+  REG->>IN: attach the source assessment's prior-period document references, FR1.6 and FR8.4
+  IN->>EX: raise the FR1.7 reuse event, once per referenced document
+  EX->>EX: copy the most recent extraction into the new assessment's scope
+  Note over EX: same values, confidences, source pointers and extraction_model_version; status reset to Unconfirmed; no model invoked
+  EX-->>REG: field scope populated for prior periods
+  AN->>IN: upload the new period's statements only, FR8.3 and FR1.1
+  IN->>EX: extract the new period, FR2
+  EX-->>RV: full field-period grid ready for review, FR3.1
+  RV-->>AN: review screen, every cell Unconfirmed
+</pre>
+</div>
+<div class="diagram-cap">Steps 4&ndash;7 and steps 8&ndash;10 are independent and may interleave; step 2 precedes both. Nothing in this sequence reads or writes the refresh source assessment's own <code>ExtractedField</code>, <code>Ratio</code>, <code>Rating</code>, or <code>Recommendation</code> rows &mdash; the copy sources from the <b>Document</b>'s most recent extraction (FR1.7), not from the source assessment's field set.</div>
+
+<div class="callout"><b>The window between step 2 and step 7 is a real state, and it must render as one.</b> An assessment exists, in Draft, with a source link and an empty or partial field scope. An analyst who reaches the review screen inside that window sees an empty grid, which is indistinguishable from &ldquo;this refresh inherited nothing&rdquo; unless the initialising state is shown. Same discipline the architecture plan's &sect;07 applies three times over &mdash; an absence in progress must never render as an absence that is final. Failure handling in &sect;09.</div>
+
+<div class="callout"><b>Why the Registry initiates the reference attach rather than writing the copy itself.</b> The architecture plan already fixes two ownerships that this sequence must not disturb: Document Intake attaches document references and raises the reuse event, and Field Extraction is the single component that mints an <code>ExtractedField</code> row (architecture plan &sect;04, &sect;08). Refresh introduces the first case where a reuse event is raised with no upload behind it, so the Registry supplies the reference set. It does not become a second writer of fields &mdash; splitting that ownership is the thing the architecture plan's boundary tests reject in three separate places.</div>
+
+<h2 id="compare"><span class="secno">06</span> Comparison data flow</h2>
+<p class="section-dek">FR8.8 and FR8.9. Read-only, computed at view time, storing nothing. Availability is gated on this assessment's own FR4 computation, because both sides must be computed before a delta exists.</p>
+
+<div class="diagram-wrap">
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  actor AN as Credit Analyst
+  participant RV as Field Review
+  participant RE as Ratio, Rating, Recommendation Engines
+  participant REG as Customer &amp; Assessment Registry
+  participant NEW as Assessment v(n+1) stored rows
+  participant SRC as Refresh source stored rows
+
+  AN->>RV: confirm or amend a field-period cell, FR3.4
+  RV->>RE: trigger compute or recompute, FR4.3
+  RE->>NEW: write Ratio, Rating, Recommendation rows with config_version_id, FR4.5 and FR6.4
+  Note over RE,NEW: comparison is Not yet available until this write lands &mdash; compute on write, never on read
+
+  AN->>REG: open the comparison view
+  REG->>NEW: read Ratio, Rating, Recommendation plus both flags and config_version_id
+  NEW-->>REG: rows, read only
+  REG->>SRC: read the same rows for the linked source assessment
+  SRC-->>REG: rows, read only
+
+  loop each ratio present in both assessments
+    alt Provisional or Not Calculable on either side
+      REG-->>AN: comparison unavailable, with the reason and which side it came from
+    else both sides carry a value
+      REG-->>AN: direction and magnitude of change
+    end
+  end
+
+  REG-->>AN: rating grade movement and limit and terms delta, FR8.9, under the same two rules
+
+  opt config_version_id differs between the two assessments
+    REG-->>AN: state the methodology change alongside every delta shown
+  end
+
+  Note over REG,SRC: no write anywhere &mdash; no copy, no re-review, no recompute, no state change on either assessment
+</pre>
+</div>
+<div class="diagram-cap">The Registry is the only component in this flow that touches both assessments. The engines write one assessment each and are never invoked here &mdash; a delta is arithmetic over two rows they already wrote. Ownership reasoning is in the architecture plan &sect;01's v1.6 boundary review.</div>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>Condition</th><th>Evaluated against</th><th>Rendered as</th><th>Source</th></tr></thead>
+<tbody>
+<tr><td>New assessment's ratios not yet computed</td><td class="ref">Absence of Ratio rows for v(n+1)</td><td>Comparison <b>not yet available</b> &mdash; distinct from unavailable</td><td class="ref">FR8.8 &ldquo;freshly computed&rdquo;; FR4.5</td></tr>
+<tr><td>No refresh source link (New path)</td><td class="ref">Null source link</td><td>Comparison view absent entirely &mdash; FR8.6's summary trend and FR8.5's drill-down remain</td><td class="ref">FR8.8 scopes itself to a Refresh Assessment</td></tr>
+<tr><td>Ratio Provisional in either assessment</td><td class="ref">Ratio.provisional_flag on either side</td><td><b>Unavailable, with reason</b> naming the side &mdash; no delta computed</td><td class="ref">FR8.8 rule 2</td></tr>
+<tr><td>Ratio Not Calculable in either assessment</td><td class="ref">Ratio.not_calculable_flag on either side</td><td><b>Unavailable, with reason</b> naming the side &mdash; no delta computed</td><td class="ref">FR8.8 rule 2, FR3.8</td></tr>
+<tr><td>Ratio present in one assessment only</td><td class="ref">Set difference over formula_ref</td><td>Value shown with <b>no counterpart</b> &mdash; not a delta, not an error</td><td class="ref">FR8.8 &ldquo;each ratio present in both&rdquo; &mdash; derived</td></tr>
+<tr><td><code>config_version_id</code> differs</td><td class="ref">Both sides' stamps, FR10.3</td><td>Delta still shown, <b>annotated with the methodology change</b> &mdash; never presented as like-for-like</td><td class="ref">FR8.8 rule 1</td></tr>
+<tr><td>Rating or Recommendation derived from any Provisional or Not Calculable ratio</td><td class="ref">Input ratio set on either side</td><td>Movement shown, <b>annotated</b> &mdash; never silently deltaed</td><td class="ref">FR8.9</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="callout"><b>The two rules stack; they do not override each other.</b> A differing config version annotates a delta that is still shown (FR8.8 rule 1). A Provisional or Not Calculable input suppresses the delta outright (FR8.8 rule 2). Where both hold, suppression wins and the reason is the flag, not the config &mdash; there is nothing to annotate once there is no delta. Implementing them as one combined check produces the wrong output in exactly that case.</div>
+
+<div class="callout"><b>What the Registry needs to know about a ratio, and what it deliberately does not.</b> Rules 1 and 2 read <code>provisional_flag</code>, <code>not_calculable_flag</code>, and <code>config_version_id</code> &mdash; three stamps the engines already wrote. None requires ratio semantics, so the Registry needs no formula knowledge to apply them. FR8.9's rating-grade <i>movement</i> is the one place ordering matters: grade order is the band sequence held in <code>ScorecardConfig</code> (FR10.1), read as data. The Registry becomes a fourth reader of the config seam, not a writer &mdash; and where the two assessments' config versions differ, FR8.8 rule 1 fires and the movement is stated as prior grade to new grade under a declared methodology change, never asserted as an improvement or a deterioration. <b>The one condition that would reopen the ownership call:</b> a future requirement asking the comparison to judge a ratio delta as favourable or adverse. That is methodology, belongs in <code>ScorecardConfig</code>, and would still be read rather than computed by the Registry &mdash; but it is the point at which &ldquo;a delta is arithmetic&rdquo; stops being true, and it should be re-tested against the architecture plan's boundary criteria if it arrives.</div>
+
+<h2 id="distinct"><span class="secno">07</span> Six paths that cross an assessment boundary</h2>
+<p class="section-dek">The PRD states the FR1.7-versus-FR8.8 distinction three times (FR1.7, FR4.4, FR8.8) because conflating them is the obvious mistake. Stated structurally once here: different reads, different writes, different timing. Sixth path added at v1.2 &mdash; FR1.9, which crosses the boundary from the document side.</p>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>Path</th><th>FR</th><th>Reads</th><th>Writes</th><th>When</th><th>Crosses an assessment boundary?</th></tr></thead>
+<tbody>
+<tr><td class="agent-name">Copy-on-reuse</td><td class="ref">FR1.7</td><td>A <b>Document</b>'s most recent extraction</td><td><code>ExtractedField</code> rows into the new assessment, status reset to Unconfirmed</td><td>Once, at refresh initialisation (&sect;05)</td><td><b>No</b> &mdash; it exists precisely so no row is shared. Source is the document, not another assessment</td></tr>
+<tr><td class="agent-name">Within-assessment period trend</td><td class="ref">FR4.4</td><td>One assessment's own <code>ExtractedField.period</code> values and their ratios</td><td>Nothing &mdash; a view over rows the Ratio Engine already wrote</td><td>Any time ratios exist</td><td><b>No</b> &mdash; multiple periods, one assessment</td></tr>
+<tr><td class="agent-name">Prior-assessment drill-down</td><td class="ref">FR8.5</td><td>One prior assessment's full field, ratio, rating, and recommendation state, as last recorded</td><td>Nothing &mdash; never reopens the assessment for editing</td><td>Any time, any prior assessment, refresh source or not. <b>Two callers from PRD v0.9</b> &mdash; refresh-source selection in Prepare mode, and FR8.11's detail view in Browse mode; one definition, not two (&sect;03)</td><td><b>Read only</b> &mdash; one assessment at a time, no delta</td></tr>
+<tr><td class="agent-name">Summary history trend</td><td class="ref">FR8.6</td><td>Every prior assessment's Rating and Recommendation for the customer</td><td>Nothing</td><td>Any time. <b>Two callers from PRD v0.9</b>, on the same terms as the row above</td><td><b>Read only</b> &mdash; N assessments, aggregate, no per-ratio detail</td></tr>
+<tr><td class="agent-name">Document browse</td><td class="ref">FR1.9</td><td>A <b>Document</b>'s version chain, plus the identities of every assessment currently referencing it through FR1.6</td><td>Nothing &mdash; opening a document takes no action on any assessment</td><td>Any time, from FR8.11 only</td><td><b>Read only</b> &mdash; N assessments, but only their identity: this path never reads inside an assessment's field, ratio, rating, or recommendation state, which is what distinguishes it from the two rows above</td></tr>
+<tr><td class="agent-name">Cross-assessment comparison</td><td class="ref">FR8.8&ndash;FR8.9</td><td>Two assessments' stored <code>Ratio</code>, <code>Rating</code>, <code>Recommendation</code> rows and their stamps</td><td>Nothing &mdash; no copy, no re-review, no recompute, no state change on either side</td><td>After this assessment's own FR4 computation, refresh path only</td><td><b>Read only</b> &mdash; exactly two assessments, delta computed at view time</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="callout"><b>The invariant that makes all six safe is one rule, not six.</b> The architecture plan's &sect;07 states it: field state never crosses an assessment boundary. Only the first path writes at all, and it writes into the new assessment's own scope from a document &mdash; never from, and never into, another assessment's rows. The other five read. Reading another assessment's already-written rows does not cross that boundary in the sense the guardrail means: the guardrail forbids one assessment's activity <i>changing</i> what another shows, and a read changes nothing. The failure mode to guard against here is the reverse reflex &mdash; treating FR8.8's read as licence to re-derive the source assessment's ratios under the current config so the two are &ldquo;comparable.&rdquo; That would rescore a closed assessment and break FR10.3. FR8.8's answer is to state the config difference instead, never to remove it (&sect;06).</div>
+
+<h2 id="ownership"><span class="secno">08</span> Component ownership per transition</h2>
+<p class="section-dek">Every transition in &sect;03&ndash;&sect;06 against the component that performs it, named as the architecture plan names it. Any disagreement between the two documents shows up in this table first.</p>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>Transition</th><th>Owning component</th><th>Writes</th><th>Ref</th></tr></thead>
+<tbody>
+<tr><td>Decide whether New or Refresh is offered</td><td class="agent-name">Customer &amp; Assessment Registry</td><td>Nothing &mdash; a read of the customer's prior-assessment count</td><td class="ref">FR8.3, &sect;03</td></tr>
+<tr><td>Create a Customer</td><td class="agent-name">Customer &amp; Assessment Registry</td><td><code>Customer</code></td><td class="ref">FR8.1, FR8.3</td></tr>
+<tr><td>Present the selectable refresh sources and capture the choice</td><td class="agent-name">Customer &amp; Assessment Registry</td><td>Nothing until the assessment is minted</td><td class="ref">FR8.3, &sect;10 branch B</td></tr>
+<tr><td>Mint Assessment v1 or v(n+1) in Draft, with the source link on a refresh</td><td class="agent-name">Customer &amp; Assessment Registry</td><td><code>Assessment</code>, including its initial state</td><td class="ref">FR8.2&ndash;FR8.4, &sect;05</td></tr>
+<tr><td>Attach prior-period document references and raise the FR1.7 reuse event</td><td class="agent-name">Document Intake &amp; Versioning</td><td>Assessment-to-Document references</td><td class="ref">FR1.6, FR8.4, &sect;05</td></tr>
+<tr><td>Write the copied fields at Unconfirmed, no model invoked</td><td class="agent-name">Field Extraction &amp; Validation Routing</td><td><code>ExtractedField</code></td><td class="ref">FR1.7, &sect;05</td></tr>
+<tr><td>Accept the new period's upload and version it</td><td class="agent-name">Document Intake &amp; Versioning</td><td><code>Document</code></td><td class="ref">FR1.1&ndash;FR1.5, FR8.3</td></tr>
+<tr><td>Extract the new period's fields</td><td class="agent-name">Field Extraction &amp; Validation Routing</td><td><code>ExtractedField</code></td><td class="ref">FR2.1&ndash;FR2.5</td></tr>
+<tr><td>Confirm, Amend, or mark Not Present; fire the recompute</td><td class="agent-name">Field Review, Confirmation &amp; Posting</td><td><code>ExtractedField.status</code>, amendment history</td><td class="ref">FR3.4&ndash;FR3.9, FR4.3</td></tr>
+<tr><td>Compute and recompute ratios within one assessment</td><td class="agent-name">Ratio Engine</td><td><code>Ratio</code> with both flags and <code>config_version_id</code></td><td class="ref">FR4.1&ndash;FR4.5</td></tr>
+<tr><td>Compute the rating; compute the recommendation</td><td class="agent-name">Rating / Scorecard Engine; Recommendation Engine</td><td><code>Rating</code>; <code>Recommendation</code></td><td class="ref">FR5, FR6</td></tr>
+<tr><td>Draft to Submitted to Approved, Rejected, or Returned</td><td class="agent-name">Approval Workflow</td><td><code>Assessment.state</code>, <code>ApprovalDecision</code></td><td class="ref">FR7.1&ndash;FR7.5, &sect;04</td></tr>
+<tr><td>Serve the read-only drill-down into any prior assessment &mdash; from either entry point</td><td class="agent-name">Customer &amp; Assessment Registry</td><td>Nothing</td><td class="ref">FR8.5, &sect;03</td></tr>
+<tr><td>Serve the per-customer rating and limit history &mdash; from either entry point</td><td class="agent-name">Customer &amp; Assessment Registry</td><td>Nothing</td><td class="ref">FR8.6, &sect;03</td></tr>
+<tr><td><b>Offer Browse History as a top-level mode and serve the Customer Directory list</b></td><td class="agent-name">Customer &amp; Assessment Registry</td><td><b>Nothing</b> &mdash; a per-customer aggregate computed at query time over the caller's visible assessment set</td><td class="ref">FR8.10, &sect;03</td></tr>
+<tr><td>Assemble the customer detail view from FR8.6, FR8.5, and FR1.9</td><td class="agent-name">Customer &amp; Assessment Registry</td><td>Nothing &mdash; and nothing on this surface edits a field, ratio, rating, or document in place</td><td class="ref">FR8.11, &sect;03</td></tr>
+<tr><td><b>Offer Refresh this customer, gate it on FR8.3 rights, and carry the pre-selected customer &mdash; and the viewed assessment when reached via FR8.5 &mdash; into the refresh flow</b></td><td class="agent-name">Customer &amp; Assessment Registry</td><td><b>Nothing on the transition itself</b> &mdash; the Assessment is minted by the row above once FR8.3's flow proceeds. Both endpoints are this component's own surfaces, so the route crosses no boundary</td><td class="ref">FR8.11, FR8.3, &sect;03</td></tr>
+<tr><td>Serve a customer's document list, each document's version chain, and its referencing assessments</td><td class="agent-name">Customer &amp; Assessment Registry &mdash; reading <code>Document</code>, which Document Intake &amp; Versioning owns and still solely writes</td><td>Nothing</td><td class="ref">FR1.9, FR1.5, FR1.6; architecture plan &sect;01 v1.8 boundary review</td></tr>
+<tr><td>Apply the caller's role scope to every browse query before it reaches data</td><td class="agent-name">Customer &amp; Assessment Registry</td><td>Nothing</td><td class="ref">FR8.10, NFR Confidentiality/RBAC, &sect;03; scope for the Auditor is <code>OPEN</code>, &sect;10 branch C</td></tr>
+<tr><td><b>Compute and serve the cross-assessment comparison</b></td><td class="agent-name">Customer &amp; Assessment Registry</td><td><b>Nothing</b> &mdash; reads both assessments' stored engine outputs at view time</td><td class="ref">FR8.8&ndash;FR8.9, &sect;06</td></tr>
+<tr><td>Log every transition above with actor, timestamp, and before/after value</td><td class="agent-name">Audit &amp; Access Log</td><td><code>AuditLogEntry</code></td><td class="ref">FR9.1&ndash;FR9.2</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="callout"><b>Three ownerships this table pins deliberately, because both documents have to agree on them.</b> (1) <b>Entry point:</b> Registry &mdash; it is the only component that can count a customer's assessments, and no assessment exists yet to hold the question. (2) <b>FR1.7 copy trigger:</b> the Registry initiates the reference attach on a refresh, Document Intake raises the reuse event, Field Extraction writes the rows. Unchanged from the architecture plan's &sect;04; refresh only adds the case where the event has no upload behind it. (3) <b>FR8.8&ndash;FR8.9 comparison:</b> Registry, with no new logic in any engine. Defended in the architecture plan &sect;01's v1.6 boundary review and not re-argued here. <b>(4) FR1.9 document browse:</b> Registry, not Document Intake &amp; Versioning &mdash; the one v0.9 call that could have gone either way, since Intake owns the <code>Document</code> entity outright. It reads that entity and writes nothing to it; half the requirement is a cross-assessment lookup Intake cannot perform; and splitting FR8.11's three sections across two components would implement FR8.10's role scope twice. Defended in the architecture plan &sect;01's v1.8 boundary review and not re-argued here. <b>(5) The v0.10 browse-to-refresh route:</b> Registry, and checked rather than assumed &mdash; a role gate joining two previously separate entry points is the shape that could imply a new responsibility, but both endpoints are surfaces this component already serves, the gate reads FR8.3's existing right, and the pre-selection is a default on a selection step it already evaluates. Matches the architecture plan's v1.9 resync. <b>The four rows this table adds at v1.2 and the one added at v1.3 name one owner between them,</b> which is the check both documents have to pass.</div>
+
+<h2 id="failure"><span class="secno">09</span> Failure modes and escalation</h2>
+<p class="section-dek">Each failure below is reachable through the state machines above. None is an exception path bolted on afterward; every one has a defined rendering or a named owner.</p>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>Failure</th><th>Reached when</th><th>Required behaviour</th><th>Escalates to</th></tr></thead>
+<tbody>
+<tr><td class="agent-name">Empty field scope read as inherited-nothing</td><td>Review screen opened between &sect;05 steps 2 and 7</td><td>Render the initialising state distinctly from a populated-but-empty scope. Never show a bare empty grid on a refresh</td><td class="ref">Build &mdash; no requirement change needed</td></tr>
+<tr><td class="agent-name">Copy produces zero rows</td><td>A referenced document carries no prior extraction &mdash; possible if it was uploaded but never extracted</td><td>Fall through to a normal extraction pass for that document rather than proceeding with a gap. If extraction also yields nothing, surface it as an intake failure on the assessment; do not leave a silently thin Draft</td><td class="ref">Field Extraction &amp; Validation Routing</td></tr>
+<tr><td class="agent-name">Refresh source has no computed ratios</td><td>Source assessment abandoned in Draft before FR4 ran &mdash; reachable only under &sect;10 branch A1</td><td>Whole comparison view unavailable with that reason. Not an error, and it must not block the new assessment's own lifecycle</td><td class="ref">Registry; interacts with &sect;10 branch A</td></tr>
+<tr><td class="agent-name">Source assessment's rows change after a delta was shown</td><td>Source is non-terminal and its fields are amended, firing FR4.3 &mdash; reachable only under &sect;10 branch A1</td><td>The delta is computed at view time, so it silently changes between views. Branch A1 must state that a delta against a non-terminal source is not reproducible; branch A2 removes the case entirely</td><td class="ref">Product decision &mdash; &sect;10 branch A</td></tr>
+<tr><td class="agent-name">Delta asserted across a methodology change</td><td>Both assessments carry values, config versions differ, and the annotation is dropped</td><td>Hard rule, not a display preference: FR8.8 rule 1. A delta without its config annotation is a wrong number presented cleanly &mdash; the same failure the architecture plan's &sect;07 names for excluded fields and coerced Not Calculable ratios</td><td class="ref">Registry</td></tr>
+<tr><td class="agent-name">Source assessment rescored to make it comparable</td><td>An implementation re-runs the source's ratios under the current config</td><td>Forbidden. FR10.3 &mdash; historical assessments keep the config version live when computed and are never retroactively rescored. FR8.8's answer to a config difference is to state it (&sect;07)</td><td class="ref">Registry; guardrail in architecture plan &sect;07</td></tr>
+<tr><td class="agent-name">Suppression and annotation collapsed into one check</td><td>Both FR8.8 conditions hold on the same ratio</td><td>Suppression wins; the reason given is the flag, not the config version (&sect;06)</td><td class="ref">Registry</td></tr>
+<tr><td class="agent-name">Refresh source link absent on a refresh version</td><td>The link is not persisted &mdash; see the gap below</td><td>FR8.8&ndash;FR8.9 have no addressable comparison target and the view cannot be built. Blocks the requirement, not the assessment</td><td class="ref">PRD &mdash; raised below</td></tr>
+<tr><td class="agent-name">Role-emptied directory read as an empty system</td><td>The caller's scope excludes every customer &mdash; a new Analyst, or an Auditor before any assessment reaches Approved or Rejected</td><td>State that the list is empty <i>for this role's scope</i>, never that the system holds no customers. Same discipline as FR12.7 and Not Calculable: an absence produced by a rule must not render as an absence of fact</td><td class="ref">Registry, &sect;03</td></tr>
+<tr><td class="agent-name">Two different blanks rendered alike</td><td>A directory row's rating cell is blank because FR5 has not run; its limit and terms cells are blank because the customer has no Approved assessment</td><td>Render the two distinctly. They answer different questions &mdash; &ldquo;not computed yet&rdquo; against &ldquo;never approved&rdquo; &mdash; and a shared dash tells a reader the customer has no credit limit when the truth may be that its first assessment is mid-review</td><td class="ref">Registry; guardrail in architecture plan &sect;07</td></tr>
+<tr><td class="agent-name">Scope applied after the aggregate, not before it</td><td>A directory row is computed from all of a customer's assessments and then hidden or masked at the UI layer</td><td>Forbidden. NFR Confidentiality/RBAC requires the scope to reach the query, not the result &mdash; a row computed from invisible assessments has already disclosed them, whether or not it renders. Materially harder to retrofit than to build correctly, because the aggregate is the natural place to cache</td><td class="ref">Registry; guardrail in architecture plan &sect;07</td></tr>
+<tr><td class="agent-name">An edit or create affordance appears on a browse surface</td><td>FR8.5's drill-down or FR8.6's trend is reused in FR8.11 carrying an action it legitimately offers in Prepare mode</td><td>Forbidden by FR8.11. The direct consequence of implementing these two views once and calling them from two modes: the mode, not the view, decides what may be offered. The single sanctioned action on this surface is Refresh this customer, which edits nothing and is itself role-gated (&sect;03) &mdash; it is not a licence for the rest. An Auditor reaching an action they hold no right to is an access defect, not a cosmetic one</td><td class="ref">Registry, &sect;03 and &sect;08</td></tr>
+<tr><td class="agent-name">Refresh this customer offered to a role without FR8.3 rights</td><td>The action is rendered from browse scope alone &mdash; an Auditor correctly scoped to completed assessments still sees it</td><td>Forbidden. The gate is on the transition, not on the row set, so a passing data-scope check proves nothing about it &mdash; test it separately, per role, on a customer the role can legitimately see (&sect;03)</td><td class="ref">Registry, &sect;03 and &sect;08</td></tr>
+<tr><td class="agent-name">Mode change into Prepare passes unnoticed</td><td>Refresh this customer routes a user out of a surface that writes nothing into one that mints an Assessment on entry (&sect;05), with the customer and possibly the source already selected</td><td>Make the crossing explicit. Pre-selection removes the steps that would otherwise signal it, so a browse session must not be able to end with a Draft the user did not know they created</td><td class="ref">Registry, &sect;03</td></tr>
+<tr><td class="agent-name">Document version list read as current-only</td><td>FR1.9 shows a document's versions without making the superseding order and the current version explicit</td><td>Render the chain as a chain (FR1.5 supersedes, never overwrites), and show each version's own referencing assessments &mdash; a closed assessment may cite a superseded version, and presenting only the newest breaks NFR Traceability's reconstructability claim at the exact surface built to serve it</td><td class="ref">Registry reads it; Document Intake &amp; Versioning owns the versioning rule</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="callout"><b>Closed at PRD v0.8 &mdash; the refresh source link is now stored.</b> This plan raised the gap against v0.7: PRD &sect;4's Assessment row claimed <code>customer_id</code> plus <code>version</code>/<code>created_at</code> &ldquo;already supports finding a customer's most recent assessment and listing all of them, so FR8.3's refresh-source selection and FR8.5's drill-down need no new field.&rdquo; True for selection and drill-down, both user-driven picks made at view time. False for FR8.4 and FR8.8&ndash;FR8.9: FR8.4 creates a &ldquo;new <i>linked</i> assessment version,&rdquo; and FR8.8 compares against &ldquo;<i>the</i> refresh source assessment&rdquo; &mdash; a specific, previously chosen record that version ordering cannot recover once the choice is made, because FR8.3 permits any prior assessment as the source, not necessarily version n. PRD v0.8 added <code>Assessment.source_assessment_id</code> (nullable self-reference, set only when created via Refresh Assessment) and cross-referenced it from FR8.4 &mdash; the one schema addition FR8.3&ndash;FR8.9 implied beyond &sect;4's v0.7 position. <b>Interaction with the open questions:</b> under &sect;10 branch B2 the link degrades to derivable &mdash; the source is always the immediately prior version &mdash; but storing it remains the better choice, since it survives a later reversal of B2 and makes the comparison target explicit in the audit trail rather than inferred from ordering. Carried in the architecture plan's &sect;08 Assessment row; no component boundary moved.</div>
+
+<h2 id="branches"><span class="secno">10</span> Open questions, modelled both ways</h2>
+<p class="section-dek">Three branches: two from PRD v0.7 &sect;5 and one from PRD v0.9 &sect;5. None is resolved here. Each is modelled to the point where a later decision selects a branch rather than restarting the model. A fourth, the browse-to-refresh transition this plan raised against v0.9, was answered by PRD v0.10 and now sits in &sect;03 as settled behaviour.</p>
+
+<h3><span class="tag tag-open">OPEN A</span> &nbsp;Concurrent in-flight assessments during refresh</h3>
+<p>PRD &sect;5: may a Customer with an Assessment still in Draft or Submitted be refreshed &mdash; creating a second, concurrent in-flight Assessment &mdash; or must the prior cycle reach Approved or Rejected first?</p>
+
+<div class="diagram-wrap">
+<pre class="mermaid">
+stateDiagram-v2
+  state "Prior Assessment in Draft, Submitted, or Returned" as INFLIGHT
+  state "Refresh offered &mdash; branch A1" as OFFER
+  state "Refresh blocked with a stated reason &mdash; branch A2" as BLOCK
+  state "Source rows may still change under FR4.3 &mdash; delta not reproducible" as UNSTABLE
+  state "Source rows terminal &mdash; delta stable by construction" as STABLE
+
+  INFLIGHT --> OFFER: concurrency permitted
+  INFLIGHT --> BLOCK: prior cycle must reach Approved or Rejected
+  OFFER --> UNSTABLE
+  BLOCK --> STABLE
+</pre>
+</div>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>Model element</th><th>A1 &mdash; concurrency permitted</th><th>A2 &mdash; prior cycle must close first</th></tr></thead>
+<tbody>
+<tr><td class="agent-name">&sect;03 entry-point gate</td><td>Prior-assessment count is the only precondition</td><td>Second precondition added: no prior Assessment outside Approved or Rejected</td></tr>
+<tr><td class="agent-name">Per-customer invariant</td><td>Zero or more in-flight Assessments per Customer</td><td>At most one in-flight Assessment per Customer &mdash; enforceable as a uniqueness constraint</td></tr>
+<tr><td class="agent-name">Refresh-source eligibility</td><td>A non-terminal assessment can be a source, so &sect;09's &ldquo;no computed ratios&rdquo; and &ldquo;rows change under a shown delta&rdquo; failures are both reachable</td><td>Sources are always terminal; both failures become unreachable</td></tr>
+<tr><td class="agent-name">FR8.8 comparison stability</td><td>Delta is a point-in-time view, not reproducible. Either state that on the view, or snapshot the source's rows at first comparison &mdash; and a snapshot is a stored artefact, which changes &ldquo;stores nothing&rdquo; in &sect;06</td><td>Delta is reproducible from stored rows indefinitely; &sect;06 stores nothing, as modelled</td></tr>
+<tr><td class="agent-name">FR8.6 history view</td><td>Must distinguish in-flight from decided assessments, or the trend line mixes proposals with approved outcomes</td><td>Every assessment on the trend is decided</td></tr>
+<tr><td class="agent-name">FR7.5 segregation of duties</td><td>Unchanged per assessment, but two concurrent cycles can consume the same small approver pool &mdash; interacts with FR7.6's block-by-default</td><td>Unchanged</td></tr>
+<tr><td class="agent-name">Component impact</td><td colspan="2">None in either branch. The Registry evaluates the gate; the constraint is a precondition, not a component</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3><span class="tag tag-open">OPEN B</span> &nbsp;Refresh-source selection scope</h3>
+<p>PRD &sect;5: may an analyst select any prior Assessment as the refresh source, as FR8.3 currently designs it, or should selection be restricted to the most recent, leaving older comparisons to FR8.5's drill-down?</p>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>Model element</th><th>B1 &mdash; any prior assessment</th><th>B2 &mdash; most recent only</th></tr></thead>
+<tbody>
+<tr><td class="agent-name">&sect;03 entry-point flow</td><td>Selection step retained; default is most recent, override allowed</td><td>Selection step removed; source is determined, not chosen. One fewer state in &sect;03</td></tr>
+<tr><td class="agent-name">Source link</td><td><b>Must be stored</b> &mdash; not recoverable from version ordering (&sect;09)</td><td>Derivable from version ordering, but still worth storing (&sect;09)</td></tr>
+<tr><td class="agent-name">FR1.7 copy scope</td><td>Copies the documents referenced by the chosen source, which may omit periods a later assessment added</td><td>Copies from the most recent assessment, so the widest available period set carries forward by default</td></tr>
+<tr><td class="agent-name">FR8.8 comparison target</td><td>Any prior assessment &mdash; so a config-version difference is more likely, and rule 1's annotation fires more often</td><td>Adjacent versions only &mdash; config differences are rarer but not impossible</td></tr>
+<tr><td class="agent-name">Comparing against an older assessment</td><td>Structured delta available directly</td><td>Not available &mdash; FR8.5 drill-down only, which shows values without a delta. Accept that this is a real capability reduction, not an equivalent path</td></tr>
+<tr><td class="agent-name">Interaction with OPEN A</td><td colspan="2">A1 plus B2 leaves &ldquo;most recent&rdquo; ambiguous: most recent by version, including an in-flight one, or most recent decided? A2 removes the ambiguity, since only decided assessments exist to be most recent. Whichever branch of A is chosen, B2 needs that definition written down</td></tr>
+<tr><td class="agent-name">Component impact</td><td colspan="2">None in either branch. Both are Registry-side selection rules</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3><span class="tag tag-open">OPEN C</span> &nbsp;Auditor scope on the browse surface</h3>
+<p>PRD &sect;5, new at v0.9: should the Auditor's Customer Directory and detail view (FR8.10&ndash;FR8.11) include non-completed assessments, rather than the completed-only scope FR8.10 applies by default per FR9.3? The Auditor persona exists for read-only historical access, which argues for widening; widening it on this surface alone would give one role two different assessment scopes depending on where it entered from, which argues against.</p>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>Model element</th><th>C1 &mdash; completed only, as FR8.10 states</th><th>C2 &mdash; all states visible to the Auditor</th></tr></thead>
+<tbody>
+<tr><td class="agent-name">&sect;03 browse states</td><td colspan="2">Identical in both. Role scopes the query, it does not fork the machine (&sect;03) &mdash; which is what makes this a parameter change rather than a remodelling</td></tr>
+<tr><td class="agent-name">Directory row set</td><td>Customers with at least one Approved or Rejected Assessment</td><td>Customers with at least one Assessment in any state</td></tr>
+<tr><td class="agent-name">Directory row content</td><td>&ldquo;Most recent Assessment date, any state&rdquo; collapses to most recent <i>completed</i> for this role, so the Auditor's row can differ from the Analyst's for the same customer</td><td>Rows match across roles, since the underlying set is the same</td></tr>
+<tr><td class="agent-name">FR8.5 drill-down reach</td><td>Completed assessments only &mdash; consistent with FR9.3 and with what the Auditor can already reach elsewhere</td><td>Includes Draft assessments, so the Auditor sees Unconfirmed fields and Provisional ratios &mdash; work in progress, not a decision. Decide deliberately whether that is control evidence or noise</td></tr>
+<tr><td class="agent-name">FR1.9 document reach</td><td>Documents referenced by completed assessments only; an uploaded-but-unassessed document is invisible</td><td>Every document for the customer, including one uploaded into a Draft an hour ago</td></tr>
+<tr><td class="agent-name">Consistency with FR9.3</td><td>Holds &mdash; one scope for the role across every surface</td><td>Diverges &mdash; the audit log stays FR9.3-scoped while browse widens, so FR9.3 needs rewording or the divergence needs stating as intentional</td></tr>
+<tr><td class="agent-name">Component impact</td><td colspan="2">None in either branch. The Registry applies whichever scope it is given, before the query reaches data (&sect;08)</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="callout"><b>None of the three blocks the build.</b> A and B are preconditions and selection rules and C is an RBAC parameter &mdash; all three evaluated by one component that exists in every branch, and none changes the &sect;04 lifecycle, the &sect;05 initialisation sequence, or the &sect;06 data flow. Two are worth pricing before their surface ships rather than after. <b>A1's effect on comparison reproducibility:</b> snapshotting a non-terminal source's rows to make a delta stable would introduce the only stored artefact this document's comparison flow otherwise has, which is why it is worth answering before FR8.8 builds. <b>C's direction of travel:</b> widening a role's visible scope after go-live discloses assessments that role could not previously see, which is a decision to take deliberately in advance, not a configuration change to make afterwards.</div>
+
+<div class="footline">Credit Assessment State Management Plan v1.3 &middot; derived from Credit_Assessment_PRD_v0.10.md &middot; companion to Credit_Assessment_Agent_Architecture_Plan.html v1.9 &middot; 13 components; comparison, browse mode, FR1.9 document browse, and the FR8.11&rarr;FR8.3 refresh route all owned by Customer &amp; Assessment Registry &middot; prepared for internal review</div>

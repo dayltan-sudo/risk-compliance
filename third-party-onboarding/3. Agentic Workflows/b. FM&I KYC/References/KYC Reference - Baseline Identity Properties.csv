@@ -1,0 +1,19 @@
+Q#,Section,Question Text,Type,Property,Mandatory,Field Class,Predetermined Answer List,Source Row (FM&I tab)
+1,Third Party Type,Is the Third Party an Legal Person (Entity) or a Natural Person (Person)?,Dropdown with List,Third Party Legal Structure,Yes,Factual,SOURCED — see KYC Reference - Answer Lists.md,4
+2,Third Party Type,Customer Type,Dropdown with List,MASKYC Customer Type,Yes,Factual,SOURCED — see KYC Reference - Answer Lists.md,5
+3,Third Party Type,Private Fund / Listed Vehicle,Dropdown with List,MASKYC Fund or Listed Vehicle,Yes,Factual,SOURCED — see KYC Reference - Answer Lists.md,7
+4,Third Party Type,Project / Asset Company,Textbox,MASKYC Project or AssetCo,Yes,Factual,,8
+1,Person,Legal Name of the Customer,Textbox,Person Third Party Legal Name,Yes,Factual,,10
+2,Person,Business Address,Multiline Textbox,Person Business Address,No,Factual,,11
+3,Person,Country/Territory of Residence,Dropdown with List,Person Country of Residence,Yes,Factual,SOURCED — see TPA Reference - Countries Territories 2025.md (reused verbatim; confirmed identical 252-entry list across both workbooks),12
+4,Person,Year of Birth,Dropdown with List,Person Year of Birth,No,Factual,NOT A CATEGORICAL LIST — a year value; see KYC Reference - Answer Lists.md's note (treat as numeric/generated year range, not a sourced picklist),13
+5,Person,Gender,Dropdown with List,Gender,No,Factual,SOURCED — see KYC Reference - Answer Lists.md,14
+6a,Person,ID Type,Dropdown with List,Person ID Type,No,Factual,SOURCED — RCTP Functional Spec Standard v6.0.xlsx; see KYC Reference - Answer Lists.md (only select an identity-document value, never a sanctions/watchlist-type value from that same dropdown),16
+6b,Person,ID Value,Textbox,Person ID Value,No,Factual,,17
+1,Entity,Legal Name of the Customer,Textbox,Entity Third Party Legal Name,Yes,Factual,,19
+2,Entity,Company Number (or equivalent),Textbox,Entity Company Number,No,Factual,,20
+3,Entity,Registered Address,Multiline Textbox,Entity Registered Address,No,Factual,,21
+4,Entity,Registered Country/Territory,Dropdown with List,Entity Registered Country,Yes,Factual,SOURCED — see TPA Reference - Countries Territories 2025.md (reused verbatim; confirmed identical 252-entry list across both workbooks),22
+5,Entity,Company Website,Textbox,Entity Website,No,Factual,,23
+6a,Entity,ID Type,Dropdown with List,Entity ID Type,No,Factual,SOURCED — RCTP Functional Spec Standard v6.0.xlsx; see KYC Reference - Answer Lists.md (only select an identity-document value, never a sanctions/watchlist-type value from that same dropdown),25
+6b,Entity,ID Value,Textbox,Entity ID Value,No,Factual,,26

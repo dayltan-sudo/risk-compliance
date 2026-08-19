@@ -1,0 +1,245 @@
+<title>Atlas State & Data Lifecycle Design</title>
+<style>
+  :root{
+    --ink:#1C1712; --paper:#F6F2EA; --card:#FFFFFF; --line:#E4DCC9; --muted:#756B58;
+    --accent:#A81C2C; --accent-deep:#7E1620; --accent-tint:#F7E2E1;
+    --low:#1F7A5C; --low-bg:#E3F1E9;
+    --med:#A97417; --med-bg:#F8EDD8;
+    --high:#B0552A; --high-bg:#F8E7D9;
+    --crit:#8B2E22; --crit-bg:#F3DFD6;
+    --v-mvp:#3D6B8C; --v-mvp-bg:#E3EDF3;
+    --v2:#7A5AA8; --v2-bg:#EEE7F5;
+    --v3:#756B58; --v3-bg:#EFE9DA;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --ink:#F1ECE0; --paper:#15120E; --card:#1E1913; --line:#3A3226; --muted:#A79C86;
+      --accent:#FF6E7C; --accent-deep:#FF97A1; --accent-tint:rgba(255,110,124,.14);
+      --low:#5FCB9C; --low-bg:rgba(95,203,156,.14);
+      --med:#E3B24E; --med-bg:rgba(227,178,78,.14);
+      --high:#E38A54; --high-bg:rgba(227,138,84,.14);
+      --crit:#E8776A; --crit-bg:rgba(232,119,106,.16);
+      --v-mvp:#7FB3D9; --v-mvp-bg:rgba(127,179,217,.14);
+      --v2:#B79EE0; --v2-bg:rgba(183,158,224,.14);
+      --v3:#A79C86; --v3-bg:rgba(167,156,134,.14);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ink:#F1ECE0; --paper:#15120E; --card:#1E1913; --line:#3A3226; --muted:#A79C86;
+    --accent:#FF6E7C; --accent-deep:#FF97A1; --accent-tint:rgba(255,110,124,.14);
+    --low:#5FCB9C; --low-bg:rgba(95,203,156,.14);
+    --med:#E3B24E; --med-bg:rgba(227,178,78,.14);
+    --high:#E38A54; --high-bg:rgba(227,138,84,.14);
+    --crit:#E8776A; --crit-bg:rgba(232,119,106,.16);
+    --v-mvp:#7FB3D9; --v-mvp-bg:rgba(127,179,217,.14);
+    --v2:#B79EE0; --v2-bg:rgba(183,158,224,.14);
+    --v3:#A79C86; --v3-bg:rgba(167,156,134,.14);
+  }
+  :root[data-theme="light"]{
+    --ink:#1C1712; --paper:#F6F2EA; --card:#FFFFFF; --line:#E4DCC9; --muted:#756B58;
+    --accent:#A81C2C; --accent-deep:#7E1620; --accent-tint:#F7E2E1;
+    --low:#1F7A5C; --low-bg:#E3F1E9;
+    --med:#A97417; --med-bg:#F8EDD8;
+    --high:#B0552A; --high-bg:#F8E7D9;
+    --crit:#8B2E22; --crit-bg:#F3DFD6;
+    --v-mvp:#3D6B8C; --v-mvp-bg:#E3EDF3;
+    --v2:#7A5AA8; --v2-bg:#EEE7F5;
+    --v3:#756B58; --v3-bg:#EFE9DA;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{ background:var(--paper); }
+  body{
+    color:var(--ink); font-family:-apple-system,"Segoe UI",system-ui,sans-serif;
+    max-width:900px; margin:0 auto; padding:56px 28px 100px; line-height:1.55;
+  }
+  ::selection{ background:var(--accent-tint); }
+
+  .eyebrow{
+    font-family:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+    font-size:11px; font-weight:600; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--accent); margin:0 0 10px;
+  }
+  h1{
+    font-family:ui-serif,"Iowan Old Style","Palatino Linotype",Georgia,serif;
+    font-size:clamp(28px,4vw,38px); font-weight:600; letter-spacing:-.01em; margin:0 0 10px;
+    text-wrap:balance;
+  }
+  .subtitle{ font-size:15px; color:var(--muted); max-width:64ch; margin:0 0 30px; }
+  .meta-row{ display:flex; flex-wrap:wrap; gap:8px 18px; font-size:11.5px; color:var(--muted);
+    font-family:ui-monospace,"SF Mono",monospace; padding:14px 0; border-top:1px solid var(--line); border-bottom:1px solid var(--line); margin-bottom:34px; }
+  .meta-row b{ color:var(--ink); font-weight:600; }
+
+  h2{
+    font-family:ui-serif,"Iowan Old Style","Palatino Linotype",Georgia,serif;
+    font-size:22px; font-weight:600; margin:56px 0 6px; letter-spacing:-.005em; text-wrap:balance;
+    display:flex; align-items:baseline; gap:12px;
+  }
+  h2 .secno{ font-family:ui-monospace,"SF Mono",monospace; font-size:13px; font-weight:600; color:var(--accent); }
+  h2 + .section-dek{ font-size:13.5px; color:var(--muted); margin:0 0 20px; max-width:66ch; }
+  h3{ font-size:15.5px; font-weight:700; margin:26px 0 8px; }
+
+  p{ font-size:14.5px; max-width:68ch; }
+  a{ color:var(--accent-deep); }
+  code{ font-family:ui-monospace,"SF Mono",monospace; font-size:12.5px; background:var(--v3-bg); padding:1px 5px; border-radius:4px; }
+
+  .toc{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:18px 22px; }
+  .toc-label{ font-family:ui-monospace,monospace; font-size:10.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin:0 0 10px; }
+  .toc ol{ margin:0; padding-left:0; list-style:none; columns:2; column-gap:28px; }
+  .toc li{ font-size:13px; padding:4px 0; break-inside:avoid; }
+  .toc a{ text-decoration:none; color:var(--ink); }
+  .toc a:hover{ color:var(--accent-deep); text-decoration:underline; }
+  @media (max-width:640px){ .toc ol{ columns:1; } }
+
+  .callout{
+    background:var(--card); border:1px solid var(--line); border-left:3px solid var(--accent);
+    border-radius:0 8px 8px 0; padding:14px 18px; font-size:13.5px; margin:18px 0; color:var(--ink);
+  }
+  .callout b{ color:var(--accent-deep); }
+  .callout.open-q{ border-left-color:var(--med); }
+  .callout.open-q b{ color:var(--med); }
+
+  .diagram-wrap{ background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px; overflow-x:auto; margin:16px 0 8px; }
+  .diagram-cap{ font-size:11.5px; color:var(--muted); text-align:center; margin-top:4px; }
+
+  table{ width:100%; border-collapse:collapse; font-size:13px; margin:14px 0 6px; }
+  .table-wrap{ overflow-x:auto; }
+  th{ text-align:left; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--muted);
+    padding:8px 10px; border-bottom:1px solid var(--line); white-space:nowrap; }
+  td{ padding:11px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+  tr:last-child td{ border-bottom:none; }
+  td.ent-name{ font-weight:600; white-space:nowrap; }
+  td.ref{ font-family:ui-monospace,monospace; font-size:11px; color:var(--muted); white-space:nowrap; }
+
+  .tag{ display:inline-flex; align-items:center; font-family:ui-monospace,monospace; font-size:10.5px; font-weight:700;
+    padding:2px 8px; border-radius:20px; white-space:nowrap; }
+  .tag-ref{ background:var(--v3-bg); color:var(--v3); }
+  .tag-ver{ background:var(--v-mvp-bg); color:var(--v-mvp); }
+  .tag-snap{ background:var(--accent-tint); color:var(--accent-deep); }
+  .tag-indep{ background:var(--high-bg); color:var(--high); }
+  .tag-append{ background:var(--low-bg); color:var(--low); }
+  .tag-config{ background:var(--v2-bg); color:var(--v2); }
+
+  .clock-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin:16px 0; }
+  @media (max-width:640px){ .clock-grid{ grid-template-columns:1fr; } }
+  .clock-card{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px 18px; }
+  .clock-card h4{ margin:0 0 6px; font-size:14px; font-weight:700; display:flex; align-items:center; gap:8px; }
+  .clock-card .dur{ font-family:ui-monospace,monospace; font-size:11px; color:var(--accent-deep); font-weight:700; text-transform:uppercase; letter-spacing:.03em; }
+  .clock-card p{ margin:6px 0 0; font-size:13px; }
+
+  .footline{ margin-top:70px; padding-top:18px; border-top:1px solid var(--line); font-size:11.5px; color:var(--muted); font-family:ui-monospace,monospace; }
+
+  .mermaid{ font-size:13px !important; }
+</style>
+
+<div class="eyebrow">Atlas &middot; State &amp; Data Lifecycle Design</div>
+<h1>State &amp; Data Lifecycle Design for Atlas</h1>
+<p class="subtitle">A dedicated companion to the <a href="https://claude.ai/code/artifact/8d62cea6-47b5-436b-92d5-2ad423c271bc" target="_blank" rel="noopener">Agent Architecture Plan</a> &sect;09. Atlas's state has to remain reconstructable across a renewal cycle that can run a year or more, and legally retrievable well past that &mdash; a fundamentally different permanence requirement than a case-workflow system whose state mostly matters while a case is open.</p>
+<div class="meta-row">
+  <span><b>Source PRD</b> &nbsp;Keppel_Atlas_PRD_v0_8.docx (content v0.8, 21 Jul 2026), &sect;8, &sect;9.2, &sect;10.3, &sect;13</span>
+  <span><b>Companion to</b> &nbsp;Atlas_Agent_Architecture_Plan.html &sect;09</span>
+  <span><b>Rev.</b> &nbsp;v1.0</span>
+</div>
+
+<div class="toc">
+  <div class="toc-label">On this page</div>
+  <ol>
+    <li>01 &nbsp;<a href="#why">Why this needs its own document</a></li>
+    <li>02 &nbsp;<a href="#pattern">The core pattern: valid-time and transaction-time</a></li>
+    <li>03 &nbsp;<a href="#entities">Entity-by-entity classification</a></li>
+    <li>04 &nbsp;<a href="#clocks">The retention clocks</a></li>
+    <li>05 &nbsp;<a href="#timeline">A policy's lifecycle, end to end</a></li>
+    <li>06 &nbsp;<a href="#implementation">Implementation recommendation</a></li>
+    <li>07 &nbsp;<a href="#contrast">How this differs from a case-workflow system</a></li>
+    <li>08 &nbsp;<a href="#openq">Open questions</a></li>
+  </ol>
+</div>
+
+<h2 id="why"><span class="secno">01</span> Why this needs its own document</h2>
+<p>The architecture plan's &sect;09 makes the core claim: Atlas is closer to a ledger than a workflow tracker. Its &ldquo;current&rdquo; state is the latest slice of an append-only history that has to stay reconstructable at any prior point in time. Three things make this a harder problem than it looks:</p>
+<div class="callout"><b>It's explicit, not incidental.</b> FR3.7 requires the system to &ldquo;never overwrite a prior value silently &mdash; version changes and keep an audit trail.&rdquo; &sect;10.3 goes further: &ldquo;historical KPI and risk-score values retain the weights/thresholds in effect when they were calculated ... so a later reweighting does not silently rewrite history.&rdquo; That's not a general good-engineering-practice footnote &mdash; it's a named functional requirement with an auditor as a persona (&sect;4.1) whose job depends on it holding.</div>
+<div class="callout"><b>The timescale is long and PRD-defined, not sprint-scoped.</b> A policy's own inception&ndash;expiry window (typically annual, longer for project-length covers like CAR/EAR) is the natural unit of &ldquo;current,&rdquo; and &sect;9.2 requires Atlas to run correctly in parallel with legacy trackers for at least one full renewal cycle per entity before that tracker retires. Claims can stay open even longer &mdash; &sect;7.4's &ldquo;Open vs Closed / Settlement time&rdquo; tracking implies a claim can outlive the policy period it was filed against entirely.</div>
+<div class="callout"><b>Getting it wrong is invisible until an audit.</b> A system that mutates a KPI or risk-score in place will look completely correct in every day-to-day view. The failure only surfaces when someone tries to reproduce a number from six months ago and it's silently different &mdash; exactly the audit-defensibility scenario the PRD's Executive Summary calls out as a primary business driver (&ldquo;a defensible, audit-ready basis&rdquo;).</div>
+
+<h2 id="pattern"><span class="secno">02</span> The core pattern: valid-time and transaction-time</h2>
+<p class="section-dek">One modeling idea covers almost every requirement in &sect;01: distinguish <i>when something was true</i> from <i>when the system learned it</i>. This is a well-established database pattern (bitemporal modeling); Atlas doesn't need the full academic version, but it needs both axes, not just one.</p>
+<p><b>Valid time</b> &mdash; the period during which a fact was actually true in the real world (a policy's own inception&ndash;expiry dates; the period a given sum-insured value applied). <b>Transaction time</b> &mdash; when Atlas itself recorded or corrected that fact (when a validator confirmed an extracted field; when a later correction was posted). These are different axes and can disagree: a broker might send a corrected schedule in July showing the sum insured was actually different back in March. Atlas needs to answer both &ldquo;what was true in March&rdquo; (valid time) <i>and</i> &ldquo;what did we believe in March, versus what we believe now, and when did that change&rdquo; (transaction time) &mdash; the second question is exactly what an auditor tracing a number back to source is asking.</p>
+<div class="callout"><b>Why a simple mutable-row-plus-change-log isn't quite enough:</b> a change-log answers &ldquo;what changed and when&rdquo; but reconstructing &ldquo;what the system would have shown a user on a given past date&rdquo; means replaying every log entry up to that date &mdash; fragile, slow, and easy to get subtly wrong (e.g. around a config-weight change, per &sect;10.3). Storing valid-time and transaction-time as first-class columns on the record itself (or as an explicit snapshot table, &sect;06) makes that a direct query instead of a replay.</div>
+
+<h2 id="entities"><span class="secno">03</span> Entity-by-entity classification</h2>
+<p class="section-dek">Every entity in PRD &sect;8.1, classified by lifecycle pattern. Reference data changes rarely and mostly needs an audit trail, not full bitemporal treatment; the versioned tier is where FR3.7 lives; the snapshot tier is where &sect;10.3 lives.</p>
+<div class="table-wrap">
+<table>
+<thead><tr><th>Entity (&sect;8.1)</th><th>Lifecycle</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td class="ent-name">Business Unit / Entity</td><td><span class="tag tag-ref">Reference</span></td><td>Changes rarely (M&amp;A, restructuring); needs an audit trail of reassignments, not point-in-time snapshots.</td></tr>
+<tr><td class="ent-name">Site / Location</td><td><span class="tag tag-ref">Reference</span></td><td>Geocode corrections, entity reassignment &mdash; low frequency, versioned for audit rather than trend.</td></tr>
+<tr><td class="ent-name">Asset</td><td><span class="tag tag-ver">Versioned</span></td><td>Declared value / PML changes at revaluation or renewal &mdash; needs history for the ITV/Limit-to-PML trend in &sect;7.1.</td></tr>
+<tr><td class="ent-name">Policy</td><td><span class="tag tag-ver">Versioned</span></td><td>The core record; its own inception&ndash;expiry window defines the renewal-cycle clock (&sect;04).</td></tr>
+<tr><td class="ent-name">Coverage / Line</td><td><span class="tag tag-ver">Versioned</span></td><td>Sum insured, limits, sublimits change at endorsement and renewal &mdash; each change is a new version, not an overwrite (FR3.7).</td></tr>
+<tr><td class="ent-name">Carrier / Insurer</td><td><span class="tag tag-ref">Reference</span></td><td>Credit rating changes over time (the &sect;12.1 &ldquo;carrier downgrade&rdquo; alert) &mdash; needs the rating <i>as of placement</i> to be distinguishable from the rating <i>now</i>.</td></tr>
+<tr><td class="ent-name">Broker</td><td><span class="tag tag-ref">Reference</span></td><td>Low change frequency.</td></tr>
+<tr><td class="ent-name">Premium</td><td><span class="tag tag-ver">Versioned</span></td><td>Debit notes and adjustments create new versions; TCOR/RoL trend (&sect;7.3) depends on the full premium history, not just the latest figure.</td></tr>
+<tr><td class="ent-name">Claim</td><td><span class="tag tag-indep">Independent</span></td><td>Open until settled; can outlive the policy period it was filed against (&sect;7.4). Its own lifecycle clock, not tied to policy renewal.</td></tr>
+<tr><td class="ent-name">Document</td><td><span class="tag tag-append">Append-only</span></td><td>Source documents are immutable once ingested (&sect;9); reprocessing (FR3.8) creates a new version alongside the original, never replacing it.</td></tr>
+<tr><td class="ent-name">ExtractionField</td><td><span class="tag tag-ver">Versioned</span></td><td>Corrections after human validation must retain the prior extracted value and confidence score, not just the corrected one (FR3.7).</td></tr>
+<tr><td class="ent-name">FX Rate</td><td><span class="tag tag-append">Append-only</span></td><td>Already inherently dated reference data (&ldquo;dated currency rate&rdquo;) &mdash; a natural append-only feed, keyed by date.</td></tr>
+<tr><td class="ent-name">Risk Score</td><td><span class="tag tag-snap">Snapshot</span></td><td>The clearest &sect;10.3 case: frozen at the config version live when computed. Same treatment applies to every Coverage &amp; Ratio Engine KPI even though the KPI values themselves aren't named as a separate &sect;8.1 entity (see Open Questions).</td></tr>
+<tr><td class="ent-name">News Item / Source</td><td><span class="tag tag-append">Append-only</span></td><td>External articles, immutable once ingested; provenance (source, publisher, timestamp) is a hard requirement (FR6.10).</td></tr>
+<tr><td class="ent-name">News / Emerging-Risk Signal</td><td><span class="tag tag-ver">Versioned</span></td><td>Status changes on analyst confirm/dismiss (FR6.9) &mdash; the decision and who made it needs to be retained, not just the current status.</td></tr>
+<tr><td class="ent-name">Risk Appetite</td><td><span class="tag tag-config">Configuration</span></td><td>Thresholds by line/entity/peril; versioned the same way as KPI thresholds and risk-score weights (&sect;10.3) &mdash; referenced by every point-in-time comparison made against it.</td></tr>
+<tr><td class="ent-name">User / Role</td><td><span class="tag tag-ref">Reference</span></td><td>Role/access changes need an audit trail (who had access to what, when) for the &sect;13 audit NFR, distinct from KPI point-in-time needs.</td></tr>
+<tr><td class="ent-name">Third-Party Requirement</td><td><span class="tag tag-ver">Versioned</span></td><td>Status (Met/At-risk/Gap) recalculates on coverage change (FR7.6) &mdash; each recalculation is a new version, tied to the coverage version that triggered it.</td></tr>
+<tr><td class="ent-name">Counterparty / Agreement</td><td><span class="tag tag-ref">Reference</span></td><td>Low change frequency once captured.</td></tr>
+<tr><td class="ent-name">Policy Exclusion</td><td><span class="tag tag-ver">Versioned</span></td><td>New exclusions can appear at renewal or reclassification; the Contract Compliance Engine's &ldquo;Excluded&rdquo; override status needs the exclusion version active at the time, not just the current one.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="clocks"><span class="secno">04</span> The retention clocks</h2>
+<p class="section-dek">Four different clocks govern how long something has to remain retrievable &mdash; conflating them is the easiest way to accidentally archive something too early.</p>
+<div class="clock-grid">
+  <div class="clock-card"><h4>Renewal-cycle clock <span class="dur">~1 policy term</span></h4><p>A policy's own inception&ndash;expiry window. Typically annual across most &sect;17.4 lines; potentially multi-year for project-length covers (CAR/EAR). Not a fixed PRD duration &mdash; it's whatever the placed policy's own term is.</p></div>
+  <div class="clock-card"><h4>Regulatory-retention clock <span class="dur">unspecified &mdash; §13</span></h4><p>&ldquo;Retain documents and records per the Group records-retention policy&rdquo; &mdash; almost certainly longer than one renewal cycle for financial/insurance records, but the PRD doesn't state a duration. Flagged in Open Questions.</p></div>
+  <div class="clock-card"><h4>Audit clock <span class="dur">effectively permanent</span></h4><p>Immutable, time-stamped log of every data change, validation action, export, and access event (&sect;13). Doesn't prune during normal operation.</p></div>
+  <div class="clock-card"><h4>Migration clock <span class="dur">1 renewal cycle, one-time</span></h4><p>&sect;9.2's parallel-run requirement &mdash; a temporary, per-entity clock during onboarding: Atlas runs alongside the legacy tracker for at least one full renewal cycle before that tracker retires.</p></div>
+</div>
+<div class="callout"><b>The rule that falls out of this:</b> nothing gets archived or hard-deleted before both the renewal-cycle clock and the regulatory-retention clock have elapsed, whichever is longer &mdash; and the audit clock never triggers a deletion under normal operation at all.</div>
+
+<h2 id="timeline"><span class="secno">05</span> A policy's lifecycle, end to end</h2>
+<div class="diagram-wrap">
+<pre class="mermaid">
+timeline
+    title A single policy's state, from placement to next renewal
+    Placement and intake : Document uploaded and classified : Field Extraction runs, human validates : Posted as v1 by Enrichment and Posting
+    Mid-term, months 2 to 10 : Endorsement changes a limit, v2 posted, v1 retained : Claim filed, independent lifecycle begins : Exclusion discovered, Contract Compliance version updates : Every KPI or score recompute writes a dated snapshot tagged to the config version live at the time
+    Renewal window, day 90 to 30 pre-expiry : Renewal Pipeline KPI tracks lapse risk (Section 7.6) : Alerts fire at 90, 60, and 30 days
+    Renewal : New policy period placed, new Policy and Coverage versions : Prior period's versions never deleted, still queryable for trend, audit, and any claim still open against it
+    Ongoing : Regulatory-retention clock keeps running independently of renewal : Audit log entries from every step above remain permanent
+</pre>
+</div>
+<div class="diagram-cap">Every stage after intake appends a new version or a new snapshot &mdash; nothing in this timeline overwrites what came before it.</div>
+
+<h2 id="implementation"><span class="secno">06</span> Implementation recommendation</h2>
+<p>Three distinct storage patterns, matched to the three non-reference lifecycle categories in &sect;03:</p>
+<h3>Versioned entities (Policy, Coverage, Premium, Asset, ExtractionField, Policy Exclusion, Third-Party Requirement)</h3>
+<p>A type-2 slowly-changing-dimension style table: each row carries <code>valid_from</code> / <code>valid_to</code> (the real-world period this value applied) and <code>recorded_at</code> (when Atlas learned it), with the current row simply the one where <code>valid_to</code> is open-ended. A correction to a past value doesn't touch the old row &mdash; it closes it and inserts a new one, so both &ldquo;what we show today&rdquo; and &ldquo;what we showed on any past date&rdquo; are direct queries, not replays.</p>
+<h3>Point-in-time snapshots (Risk Score, Coverage &amp; Ratio KPIs, Contract Compliance status)</h3>
+<p>A separate, purely additive fact table keyed by <code>(entity, metric, as_of_date, config_version_id)</code>. This is what &sect;10.3 actually requires: a KPI value is meaningless without knowing which threshold/weight version produced it, so that foreign key is not optional. Recomputation writes a new row; it never updates an existing one.</p>
+<h3>Configuration versions (KPI thresholds, risk-score weights, risk-appetite thresholds)</h3>
+<div class="callout open-q"><b>Gap worth naming:</b> &sect;8.1 doesn't list a &ldquo;Configuration Version&rdquo; entity even though &sect;10.3 requires exactly this &mdash; a dated, approved version of thresholds/weights that every snapshot above references. Recommend adding it explicitly to the data model rather than treating it as implicit inside Config Change-Control.</div>
+<h3>Append-only feeds (Document, FX Rate, News Item/Source) and the Audit log</h3>
+<p>These need no update path at all by design &mdash; every write is an insert. The Audit log in particular should be structurally incapable of an <code>UPDATE</code> or <code>DELETE</code> in normal operation (enforced at the database/permissions layer, not just by convention), since it's the record of last resort if any other layer's versioning is ever questioned.</p>
+
+<h2 id="contrast"><span class="secno">07</span> How this differs from a case-workflow system</h2>
+<p>Without visibility into Sentinel's actual internals, the general shape of a third-party-onboarding workflow system is usually: a case opens, moves through review/approval stages, and closes &mdash; state matters most while the case is open, and once it resolves (approved, rejected, withdrawn), older intermediate states typically don't need to remain independently queryable and legally frozen forever. The system's job is mostly to get to a decision, then move on.</p>
+<p>Atlas doesn't get to &ldquo;move on&rdquo; in that sense. A placed policy doesn't resolve to a terminal state &mdash; it stays &ldquo;open&rdquo; for its full term, accumulates mid-term changes, and every number computed against it during that time has to remain exactly reproducible indefinitely afterward. If Sentinel's state model is built around <i>current case status</i>, Atlas's has to be built around <i>what was true, and what we believed, as of any date</i> &mdash; which is a materially different default to design for, not just a longer retention setting on the same pattern.</p>
+
+<h2 id="openq"><span class="secno">08</span> Open questions</h2>
+<p class="section-dek">Mirroring the PRD's own &sect;18 style &mdash; these need an answer from the sponsor/IT &amp; Data Engineering before the storage design is final.</p>
+<div class="callout open-q"><b>Regulatory-retention duration:</b> &sect;13 references &ldquo;the Group records-retention policy&rdquo; without stating a duration. Insurance/financial records commonly carry 6&ndash;7+ year minimums &mdash; needs confirming so the retention clock in &sect;04 has a real number.</div>
+<div class="callout open-q"><b>Configuration Version as a first-class entity:</b> should &sect;8.1's data model be updated to name this explicitly, given &sect;10.3 already requires its behaviour?</div>
+<div class="callout open-q"><b>Does the same versioning bar apply to News/Emerging-Risk Signals?</b> FR6.9's confirm/dismiss is clearly versioned, but the PRD doesn't say whether dismissed signals are retained indefinitely or can be pruned once dismissed and no longer influencing the Risk Score.</div>
+<div class="callout open-q"><b>Claim data ownership after policy retirement:</b> &sect;5.1 scopes claims as data-capture only (Atlas doesn't process claims) &mdash; confirm whether Atlas is expected to keep tracking an open claim's status after its policy period has fully lapsed and been superseded by a new placement.</div>
+
+<div class="footline">Atlas State &amp; Data Lifecycle Design &middot; companion to Atlas_Agent_Architecture_Plan.html &sect;09 &middot; derived from Keppel_Atlas_PRD_v0_8.docx (v0.8) &middot; prepared for internal review</div>

@@ -1,0 +1,1013 @@
+<mxfile host="app.diagrams.net" agent="Claude" pages="5">
+  <diagram id="agent-chat" name="0. Agent Chat + Doc Screening">
+    <mxGraphModel dx="1660" dy="773" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="960" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="nav5" parent="1" style="rounded=0;fillColor=#1B2B4B;strokeColor=none;" value="" vertex="1">
+          <mxGeometry height="56" width="1400" as="geometry" />
+        </mxCell>
+        <mxCell id="nav-logo5" parent="1" style="text;html=1;fontStyle=1;fontSize=16;fontColor=#FFFFFF;align=left;" value="🛡 Keppel Sentinel" vertex="1">
+          <mxGeometry height="28" width="220" x="24" y="14" as="geometry" />
+        </mxCell>
+        <mxCell id="nav-links5" parent="1" style="text;html=1;fontSize=13;fontColor=#FFFFFF;align=left;" value="Dashboard   |   Screen Entity   |   Bulk Sync   |   Review Queue   |   Audit Log   |   Agent Chat ◀" vertex="1">
+          <mxGeometry height="22" width="800" x="280" y="18" as="geometry" />
+        </mxCell>
+        <mxCell id="nav-user5" parent="1" style="text;html=1;fontSize=12;fontColor=#A8B8D0;align=right;" value="👤  Analyst — Brijesh P." vertex="1">
+          <mxGeometry height="22" width="220" x="1160" y="18" as="geometry" />
+        </mxCell>
+        <mxCell id="sidebar5-bg" parent="1" style="rounded=0;fillColor=#F4F6FA;strokeColor=#D8DEE8;" value="" vertex="1">
+          <mxGeometry height="904" width="280" y="56" as="geometry" />
+        </mxCell>
+        <mxCell id="new-chat-btn" parent="1" style="rounded=6;fillColor=#1B2B4B;strokeColor=none;fontStyle=1;fontSize=13;fontColor=#FFFFFF;" value="＋  New Screening Session" vertex="1">
+          <mxGeometry height="38" width="248" x="16" y="72" as="geometry" />
+        </mxCell>
+        <mxCell id="session-lbl" parent="1" style="text;html=1;fontSize=10;fontStyle=1;fontColor=#A0AEC0;align=left;" value="RECENT SESSIONS" vertex="1">
+          <mxGeometry height="16" width="248" x="16" y="124" as="geometry" />
+        </mxCell>
+        <mxCell id="sess1-bg" parent="1" style="rounded=6;fillColor=#FFFFFF;strokeColor=#2C5282;" value="" vertex="1">
+          <mxGeometry height="56" width="264" x="8" y="144" as="geometry" />
+        </mxCell>
+        <mxCell id="sess1-title" parent="1" style="text;html=1;fontStyle=1;fontSize=12;fontColor=#1B2B4B;align=left;" value="Vendor contract batch — 14 entities" vertex="1">
+          <mxGeometry height="16" width="244" x="20" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="sess1-meta" parent="1" style="text;html=1;fontSize=11;fontColor=#C53030;align=left;" value="Today, 09:14  ·  6 HITs  ·  23 REVIEW" vertex="1">
+          <mxGeometry height="16" width="244" x="20" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="sess2-bg" parent="1" style="rounded=6;fillColor=#FFFFFF;strokeColor=#E2E8F0;" value="" vertex="1">
+          <mxGeometry height="56" width="264" x="8" y="208" as="geometry" />
+        </mxCell>
+        <mxCell id="sess2-title" parent="1" style="text;html=1;fontStyle=1;fontSize=12;fontColor=#1B2B4B;align=left;" value="Due diligence — APAC partners" vertex="1">
+          <mxGeometry height="16" width="244" x="20" y="214" as="geometry" />
+        </mxCell>
+        <mxCell id="sess2-meta" parent="1" style="text;html=1;fontSize=11;fontColor=#276749;align=left;" value="Yesterday, 15:32  ·  All clear" vertex="1">
+          <mxGeometry height="16" width="244" x="20" y="234" as="geometry" />
+        </mxCell>
+        <mxCell id="sess3-bg" parent="1" style="rounded=6;fillColor=#FFFFFF;strokeColor=#E2E8F0;" value="" vertex="1">
+          <mxGeometry height="56" width="264" x="8" y="272" as="geometry" />
+        </mxCell>
+        <mxCell id="sess3-title" parent="1" style="text;html=1;fontStyle=1;fontSize=12;fontColor=#1B2B4B;align=left;" value="Sanctions check — shipping list" vertex="1">
+          <mxGeometry height="16" width="244" x="20" y="278" as="geometry" />
+        </mxCell>
+        <mxCell id="sess3-meta" parent="1" style="text;html=1;fontSize=11;fontColor=#C53030;align=left;" value="04 Jul  ·  2 HITs confirmed" vertex="1">
+          <mxGeometry height="16" width="244" x="20" y="298" as="geometry" />
+        </mxCell>
+        <mxCell id="upload-lbl" parent="1" style="text;html=1;fontSize=10;fontStyle=1;fontColor=#A0AEC0;align=left;" value="UPLOAD DOCUMENT" vertex="1">
+          <mxGeometry height="16" width="248" x="16" y="344" as="geometry" />
+        </mxCell>
+        <mxCell id="upload-zone" parent="1" style="rounded=8;fillColor=#FFFFFF;strokeColor=#63B3ED;strokeStyle=dashed;fontSize=12;fontColor=#718096;align=center;verticalAlign=middle;" value="📄  Drop file here or click to browse  Supports: &#xa;PDF, DOCX, XLSX, CSV, TXT Max 50 MB" vertex="1">
+          <mxGeometry height="100" width="264" x="8" y="364" as="geometry" />
+        </mxCell>
+        <mxCell id="doc-chip" parent="1" style="rounded=6;fillColor=#EBF8FF;strokeColor=#63B3ED;" value="" vertex="1">
+          <mxGeometry height="52" width="264" x="8" y="476" as="geometry" />
+        </mxCell>
+        <mxCell id="doc-icon" parent="1" style="text;html=1;fontSize=20;align=left;" value="📄" vertex="1">
+          <mxGeometry height="30" width="30" x="16" y="484" as="geometry" />
+        </mxCell>
+        <mxCell id="doc-name" parent="1" style="text;html=1;fontStyle=1;fontSize=11;fontColor=#2C5282;align=left;" value="vendor_contracts_Q3.pdf" vertex="1">
+          <mxGeometry height="16" width="210" x="50" y="484" as="geometry" />
+        </mxCell>
+        <mxCell id="doc-meta" parent="1" style="text;html=1;fontSize=10;fontColor=#4A5568;align=left;" value="2.4 MB  ·  14 entities extracted  ✓" vertex="1">
+          <mxGeometry height="14" width="210" x="50" y="502" as="geometry" />
+        </mxCell>
+        <mxCell id="ext-lbl" parent="1" style="text;html=1;fontSize=10;fontStyle=1;fontColor=#A0AEC0;align=left;" value="EXTRACTED ENTITIES  (14)" vertex="1">
+          <mxGeometry height="16" width="248" x="16" y="540" as="geometry" />
+        </mxCell>
+        <mxCell id="ext-e1" parent="1" style="text;html=1;fontSize=11;fontColor=#C53030;align=left;" value="● Huawei Technologies Co. Ltd" vertex="1">
+          <mxGeometry height="16" width="248" x="16" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="ext-e2" parent="1" style="text;html=1;fontSize=11;fontColor=#975A16;align=left;" value="◐ China Ocean Shipping Group" vertex="1">
+          <mxGeometry height="16" width="248" x="16" y="578" as="geometry" />
+        </mxCell>
+        <mxCell id="ext-e3" parent="1" style="text;html=1;fontSize=11;fontColor=#975A16;align=left;" value="◐ Rosneft Trading SA" vertex="1">
+          <mxGeometry height="16" width="248" x="16" y="596" as="geometry" />
+        </mxCell>
+        <mxCell id="ext-e4" parent="1" style="text;html=1;fontSize=11;fontColor=#276749;align=left;" value="✓ Sembcorp Marine Ltd" vertex="1">
+          <mxGeometry height="16" width="248" x="16" y="614" as="geometry" />
+        </mxCell>
+        <mxCell id="ext-e5" parent="1" style="text;html=1;fontSize=11;fontColor=#276749;align=left;" value="✓ Keppel Infrastructure Trust" vertex="1">
+          <mxGeometry height="16" width="248" x="16" y="632" as="geometry" />
+        </mxCell>
+        <mxCell id="ext-more" parent="1" style="text;html=1;fontSize=11;fontColor=#2C5282;align=left;" value="+ 9 more  [ Show all ]" vertex="1">
+          <mxGeometry height="16" width="248" x="16" y="650" as="geometry" />
+        </mxCell>
+        <mxCell id="cov-lbl" parent="1" style="text;html=1;fontSize=10;fontStyle=1;fontColor=#A0AEC0;align=left;" value="SANCTIONS LISTS TO CHECK" vertex="1">
+          <mxGeometry height="16" width="248" x="16" y="680" as="geometry" />
+        </mxCell>
+        <mxCell id="cov-1" parent="1" style="text;html=1;fontSize=11;fontColor=#4A5568;align=left;" value="[✓] BIS — Entity / DPL / UVL / MEU" vertex="1">
+          <mxGeometry height="16" width="248" x="16" y="700" as="geometry" />
+        </mxCell>
+        <mxCell id="cov-2" parent="1" style="text;html=1;fontSize=11;fontColor=#4A5568;align=left;" value="[✓] OFAC — SDN / FSE / SSI" vertex="1">
+          <mxGeometry height="16" width="248" x="16" y="718" as="geometry" />
+        </mxCell>
+        <mxCell id="cov-3" parent="1" style="text;html=1;fontSize=11;fontColor=#4A5568;align=left;" value="[✓] State Dept — ITAR / Nonprolif" vertex="1">
+          <mxGeometry height="16" width="248" x="16" y="736" as="geometry" />
+        </mxCell>
+        <mxCell id="cov-4" parent="1" style="text;html=1;fontSize=11;fontColor=#A0AEC0;align=left;" value="[  ] UN Consolidated Sanctions List" vertex="1">
+          <mxGeometry height="16" width="248" x="16" y="754" as="geometry" />
+        </mxCell>
+        <mxCell id="cov-5" parent="1" style="text;html=1;fontSize=11;fontColor=#A0AEC0;align=left;" value="[  ] EU Sanctions Map" vertex="1">
+          <mxGeometry height="16" width="248" x="16" y="772" as="geometry" />
+        </mxCell>
+        <mxCell id="cov-6" parent="1" style="text;html=1;fontSize=11;fontColor=#A0AEC0;align=left;" value="[  ] MAS Singapore AML List" vertex="1">
+          <mxGeometry height="16" width="248" x="16" y="790" as="geometry" />
+        </mxCell>
+        <mxCell id="chat-bg" parent="1" style="rounded=0;fillColor=#FFFFFF;strokeColor=none;" value="" vertex="1">
+          <mxGeometry height="904" width="820" x="280" y="56" as="geometry" />
+        </mxCell>
+        <mxCell id="chat-header-bg" parent="1" style="rounded=0;fillColor=#FFFFFF;strokeColor=#E2E8F0;" value="" vertex="1">
+          <mxGeometry height="60" width="820" x="280" y="56" as="geometry" />
+        </mxCell>
+        <mxCell id="chat-header-title" parent="1" style="text;html=1;fontStyle=1;fontSize=15;fontColor=#1B2B4B;align=left;" value="🤖  Sentinel Compliance Agent" vertex="1">
+          <mxGeometry height="22" width="400" x="300" y="68" as="geometry" />
+        </mxCell>
+        <mxCell id="chat-header-sub" parent="1" style="text;html=1;fontSize=11;fontColor=#718096;align=left;" value="Powered by BIS CSL API  ·  Session: SCR-SESS-20260706-007  ·  Document: vendor_contracts_Q3.pdf" vertex="1">
+          <mxGeometry height="16" width="700" x="300" y="92" as="geometry" />
+        </mxCell>
+        <mxCell id="div-today" parent="1" style="text;html=1;fontSize=11;fontColor=#A0AEC0;align=center;" value="─────────────────   Today, 09:10   ─────────────────" vertex="1">
+          <mxGeometry height="16" width="820" x="280" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="msg-system-bg" parent="1" style="rounded=8;fillColor=#F4F6FA;strokeColor=#D8DEE8;" value="" vertex="1">
+          <mxGeometry height="64" width="788" x="296" y="154" as="geometry" />
+        </mxCell>
+        <mxCell id="msg-system" parent="1" style="text;html=1;fontSize=12;fontColor=#4A5568;align=left;verticalAlign=middle;" value="🤖  Hello Brijesh. I&#39;ve parsed vendor_contracts_Q3.pdf and identified 14 entity names. I&#39;ll screen each one against BIS, OFAC, and&amp;nbsp;&lt;div&gt;State Department lists and give you a full breakdown. You can also ask me questions about any specific entity, compare results,&amp;nbsp;&lt;/div&gt;&lt;div&gt;or request a formatted report.&lt;/div&gt;" vertex="1">
+          <mxGeometry height="52" width="764" x="308" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="msg-user1-bg" parent="1" style="rounded=8;fillColor=#EBF8FF;strokeColor=#63B3ED;" value="" vertex="1">
+          <mxGeometry height="36" width="604" x="480" y="234" as="geometry" />
+        </mxCell>
+        <mxCell id="msg-user1" parent="1" style="text;html=1;fontSize=12;fontColor=#1B2B4B;align=left;verticalAlign=middle;" value="👤  Screen all 14 entities and flag anything that needs my attention." vertex="1">
+          <mxGeometry height="20" width="578" x="494" y="242" as="geometry" />
+        </mxCell>
+        <mxCell id="msg-result-bg" parent="1" style="rounded=8;fillColor=#F4F6FA;strokeColor=#D8DEE8;" value="" vertex="1">
+          <mxGeometry height="240" width="788" x="296" y="286" as="geometry" />
+        </mxCell>
+        <mxCell id="msg-agent-lbl" parent="1" style="text;html=1;fontStyle=1;fontSize=12;fontColor=#1B2B4B;align=left;" value="🤖  Screening complete — 14 entities checked across 11 lists." vertex="1">
+          <mxGeometry height="18" width="764" x="308" y="296" as="geometry" />
+        </mxCell>
+        <mxCell id="res-thead2" parent="1" style="fillColor=#E2E8F0;strokeColor=none;" value="" vertex="1">
+          <mxGeometry height="24" width="764" x="308" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="res-th2" parent="1" style="text;html=1;fontStyle=1;fontSize=11;fontColor=#4A5568;align=left;" value="Entity                                   Country   List(s) Hit                      Score    Status" vertex="1">
+          <mxGeometry height="12" width="748" x="316" y="326" as="geometry" />
+        </mxCell>
+        <mxCell id="res-r1-bg" parent="1" style="fillColor=#FFF5F5;strokeColor=none;" value="" vertex="1">
+          <mxGeometry height="22" width="764" x="308" y="344" as="geometry" />
+        </mxCell>
+        <mxCell id="res-r1-txt" parent="1" style="text;html=1;fontSize=11;fontColor=#C53030;align=left;" value="Huawei Technologies Co. Ltd              CN        BIS Entity List                  96%      ● HIT" vertex="1">
+          <mxGeometry height="12" width="748" x="316" y="349" as="geometry" />
+        </mxCell>
+        <mxCell id="res-r2-bg" parent="1" style="fillColor=#FFFBEB;strokeColor=none;" value="" vertex="1">
+          <mxGeometry height="22" width="764" x="308" y="366" as="geometry" />
+        </mxCell>
+        <mxCell id="res-r2-txt" parent="1" style="text;html=1;fontSize=11;fontColor=#975A16;align=left;" value="China Ocean Shipping Group               CN        BIS MEU List                     79%      ◐ REVIEW" vertex="1">
+          <mxGeometry height="12" width="748" x="316" y="371" as="geometry" />
+        </mxCell>
+        <mxCell id="res-r3-bg" parent="1" style="fillColor=#FFFBEB;strokeColor=none;" value="" vertex="1">
+          <mxGeometry height="22" width="764" x="308" y="388" as="geometry" />
+        </mxCell>
+        <mxCell id="res-r3-txt" parent="1" style="text;html=1;fontSize=11;fontColor=#975A16;align=left;" value="Rosneft Trading SA                       RU        OFAC SDN List                    83%      ◐ REVIEW" vertex="1">
+          <mxGeometry height="12" width="748" x="316" y="393" as="geometry" />
+        </mxCell>
+        <mxCell id="res-r4-bg" parent="1" style="fillColor=#F0FFF4;strokeColor=none;" value="" vertex="1">
+          <mxGeometry height="22" width="764" x="308" y="410" as="geometry" />
+        </mxCell>
+        <mxCell id="res-r4-txt" parent="1" style="text;html=1;fontSize=11;fontColor=#276749;align=left;" value="Sembcorp Marine Ltd                      SG        —                                —        ✓ CLEAR" vertex="1">
+          <mxGeometry height="12" width="748" x="316" y="415" as="geometry" />
+        </mxCell>
+        <mxCell id="res-r5-bg" parent="1" style="fillColor=#F0FFF4;strokeColor=none;" value="" vertex="1">
+          <mxGeometry height="22" width="764" x="308" y="432" as="geometry" />
+        </mxCell>
+        <mxCell id="res-r5-txt" parent="1" style="text;html=1;fontSize=11;fontColor=#276749;align=left;" value="+ 10 more entities — all CLEAR                                                           ✓ CLEAR" vertex="1">
+          <mxGeometry height="12" width="748" x="316" y="437" as="geometry" />
+        </mxCell>
+        <mxCell id="chip-hit2" parent="1" style="rounded=10;fillColor=#C53030;strokeColor=none;fontSize=11;fontStyle=1;fontColor=#FFFFFF;" value="1 HIT" vertex="1">
+          <mxGeometry height="24" width="72" x="308" y="462" as="geometry" />
+        </mxCell>
+        <mxCell id="chip-rev2" parent="1" style="rounded=10;fillColor=#F6AD55;strokeColor=none;fontSize=11;fontStyle=1;fontColor=#FFFFFF;" value="2 REVIEW" vertex="1">
+          <mxGeometry height="24" width="88" x="390" y="462" as="geometry" />
+        </mxCell>
+        <mxCell id="chip-clr2" parent="1" style="rounded=10;fillColor=#68D391;strokeColor=none;fontSize=11;fontStyle=1;fontColor=#FFFFFF;" value="11 CLEAR" vertex="1">
+          <mxGeometry height="24" width="88" x="488" y="462" as="geometry" />
+        </mxCell>
+        <mxCell id="chip-dl" parent="1" style="rounded=10;fillColor=#EBF8FF;strokeColor=#63B3ED;fontSize=11;fontColor=#2C5282;" value="⬇ Download Report" vertex="1">
+          <mxGeometry height="24" width="148" x="700" y="462" as="geometry" />
+        </mxCell>
+        <mxCell id="chip-review-q" parent="1" style="rounded=10;fillColor=#FFFBEB;strokeColor=#F6AD55;fontSize=11;fontColor=#975A16;" value="→ Open Review Queue" vertex="1">
+          <mxGeometry height="24" width="148" x="858" y="462" as="geometry" />
+        </mxCell>
+        <mxCell id="msg-user2-bg" parent="1" style="rounded=8;fillColor=#EBF8FF;strokeColor=#63B3ED;" value="" vertex="1">
+          <mxGeometry height="36" width="604" x="480" y="544" as="geometry" />
+        </mxCell>
+        <mxCell id="msg-user2" parent="1" style="text;html=1;fontSize=12;fontColor=#1B2B4B;align=left;verticalAlign=middle;" value="👤  Tell me more about Rosneft — is this the same entity as the OFAC SDN record?" vertex="1">
+          <mxGeometry height="20" width="578" x="494" y="552" as="geometry" />
+        </mxCell>
+        <mxCell id="msg-agent2-bg" parent="1" style="rounded=8;fillColor=#F4F6FA;strokeColor=#D8DEE8;" value="" vertex="1">
+          <mxGeometry height="156" width="788" x="296" y="596" as="geometry" />
+        </mxCell>
+        <mxCell id="msg-agent2-title" parent="1" style="text;html=1;fontStyle=1;fontSize=12;fontColor=#1B2B4B;align=left;" value="🤖  Analysis: Rosneft Trading SA vs OFAC SDN Record" vertex="1">
+          <mxGeometry height="18" width="764" x="308" y="606" as="geometry" />
+        </mxCell>
+        <mxCell id="msg-agent2-body" parent="1" style="text;html=1;fontSize=12;fontColor=#4A5568;align=left;verticalAlign=top;" value="The OFAC SDN record lists &quot;Rosneft Oil Company&quot; (SDN ID: 26563) headquartered in Moscow, Russia.&amp;nbsp;&lt;div&gt;Your document references &quot;Rosneft Trading SA&quot; — a Geneva-based trading subsidiary.&amp;nbsp;&lt;/div&gt;&lt;div&gt;OFAC guidance states that subsidiaries 50%+ owned by an SDN entity are themselves subject to sanctions under the 50% rule,&amp;nbsp;&lt;/div&gt;&lt;div&gt;even if not individually listed.  Match score is 83% due to the name variation (parent vs. subsidiary) and different jurisdictions (RU vs. CH).&amp;nbsp;&lt;/div&gt;&lt;div&gt;However, given the ownership structure, this is likely a genuine sanctions exposure.  ⚠️  Recommendation:&amp;nbsp;&lt;/div&gt;&lt;div&gt;Treat as a confirmed hit pending legal review. Do not proceed with the transaction.&lt;/div&gt;" vertex="1">
+          <mxGeometry height="96" width="764" x="308" y="628" as="geometry" />
+        </mxCell>
+        <mxCell id="agent2-cite" parent="1" style="text;html=1;fontSize=10;fontColor=#A0AEC0;align=left;" value="Sources: OFAC SDN List (ofac.treas.gov)  ·  OFAC FAQ #398 (50% Rule)  ·  BIS CSL API result ref: CSL-20260706-R8821" vertex="1">
+          <mxGeometry height="14" width="764" x="308" y="728" as="geometry" />
+        </mxCell>
+        <mxCell id="msg-user3-bg" parent="1" style="rounded=8;fillColor=#EBF8FF;strokeColor=#63B3ED;" value="" vertex="1">
+          <mxGeometry height="36" width="604" x="480" y="768" as="geometry" />
+        </mxCell>
+        <mxCell id="msg-user3" parent="1" style="text;html=1;fontSize=12;fontColor=#1B2B4B;align=left;verticalAlign=middle;" value="👤  Generate a compliance report I can send to the deal team." vertex="1">
+          <mxGeometry height="20" width="578" x="494" y="776" as="geometry" />
+        </mxCell>
+        <mxCell id="msg-agent3-bg" parent="1" style="rounded=8;fillColor=#F4F6FA;strokeColor=#D8DEE8;" value="" vertex="1">
+          <mxGeometry height="72" width="788" x="296" y="820" as="geometry" />
+        </mxCell>
+        <mxCell id="msg-agent3" parent="1" style="text;html=1;fontSize=12;fontColor=#4A5568;align=left;verticalAlign=middle;" value="🤖  Report generated — Sentinel_Compliance_Report_Q3_Vendors_20260706.pdf (34 KB)&amp;nbsp;&lt;div&gt;Includes: screening summary, hit details with OFAC/BIS citations, 50% rule analysis for Rosneft,&amp;nbsp;&lt;/div&gt;&lt;div&gt;recommended next steps. [ ⬇ Download PDF ]   [ 📧 Send to deal team ]   [ 📋 Save to Sentinel ]&lt;/div&gt;" vertex="1">
+          <mxGeometry height="56" width="764" x="308" y="828" as="geometry" />
+        </mxCell>
+        <mxCell id="input-bar-bg" parent="1" style="rounded=0;fillColor=#FFFFFF;strokeColor=#E2E8F0;" value="" vertex="1">
+          <mxGeometry height="60" width="820" x="280" y="900" as="geometry" />
+        </mxCell>
+        <mxCell id="input-bar-field" parent="1" style="rounded=20;fillColor=#F4F6FA;strokeColor=#D8DEE8;fontSize=13;fontColor=#A0AEC0;align=left;" value="Ask about an entity, request a report, or paste names to screen..." vertex="1">
+          <mxGeometry height="36" width="640" x="296" y="912" as="geometry" />
+        </mxCell>
+        <mxCell id="input-attach" parent="1" style="text;html=1;fontSize=20;align=center;" value="📎" vertex="1">
+          <mxGeometry height="36" width="36" x="946" y="912" as="geometry" />
+        </mxCell>
+        <mxCell id="input-send" parent="1" style="rounded=20;fillColor=#1B2B4B;strokeColor=none;fontStyle=1;fontSize=13;fontColor=#FFFFFF;" value="Send ▶" vertex="1">
+          <mxGeometry height="36" width="96" x="990" y="912" as="geometry" />
+        </mxCell>
+        <mxCell id="inspector-bg" parent="1" style="rounded=0;fillColor=#FAFBFC;strokeColor=#D8DEE8;" value="" vertex="1">
+          <mxGeometry height="904" width="300" x="1100" y="56" as="geometry" />
+        </mxCell>
+        <mxCell id="insp-title" parent="1" style="text;html=1;fontStyle=1;fontSize=14;fontColor=#1B2B4B;align=left;" value="Entity Inspector" vertex="1">
+          <mxGeometry height="22" width="260" x="1116" y="72" as="geometry" />
+        </mxCell>
+        <mxCell id="insp-sub" parent="1" style="text;html=1;fontSize=11;fontColor=#A0AEC0;align=left;" value="Click any entity in chat to inspect" vertex="1">
+          <mxGeometry height="16" width="260" x="1116" y="94" as="geometry" />
+        </mxCell>
+        <mxCell id="insp-card" parent="1" style="rounded=8;fillColor=#FFFBEB;strokeColor=#F6AD55;" value="" vertex="1">
+          <mxGeometry height="48" width="280" x="1108" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="insp-entity-name" parent="1" style="text;html=1;fontStyle=1;fontSize=14;fontColor=#1B2B4B;align=left;" value="Rosneft Trading SA" vertex="1">
+          <mxGeometry height="18" width="256" x="1120" y="128" as="geometry" />
+        </mxCell>
+        <mxCell id="insp-entity-meta" parent="1" style="text;html=1;fontSize=11;fontColor=#975A16;align=left;" value="◐  REVIEW  —  83%  ·  RU / CH" vertex="1">
+          <mxGeometry height="14" width="256" x="1120" y="148" as="geometry" />
+        </mxCell>
+        <mxCell id="insp-risk-lbl" parent="1" style="text;html=1;fontSize=10;fontStyle=1;fontColor=#A0AEC0;align=left;" value="RISK BREAKDOWN" vertex="1">
+          <mxGeometry height="14" width="260" x="1116" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="risk-ofac-lbl" parent="1" style="text;html=1;fontSize=11;fontColor=#4A5568;align=left;" value="OFAC SDN" vertex="1">
+          <mxGeometry height="14" width="100" x="1116" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="risk-ofac-bar-bg" parent="1" style="rounded=4;fillColor=#E2E8F0;strokeColor=none;" value="" vertex="1">
+          <mxGeometry height="10" width="150" x="1220" y="202" as="geometry" />
+        </mxCell>
+        <mxCell id="risk-ofac-bar" parent="1" style="rounded=4;fillColor=#C53030;strokeColor=none;" value="" vertex="1">
+          <mxGeometry height="10" width="125" x="1220" y="202" as="geometry" />
+        </mxCell>
+        <mxCell id="risk-ofac-pct" parent="1" style="text;html=1;fontSize=10;fontColor=#C53030;align=left;" value="83%" vertex="1">
+          <mxGeometry height="16" width="30" x="1374" y="198" as="geometry" />
+        </mxCell>
+        <mxCell id="risk-bis-lbl" parent="1" style="text;html=1;fontSize=11;fontColor=#4A5568;align=left;" value="BIS Entity" vertex="1">
+          <mxGeometry height="14" width="100" x="1116" y="220" as="geometry" />
+        </mxCell>
+        <mxCell id="risk-bis-bar-bg" parent="1" style="rounded=4;fillColor=#E2E8F0;strokeColor=none;" value="" vertex="1">
+          <mxGeometry height="10" width="150" x="1220" y="222" as="geometry" />
+        </mxCell>
+        <mxCell id="risk-bis-bar" parent="1" style="rounded=4;fillColor=#F6AD55;strokeColor=none;" value="" vertex="1">
+          <mxGeometry height="10" width="52" x="1220" y="222" as="geometry" />
+        </mxCell>
+        <mxCell id="risk-bis-pct" parent="1" style="text;html=1;fontSize=10;fontColor=#975A16;align=left;" value="35%" vertex="1">
+          <mxGeometry height="16" width="30" x="1374" y="218" as="geometry" />
+        </mxCell>
+        <mxCell id="risk-state-lbl" parent="1" style="text;html=1;fontSize=11;fontColor=#4A5568;align=left;" value="State ITAR" vertex="1">
+          <mxGeometry height="14" width="100" x="1116" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="risk-state-bar-bg" parent="1" style="rounded=4;fillColor=#E2E8F0;strokeColor=none;" value="" vertex="1">
+          <mxGeometry height="10" width="150" x="1220" y="242" as="geometry" />
+        </mxCell>
+        <mxCell id="risk-state-pct" parent="1" style="text;html=1;fontSize=10;fontColor=#276749;align=left;" value="0%" vertex="1">
+          <mxGeometry height="16" width="30" x="1374" y="238" as="geometry" />
+        </mxCell>
+        <mxCell id="rule50-bg" parent="1" style="rounded=6;fillColor=#FFF5F5;strokeColor=#FC8181;" value="" vertex="1">
+          <mxGeometry height="64" width="280" x="1108" y="268" as="geometry" />
+        </mxCell>
+        <mxCell id="rule50" parent="1" style="text;html=1;fontSize=11;fontColor=#C53030;align=left;verticalAlign=top;" value="⚠️  OFAC 50% Rule applies Parent entity&amp;nbsp;&lt;div&gt;(Rosneft OAO) is on SDN list.&amp;nbsp;&lt;/div&gt;&lt;div&gt;Subsidiaries are automatically restricted.&lt;/div&gt;" vertex="1">
+          <mxGeometry height="48" width="256" x="1120" y="276" as="geometry" />
+        </mxCell>
+        <mxCell id="own-lbl" parent="1" style="text;html=1;fontSize=10;fontStyle=1;fontColor=#A0AEC0;align=left;" value="OWNERSHIP CHAIN (DJ RCTP)" vertex="1">
+          <mxGeometry height="14" width="260" x="1116" y="344" as="geometry" />
+        </mxCell>
+        <mxCell id="own-1" parent="1" style="text;html=1;fontSize=11;fontColor=#C53030;align=left;" value="Rosneft Oil Co. OAO  (SDN ●)" vertex="1">
+          <mxGeometry height="16" width="260" x="1116" y="364" as="geometry" />
+        </mxCell>
+        <mxCell id="own-arrow" parent="1" style="text;html=1;fontSize=11;fontColor=#718096;align=left;" value="     └── 100% owns" vertex="1">
+          <mxGeometry height="14" width="260" x="1116" y="382" as="geometry" />
+        </mxCell>
+        <mxCell id="own-2" parent="1" style="text;html=1;fontSize=11;fontColor=#975A16;align=left;" value="Rosneft Trading SA  (Subject)" vertex="1">
+          <mxGeometry height="16" width="260" x="1116" y="398" as="geometry" />
+        </mxCell>
+        <mxCell id="insp-act-lbl" parent="1" style="text;html=1;fontSize=10;fontStyle=1;fontColor=#A0AEC0;align=left;" value="QUICK ACTIONS" vertex="1">
+          <mxGeometry height="14" width="260" x="1116" y="428" as="geometry" />
+        </mxCell>
+        <mxCell id="insp-btn1" parent="1" style="rounded=4;fillColor=#FFF5F5;strokeColor=#FC8181;fontSize=11;fontColor=#C53030;" value="✗  Confirm as Genuine Hit" vertex="1">
+          <mxGeometry height="30" width="280" x="1108" y="448" as="geometry" />
+        </mxCell>
+        <mxCell id="insp-btn2" parent="1" style="rounded=4;fillColor=#F0FFF4;strokeColor=#68D391;fontSize=11;fontColor=#276749;" value="✓  Clear as False Positive" vertex="1">
+          <mxGeometry height="30" width="280" x="1108" y="486" as="geometry" />
+        </mxCell>
+        <mxCell id="insp-btn3" parent="1" style="rounded=4;fillColor=#F4F6FA;strokeColor=#D8DEE8;fontSize=11;fontColor=#4A5568;" value="↑  Escalate to Senior Compliance" vertex="1">
+          <mxGeometry height="30" width="280" x="1108" y="524" as="geometry" />
+        </mxCell>
+        <mxCell id="insp-btn4" parent="1" style="rounded=4;fillColor=#EBF8FF;strokeColor=#63B3ED;fontSize=11;fontColor=#2C5282;" value="📄  View Full CSL Record" vertex="1">
+          <mxGeometry height="30" width="280" x="1108" y="562" as="geometry" />
+        </mxCell>
+        <mxCell id="suggest-lbl" parent="1" style="text;html=1;fontSize=10;fontStyle=1;fontColor=#A0AEC0;align=left;" value="SUGGESTED FOLLOW-UP" vertex="1">
+          <mxGeometry height="14" width="260" x="1116" y="608" as="geometry" />
+        </mxCell>
+        <mxCell id="sug1" parent="1" style="rounded=4;fillColor=#FFFFFF;strokeColor=#E2E8F0;fontSize=11;fontColor=#2C5282;" value="&quot;Compare Rosneft to the 2024 SDN entry&quot;" vertex="1">
+          <mxGeometry height="28" width="280" x="1108" y="628" as="geometry" />
+        </mxCell>
+        <mxCell id="sug2" parent="1" style="rounded=4;fillColor=#FFFFFF;strokeColor=#E2E8F0;fontSize=11;fontColor=#2C5282;" value="&quot;What licence exemptions might apply?&quot;" vertex="1">
+          <mxGeometry height="28" width="280" x="1108" y="664" as="geometry" />
+        </mxCell>
+        <mxCell id="sug3" parent="1" style="rounded=4;fillColor=#FFFFFF;strokeColor=#E2E8F0;fontSize=11;fontColor=#2C5282;" value="&quot;Screen remaining entities in the file&quot;" vertex="1">
+          <mxGeometry height="28" width="280" x="1108" y="700" as="geometry" />
+        </mxCell>
+        <mxCell id="sug4" parent="1" style="rounded=4;fillColor=#FFFFFF;strokeColor=#E2E8F0;fontSize=11;fontColor=#2C5282;" value="&quot;Draft a memo on OFAC 50% Rule exposure&quot;" vertex="1">
+          <mxGeometry height="28" width="280" x="1108" y="736" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="compliance-dashboard" name="1. Compliance Dashboard">
+    <mxGraphModel dx="1465" dy="682" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="nav-bg" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1B2B4B;strokeColor=none;" value="" vertex="1">
+          <mxGeometry height="56" width="1400" as="geometry" />
+        </mxCell>
+        <mxCell id="nav-logo" parent="1" style="text;html=1;fontStyle=1;fontSize=16;fontColor=#FFFFFF;align=left;" value="🛡 Keppel Sentinel" vertex="1">
+          <mxGeometry height="28" width="220" x="24" y="14" as="geometry" />
+        </mxCell>
+        <mxCell id="nav-links" parent="1" style="text;html=1;fontSize=13;fontColor=#A8B8D0;align=left;" value="Dashboard   |   Screen Entity   |   Bulk Sync   |   Review Queue   |   Audit Log" vertex="1">
+          <mxGeometry height="22" width="640" x="280" y="18" as="geometry" />
+        </mxCell>
+        <mxCell id="nav-user" parent="1" style="text;html=1;fontSize=12;fontColor=#A8B8D0;align=right;" value="👤  Analyst — Brijesh P." vertex="1">
+          <mxGeometry height="22" width="220" x="1160" y="18" as="geometry" />
+        </mxCell>
+        <mxCell id="title-strip" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F4F6FA;strokeColor=#D8DEE8;" value="" vertex="1">
+          <mxGeometry height="60" width="1400" y="56" as="geometry" />
+        </mxCell>
+        <mxCell id="page-title" parent="1" style="text;html=1;fontStyle=1;fontSize=18;fontColor=#1B2B4B;align=left;" value="Compliance Dashboard" vertex="1">
+          <mxGeometry height="28" width="380" x="24" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="date-filter" parent="1" style="text;html=1;fontSize=12;fontColor=#4A5568;align=right;" value="[ Last 7 days ▼ ]   [ All Sources ▼ ]   [ Export CSV ]" vertex="1">
+          <mxGeometry height="22" width="480" x="900" y="74" as="geometry" />
+        </mxCell>
+        <mxCell id="card1-bg" parent="1" style="rounded=8;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D8DEE8;shadow=1;" value="" vertex="1">
+          <mxGeometry height="110" width="240" x="24" y="136" as="geometry" />
+        </mxCell>
+        <mxCell id="card1-label" parent="1" style="text;html=1;fontSize=11;fontColor=#718096;align=left;" value="Total Screened (7d)" vertex="1">
+          <mxGeometry height="20" width="200" x="40" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="card1-value" parent="1" style="text;html=1;fontStyle=1;fontSize=32;fontColor=#1B2B4B;align=left;" value="4,821" vertex="1">
+          <mxGeometry height="44" width="180" x="40" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="card1-sub" parent="1" style="text;html=1;fontSize=11;fontColor=#48BB78;align=left;" value="↑ 12% vs prior week" vertex="1">
+          <mxGeometry height="18" width="200" x="40" y="214" as="geometry" />
+        </mxCell>
+        <mxCell id="card2-bg" parent="1" style="rounded=8;whiteSpace=wrap;html=1;fillColor=#FFF5F5;strokeColor=#FC8181;shadow=1;" value="" vertex="1">
+          <mxGeometry height="110" width="240" x="284" y="136" as="geometry" />
+        </mxCell>
+        <mxCell id="card2-label" parent="1" style="text;html=1;fontSize=11;fontColor=#C53030;align=left;" value="Confirmed Hits" vertex="1">
+          <mxGeometry height="20" width="200" x="300" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="card2-value" parent="1" style="text;html=1;fontStyle=1;fontSize=32;fontColor=#C53030;align=left;" value="7" vertex="1">
+          <mxGeometry height="44" width="180" x="300" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="card2-sub" parent="1" style="text;html=1;fontSize=11;fontColor=#C53030;align=left;" value="3 pending review" vertex="1">
+          <mxGeometry height="18" width="200" x="300" y="214" as="geometry" />
+        </mxCell>
+        <mxCell id="card3-bg" parent="1" style="rounded=8;whiteSpace=wrap;html=1;fillColor=#FFFBEB;strokeColor=#F6AD55;shadow=1;" value="" vertex="1">
+          <mxGeometry height="110" width="240" x="544" y="136" as="geometry" />
+        </mxCell>
+        <mxCell id="card3-label" parent="1" style="text;html=1;fontSize=11;fontColor=#975A16;align=left;" value="Possible Matches (Review)" vertex="1">
+          <mxGeometry height="20" width="210" x="560" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="card3-value" parent="1" style="text;html=1;fontStyle=1;fontSize=32;fontColor=#975A16;align=left;" value="23" vertex="1">
+          <mxGeometry height="44" width="180" x="560" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="card3-sub" parent="1" style="text;html=1;fontSize=11;fontColor=#975A16;align=left;" value="Avg match score: 78%" vertex="1">
+          <mxGeometry height="18" width="200" x="560" y="214" as="geometry" />
+        </mxCell>
+        <mxCell id="card4-bg" parent="1" style="rounded=8;whiteSpace=wrap;html=1;fillColor=#F0FFF4;strokeColor=#68D391;shadow=1;" value="" vertex="1">
+          <mxGeometry height="110" width="240" x="804" y="136" as="geometry" />
+        </mxCell>
+        <mxCell id="card4-label" parent="1" style="text;html=1;fontSize=11;fontColor=#276749;align=left;" value="CSL API Status" vertex="1">
+          <mxGeometry height="20" width="200" x="820" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="card4-value" parent="1" style="text;html=1;fontStyle=1;fontSize=28;fontColor=#276749;align=left;" value="● Live" vertex="1">
+          <mxGeometry height="44" width="180" x="820" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="card4-sub" parent="1" style="text;html=1;fontSize=11;fontColor=#276749;align=left;" value="Last sync: 4 min ago" vertex="1">
+          <mxGeometry height="18" width="200" x="820" y="214" as="geometry" />
+        </mxCell>
+        <mxCell id="card5-bg" parent="1" style="rounded=8;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#63B3ED;shadow=1;" value="" vertex="1">
+          <mxGeometry height="110" width="240" x="1064" y="136" as="geometry" />
+        </mxCell>
+        <mxCell id="card5-label" parent="1" style="text;html=1;fontSize=11;fontColor=#2C5282;align=left;" value="Lists Monitored" vertex="1">
+          <mxGeometry height="20" width="200" x="1080" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="card5-value" parent="1" style="text;html=1;fontStyle=1;fontSize=32;fontColor=#2C5282;align=left;" value="11" vertex="1">
+          <mxGeometry height="44" width="180" x="1080" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="card5-sub" parent="1" style="text;html=1;fontSize=11;fontColor=#2C5282;align=left;" value="BIS · OFAC · State Dept" vertex="1">
+          <mxGeometry height="18" width="200" x="1080" y="214" as="geometry" />
+        </mxCell>
+        <mxCell id="table-bg" parent="1" style="rounded=8;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D8DEE8;shadow=1;" value="" vertex="1">
+          <mxGeometry height="580" width="920" x="24" y="276" as="geometry" />
+        </mxCell>
+        <mxCell id="table-title" parent="1" style="text;html=1;fontStyle=1;fontSize=14;fontColor=#1B2B4B;align=left;" value="Recent Screening Activity" vertex="1">
+          <mxGeometry height="24" width="360" x="44" y="292" as="geometry" />
+        </mxCell>
+        <mxCell id="table-search" parent="1" style="rounded=4;whiteSpace=wrap;html=1;fillColor=#F4F6FA;strokeColor=#D8DEE8;fontSize=12;fontColor=#718096;align=left;" value="[ 🔍 Search by name, country, list... ]" vertex="1">
+          <mxGeometry height="28" width="300" x="620" y="290" as="geometry" />
+        </mxCell>
+        <mxCell id="thead-bg" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F4F6FA;strokeColor=#D8DEE8;" value="" vertex="1">
+          <mxGeometry height="36" width="920" x="24" y="328" as="geometry" />
+        </mxCell>
+        <mxCell id="thead" parent="1" style="text;html=1;fontSize=11;fontStyle=1;fontColor=#4A5568;align=left;" value="Entity Name                     Country    List Hit                    Match Score    Status              Screened At           Action" vertex="1">
+          <mxGeometry height="20" width="880" x="44" y="336" as="geometry" />
+        </mxCell>
+        <mxCell id="row1-bg" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF5F5;strokeColor=#FED7D7;" value="" vertex="1">
+          <mxGeometry height="40" width="920" x="24" y="364" as="geometry" />
+        </mxCell>
+        <mxCell id="row1" parent="1" style="text;html=1;fontSize=12;fontColor=#C53030;align=left;" value="Huawei Technologies Co. Ltd    CN         BIS Entity List             96%            ● HIT               2026-07-06 09:14      [ Review ]" vertex="1">
+          <mxGeometry height="20" width="880" x="44" y="374" as="geometry" />
+        </mxCell>
+        <mxCell id="row2-bg" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFBEB;strokeColor=#FEFCBF;" value="" vertex="1">
+          <mxGeometry height="40" width="920" x="24" y="404" as="geometry" />
+        </mxCell>
+        <mxCell id="row2" parent="1" style="text;html=1;fontSize=12;fontColor=#975A16;align=left;" value="China Ocean Shipping Group     CN         BIS MEU List                79%            ◐ REVIEW             2026-07-06 09:08      [ Review ]" vertex="1">
+          <mxGeometry height="20" width="880" x="44" y="414" as="geometry" />
+        </mxCell>
+        <mxCell id="row3-bg" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E2E8F0;" value="" vertex="1">
+          <mxGeometry height="40" width="920" x="24" y="444" as="geometry" />
+        </mxCell>
+        <mxCell id="row3" parent="1" style="text;html=1;fontSize=12;fontColor=#276749;align=left;" value="Sembcorp Marine Ltd            SG         —                           —              ✓ CLEAR              2026-07-06 09:02      [ Detail ]" vertex="1">
+          <mxGeometry height="20" width="880" x="44" y="454" as="geometry" />
+        </mxCell>
+        <mxCell id="row4-bg" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFBEB;strokeColor=#FEFCBF;" value="" vertex="1">
+          <mxGeometry height="40" width="920" x="24" y="484" as="geometry" />
+        </mxCell>
+        <mxCell id="row4" parent="1" style="text;html=1;fontSize=12;fontColor=#975A16;align=left;" value="Rosneft Trading SA             RU         OFAC SDN List               83%            ◐ REVIEW             2026-07-06 08:55      [ Review ]" vertex="1">
+          <mxGeometry height="20" width="880" x="44" y="494" as="geometry" />
+        </mxCell>
+        <mxCell id="row5-bg" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E2E8F0;" value="" vertex="1">
+          <mxGeometry height="40" width="920" x="24" y="524" as="geometry" />
+        </mxCell>
+        <mxCell id="row5" parent="1" style="text;html=1;fontSize=12;fontColor=#276749;align=left;" value="Keppel Infrastructure Trust    SG         —                           —              ✓ CLEAR              2026-07-06 08:44      [ Detail ]" vertex="1">
+          <mxGeometry height="20" width="880" x="44" y="534" as="geometry" />
+        </mxCell>
+        <mxCell id="row6-bg" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF5F5;strokeColor=#FED7D7;" value="" vertex="1">
+          <mxGeometry height="40" width="920" x="24" y="564" as="geometry" />
+        </mxCell>
+        <mxCell id="row6" parent="1" style="text;html=1;fontSize=12;fontColor=#C53030;align=left;" value="Sberbank of Russia             RU         OFAC SDN + BIS Entity       99%            ● HIT               2026-07-06 08:31      [ Review ]" vertex="1">
+          <mxGeometry height="20" width="880" x="44" y="574" as="geometry" />
+        </mxCell>
+        <mxCell id="row7-bg" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E2E8F0;" value="" vertex="1">
+          <mxGeometry height="40" width="920" x="24" y="604" as="geometry" />
+        </mxCell>
+        <mxCell id="row7" parent="1" style="text;html=1;fontSize=12;fontColor=#276749;align=left;" value="Petrobras SA                   BR         —                           —              ✓ CLEAR              2026-07-06 08:18      [ Detail ]" vertex="1">
+          <mxGeometry height="20" width="880" x="44" y="614" as="geometry" />
+        </mxCell>
+        <mxCell id="pagination" parent="1" style="text;html=1;fontSize=12;fontColor=#4A5568;align=center;" value="← Previous    Page 1 of 48    Next →" vertex="1">
+          <mxGeometry height="24" width="920" x="24" y="820" as="geometry" />
+        </mxCell>
+        <mxCell id="sidebar-bg" parent="1" style="rounded=8;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D8DEE8;shadow=1;" value="" vertex="1">
+          <mxGeometry height="580" width="340" x="964" y="276" as="geometry" />
+        </mxCell>
+        <mxCell id="sidebar-title" parent="1" style="text;html=1;fontStyle=1;fontSize=14;fontColor=#975A16;align=left;" value="⚠️  Review Queue  (23)" vertex="1">
+          <mxGeometry height="24" width="280" x="984" y="292" as="geometry" />
+        </mxCell>
+        <mxCell id="q1-bg" parent="1" style="rounded=6;whiteSpace=wrap;html=1;fillColor=#FFFBEB;strokeColor=#F6AD55;" value="" vertex="1">
+          <mxGeometry height="68" width="308" x="980" y="326" as="geometry" />
+        </mxCell>
+        <mxCell id="q1-name" parent="1" style="text;html=1;fontStyle=1;fontSize=12;fontColor=#1B2B4B;align=left;" value="China Ocean Shipping Group" vertex="1">
+          <mxGeometry height="18" width="276" x="996" y="332" as="geometry" />
+        </mxCell>
+        <mxCell id="q1-detail" parent="1" style="text;html=1;fontSize=11;fontColor=#718096;align=left;" value="BIS MEU List · 79% match · CN" vertex="1">
+          <mxGeometry height="16" width="276" x="996" y="350" as="geometry" />
+        </mxCell>
+        <mxCell id="q1-actions" parent="1" style="text;html=1;fontSize=11;fontColor=#2C5282;align=left;" value="[ ✓ Clear ]   [ ✗ Flag ]   [ → Detail ]" vertex="1">
+          <mxGeometry height="18" width="276" x="996" y="370" as="geometry" />
+        </mxCell>
+        <mxCell id="q2-bg" parent="1" style="rounded=6;whiteSpace=wrap;html=1;fillColor=#FFFBEB;strokeColor=#F6AD55;" value="" vertex="1">
+          <mxGeometry height="68" width="308" x="980" y="404" as="geometry" />
+        </mxCell>
+        <mxCell id="q2-name" parent="1" style="text;html=1;fontStyle=1;fontSize=12;fontColor=#1B2B4B;align=left;" value="Rosneft Trading SA" vertex="1">
+          <mxGeometry height="18" width="276" x="996" y="410" as="geometry" />
+        </mxCell>
+        <mxCell id="q2-detail" parent="1" style="text;html=1;fontSize=11;fontColor=#718096;align=left;" value="OFAC SDN List · 83% match · RU" vertex="1">
+          <mxGeometry height="16" width="276" x="996" y="428" as="geometry" />
+        </mxCell>
+        <mxCell id="q2-actions" parent="1" style="text;html=1;fontSize=11;fontColor=#2C5282;align=left;" value="[ ✓ Clear ]   [ ✗ Flag ]   [ → Detail ]" vertex="1">
+          <mxGeometry height="18" width="276" x="996" y="448" as="geometry" />
+        </mxCell>
+        <mxCell id="q3-bg" parent="1" style="rounded=6;whiteSpace=wrap;html=1;fillColor=#FFFBEB;strokeColor=#F6AD55;" value="" vertex="1">
+          <mxGeometry height="68" width="308" x="980" y="482" as="geometry" />
+        </mxCell>
+        <mxCell id="q3-name" parent="1" style="text;html=1;fontStyle=1;fontSize=12;fontColor=#1B2B4B;align=left;" value="CNOOC Ltd" vertex="1">
+          <mxGeometry height="18" width="276" x="996" y="488" as="geometry" />
+        </mxCell>
+        <mxCell id="q3-detail" parent="1" style="text;html=1;fontSize=11;fontColor=#718096;align=left;" value="BIS Entity List · 74% match · CN" vertex="1">
+          <mxGeometry height="16" width="276" x="996" y="506" as="geometry" />
+        </mxCell>
+        <mxCell id="q3-actions" parent="1" style="text;html=1;fontSize=11;fontColor=#2C5282;align=left;" value="[ ✓ Clear ]   [ ✗ Flag ]   [ → Detail ]" vertex="1">
+          <mxGeometry height="18" width="276" x="996" y="526" as="geometry" />
+        </mxCell>
+        <mxCell id="queue-more" parent="1" style="text;html=1;fontSize=12;fontColor=#2C5282;align=center;" value="+ 20 more items →  [ View All ]" vertex="1">
+          <mxGeometry height="24" width="340" x="964" y="570" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="screen-entity" name="2. Screen Entity">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" pageWidth="1400" pageHeight="900">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <!-- NAV -->
+        <mxCell id="nav" value="" style="rounded=0;fillColor=#1B2B4B;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="0" y="0" width="1400" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="nav-logo2" value="🛡 Keppel Sentinel" style="text;html=1;fontStyle=1;fontSize=16;fontColor=#FFFFFF;align=left;" vertex="1" parent="1">
+          <mxGeometry x="24" y="14" width="220" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="nav-links2" value="Dashboard   |   Screen Entity ◀   |   Bulk Sync   |   Review Queue   |   Audit Log" style="text;html=1;fontSize=13;fontColor=#FFFFFF;align=left;" vertex="1" parent="1">
+          <mxGeometry x="280" y="18" width="660" height="22" as="geometry" />
+        </mxCell>
+        <!-- TITLE -->
+        <mxCell id="se-title" value="Screen an Entity" style="text;html=1;fontStyle=1;fontSize=20;fontColor=#1B2B4B;align=left;" vertex="1" parent="1">
+          <mxGeometry x="24" y="78" width="400" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="se-sub" value="Check a counterparty, vendor, or individual against all 11 US Government export control and sanctions lists." style="text;html=1;fontSize=13;fontColor=#718096;align=left;" vertex="1" parent="1">
+          <mxGeometry x="24" y="112" width="700" height="22" as="geometry" />
+        </mxCell>
+        <!-- SEARCH FORM CARD -->
+        <mxCell id="form-bg" value="" style="rounded=8;fillColor=#FFFFFF;strokeColor=#D8DEE8;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="24" y="150" width="680" height="320" as="geometry" />
+        </mxCell>
+        <!-- Entity Name -->
+        <mxCell id="lbl-name" value="Entity Name *" style="text;html=1;fontStyle=1;fontSize=12;fontColor=#4A5568;align=left;" vertex="1" parent="1">
+          <mxGeometry x="48" y="170" width="200" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="input-name" value="e.g.  Huawei Technologies" style="rounded=4;fillColor=#F4F6FA;strokeColor=#D8DEE8;fontSize=13;fontColor=#A0AEC0;align=left;" vertex="1" parent="1">
+          <mxGeometry x="48" y="192" width="612" height="38" as="geometry" />
+        </mxCell>
+        <!-- Country + AKA row -->
+        <mxCell id="lbl-country" value="Country (ISO-2)" style="text;html=1;fontStyle=1;fontSize=12;fontColor=#4A5568;align=left;" vertex="1" parent="1">
+          <mxGeometry x="48" y="246" width="180" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="input-country" value="[ CN ▼ ]" style="rounded=4;fillColor=#F4F6FA;strokeColor=#D8DEE8;fontSize=13;fontColor=#4A5568;align=left;" vertex="1" parent="1">
+          <mxGeometry x="48" y="268" width="160" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl-aka" value="Also Known As (optional)" style="text;html=1;fontStyle=1;fontSize=12;fontColor=#4A5568;align=left;" vertex="1" parent="1">
+          <mxGeometry x="240" y="246" width="200" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="input-aka" value="e.g.  华为技术" style="rounded=4;fillColor=#F4F6FA;strokeColor=#D8DEE8;fontSize=13;fontColor=#A0AEC0;align=left;" vertex="1" parent="1">
+          <mxGeometry x="240" y="268" width="420" height="38" as="geometry" />
+        </mxCell>
+        <!-- Sources multiselect -->
+        <mxCell id="lbl-sources" value="Lists to Check" style="text;html=1;fontStyle=1;fontSize=12;fontColor=#4A5568;align=left;" vertex="1" parent="1">
+          <mxGeometry x="48" y="322" width="200" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="chip-el" value="✓ BIS Entity List" style="rounded=12;fillColor=#EBF8FF;strokeColor=#63B3ED;fontSize=11;fontColor=#2C5282;" vertex="1" parent="1">
+          <mxGeometry x="48" y="344" width="120" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="chip-dpl" value="✓ BIS Denied Persons" style="rounded=12;fillColor=#EBF8FF;strokeColor=#63B3ED;fontSize=11;fontColor=#2C5282;" vertex="1" parent="1">
+          <mxGeometry x="178" y="344" width="140" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="chip-uvl" value="✓ BIS Unverified" style="rounded=12;fillColor=#EBF8FF;strokeColor=#63B3ED;fontSize=11;fontColor=#2C5282;" vertex="1" parent="1">
+          <mxGeometry x="328" y="344" width="110" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="chip-sdn" value="✓ OFAC SDN" style="rounded=12;fillColor=#EBF8FF;strokeColor=#63B3ED;fontSize=11;fontColor=#2C5282;" vertex="1" parent="1">
+          <mxGeometry x="448" y="344" width="100" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="chip-itar" value="+ State ITAR" style="rounded=12;fillColor=#F4F6FA;strokeColor=#D8DEE8;fontSize=11;fontColor=#718096;" vertex="1" parent="1">
+          <mxGeometry x="558" y="344" width="90" height="26" as="geometry" />
+        </mxCell>
+        <!-- Fuzzy toggle -->
+        <mxCell id="lbl-fuzzy" value="[  ✓  ]  Fuzzy / partial name matching  (recommended — catches transliterations and abbreviations)" style="text;html=1;fontSize=12;fontColor=#4A5568;align=left;" vertex="1" parent="1">
+          <mxGeometry x="48" y="386" width="620" height="20" as="geometry" />
+        </mxCell>
+        <!-- Submit button -->
+        <mxCell id="btn-screen" value="Screen Now →" style="rounded=6;fillColor=#1B2B4B;strokeColor=none;fontStyle=1;fontSize=14;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="48" y="416" width="180" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="btn-clear" value="Clear Form" style="rounded=6;fillColor=#F4F6FA;strokeColor=#D8DEE8;fontSize=13;fontColor=#718096;" vertex="1" parent="1">
+          <mxGeometry x="244" y="416" width="120" height="40" as="geometry" />
+        </mxCell>
+        <!-- RESULTS PANEL -->
+        <mxCell id="results-bg" value="" style="rounded=8;fillColor=#FFFFFF;strokeColor=#D8DEE8;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="24" y="490" width="680" height="370" as="geometry" />
+        </mxCell>
+        <mxCell id="results-header-bg" value="" style="rounded=0;fillColor=#FFF5F5;strokeColor=#FC8181;" vertex="1" parent="1">
+          <mxGeometry x="24" y="490" width="680" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="results-badge" value="● CONFIRMED HIT" style="text;html=1;fontStyle=1;fontSize=16;fontColor=#C53030;align=left;" vertex="1" parent="1">
+          <mxGeometry x="48" y="504" width="280" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="results-entity" value="Huawei Technologies Co. Ltd   ·   China (CN)   ·   Screened: 2026-07-06 09:14" style="text;html=1;fontSize=12;fontColor=#718096;align=right;" vertex="1" parent="1">
+          <mxGeometry x="48" y="506" width="636" height="18" as="geometry" />
+        </mxCell>
+        <!-- Hit Card 1 -->
+        <mxCell id="hit1-bg" value="" style="rounded=6;fillColor=#FFF5F5;strokeColor=#FC8181;" vertex="1" parent="1">
+          <mxGeometry x="44" y="554" width="640" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="hit1-tag" value="BIS ENTITY LIST" style="rounded=12;fillColor=#C53030;strokeColor=none;fontSize=10;fontStyle=1;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="60" y="562" width="110" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="hit1-score" value="Match Score: 96%" style="text;html=1;fontStyle=1;fontSize=13;fontColor=#C53030;align=right;" vertex="1" parent="1">
+          <mxGeometry x="500" y="562" width="180" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="hit1-name" value="Huawei Technologies Co., Ltd." style="text;html=1;fontStyle=1;fontSize=14;fontColor=#1B2B4B;align=left;" vertex="1" parent="1">
+          <mxGeometry x="60" y="584" width="400" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="hit1-detail" value="License Requirement: For All Items  ·  Policy: Review Policy D  ·  FR Notice: 84 FR 22961  ·  Added: 2019-05-16" style="text;html=1;fontSize=11;fontColor=#718096;align=left;" vertex="1" parent="1">
+          <mxGeometry x="60" y="606" width="620" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="hit1-actions" value="[ View Federal Register ]   [ Add to Case ]   [ Download Record ]" style="text;html=1;fontSize=11;fontColor=#2C5282;align=left;" vertex="1" parent="1">
+          <mxGeometry x="60" y="628" width="460" height="18" as="geometry" />
+        </mxCell>
+        <!-- Audit note -->
+        <mxCell id="audit-note" value="📋  This result has been logged to the Sentinel audit trail.  Ref: SCR-20260706-00814" style="rounded=4;fillColor=#EBF8FF;strokeColor=#63B3ED;fontSize=12;fontColor=#2C5282;align=left;" vertex="1" parent="1">
+          <mxGeometry x="44" y="664" width="640" height="32" as="geometry" />
+        </mxCell>
+        <!-- Recommended actions -->
+        <mxCell id="rec-title" value="Recommended Actions" style="text;html=1;fontStyle=1;fontSize=13;fontColor=#1B2B4B;align=left;" vertex="1" parent="1">
+          <mxGeometry x="44" y="708" width="280" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="rec-1" value="1.  Escalate to Compliance Officer for review" style="text;html=1;fontSize=12;fontColor=#4A5568;align=left;" vertex="1" parent="1">
+          <mxGeometry x="44" y="730" width="500" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="rec-2" value="2.  Do not proceed with transaction until cleared" style="text;html=1;fontSize=12;fontColor=#4A5568;align=left;" vertex="1" parent="1">
+          <mxGeometry x="44" y="750" width="500" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="rec-3" value="3.  Apply for BIS license if transaction is to proceed" style="text;html=1;fontSize=12;fontColor=#4A5568;align=left;" vertex="1" parent="1">
+          <mxGeometry x="44" y="770" width="500" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="btn-escalate" value="Escalate to Compliance →" style="rounded=6;fillColor=#C53030;strokeColor=none;fontStyle=1;fontSize=13;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="44" y="808" width="240" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="btn-case" value="Open Case File" style="rounded=6;fillColor=#F4F6FA;strokeColor=#D8DEE8;fontSize=13;fontColor=#4A5568;" vertex="1" parent="1">
+          <mxGeometry x="300" y="808" width="160" height="40" as="geometry" />
+        </mxCell>
+        <!-- RIGHT: HOW IT WORKS PANEL -->
+        <mxCell id="how-bg" value="" style="rounded=8;fillColor=#F4F6FA;strokeColor=#D8DEE8;" vertex="1" parent="1">
+          <mxGeometry x="730" y="150" width="340" height="320" as="geometry" />
+        </mxCell>
+        <mxCell id="how-title" value="How screening works" style="text;html=1;fontStyle=1;fontSize=13;fontColor=#1B2B4B;align=left;" vertex="1" parent="1">
+          <mxGeometry x="754" y="166" width="292" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="how-step1" value="1.  Name is sent to the ITA CSL API with fuzzy matching enabled" style="text;html=1;fontSize=12;fontColor=#4A5568;align=left;" vertex="1" parent="1">
+          <mxGeometry x="754" y="196" width="300" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="how-step2" value="2.  All 11 US Government lists are checked simultaneously" style="text;html=1;fontSize=12;fontColor=#4A5568;align=left;" vertex="1" parent="1">
+          <mxGeometry x="754" y="236" width="300" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="how-step3" value="3.  Match score ≥ 85% = HIT, 60–84% = REVIEW, &lt;60% = CLEAR" style="text;html=1;fontSize=12;fontColor=#4A5568;align=left;" vertex="1" parent="1">
+          <mxGeometry x="754" y="276" width="300" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="how-step4" value="4.  All results, including CLEARs, are logged to Sentinel DB for audit" style="text;html=1;fontSize=12;fontColor=#4A5568;align=left;" vertex="1" parent="1">
+          <mxGeometry x="754" y="316" width="300" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="how-step5" value="5.  HITs trigger an escalation workflow; analyst reviews and resolves" style="text;html=1;fontSize=12;fontColor=#4A5568;align=left;" vertex="1" parent="1">
+          <mxGeometry x="754" y="356" width="300" height="32" as="geometry" />
+        </mxCell>
+        <!-- Lists covered panel -->
+        <mxCell id="lists-bg" value="" style="rounded=8;fillColor=#FFFFFF;strokeColor=#D8DEE8;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="730" y="490" width="340" height="370" as="geometry" />
+        </mxCell>
+        <mxCell id="lists-title" value="Lists Covered (11)" style="text;html=1;fontStyle=1;fontSize=13;fontColor=#1B2B4B;align=left;" vertex="1" parent="1">
+          <mxGeometry x="754" y="506" width="292" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="bis-header" value="🏛  Bureau of Industry &amp; Security (BIS)" style="text;html=1;fontStyle=1;fontSize=11;fontColor=#2C5282;align=left;" vertex="1" parent="1">
+          <mxGeometry x="754" y="534" width="300" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="bis-lists" value="• Entity List (EL) • Denied Persons List (DPL) • Unverified List (UVL) • Military End-User List (MEU)" style="text;html=1;fontSize=11;fontColor=#4A5568;align=left;" vertex="1" parent="1">
+          <mxGeometry x="754" y="554" width="300" height="68" as="geometry" />
+        </mxCell>
+        <mxCell id="ofac-header" value="🏛  OFAC / Treasury" style="text;html=1;fontStyle=1;fontSize=11;fontColor=#2C5282;align=left;" vertex="1" parent="1">
+          <mxGeometry x="754" y="628" width="300" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="ofac-lists" value="• SDN List  •  FSE List  •  SSI List  •  NS-PLC" style="text;html=1;fontSize=11;fontColor=#4A5568;align=left;" vertex="1" parent="1">
+          <mxGeometry x="754" y="648" width="300" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="state-header" value="🏛  State Department" style="text;html=1;fontStyle=1;fontSize=11;fontColor=#2C5282;align=left;" vertex="1" parent="1">
+          <mxGeometry x="754" y="678" width="300" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="state-lists" value="• ITAR Debarred  •  Nonproliferation Sanctions  •  ISN" style="text;html=1;fontSize=11;fontColor=#4A5568;align=left;" vertex="1" parent="1">
+          <mxGeometry x="754" y="698" width="300" height="18" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="bulk-sync" name="3. Bulk Sync from DJ RCTP">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" pageWidth="1400" pageHeight="900">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <!-- NAV -->
+        <mxCell id="nav3" value="" style="rounded=0;fillColor=#1B2B4B;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="0" y="0" width="1400" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="nav-logo3" value="🛡 Keppel Sentinel" style="text;html=1;fontStyle=1;fontSize=16;fontColor=#FFFFFF;align=left;" vertex="1" parent="1">
+          <mxGeometry x="24" y="14" width="220" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="nav-links3" value="Dashboard   |   Screen Entity   |   Bulk Sync ◀   |   Review Queue   |   Audit Log" style="text;html=1;fontSize=13;fontColor=#FFFFFF;align=left;" vertex="1" parent="1">
+          <mxGeometry x="280" y="18" width="660" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="bs-title" value="Bulk Sync — DJ RCTP → Sentinel DB" style="text;html=1;fontStyle=1;fontSize=20;fontColor=#1B2B4B;align=left;" vertex="1" parent="1">
+          <mxGeometry x="24" y="78" width="600" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="bs-sub" value="Pull entity data from Dow Jones RCTP and run compliance screening on all records before writing to Sentinel." style="text;html=1;fontSize=13;fontColor=#718096;align=left;" vertex="1" parent="1">
+          <mxGeometry x="24" y="112" width="800" height="22" as="geometry" />
+        </mxCell>
+        <!-- PIPELINE DIAGRAM (flow boxes) -->
+        <mxCell id="pipe-bg" value="" style="rounded=8;fillColor=#F4F6FA;strokeColor=#D8DEE8;" vertex="1" parent="1">
+          <mxGeometry x="24" y="150" width="1340" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe1" value="DJ RCTP API (Source)" style="rounded=8;fillColor=#1B2B4B;strokeColor=none;fontStyle=1;fontSize=13;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="60" y="180" width="160" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow1" value="fetch entities ▶" style="text;html=1;fontSize=11;fontColor=#718096;align=center;" vertex="1" parent="1">
+          <mxGeometry x="230" y="203" width="120" height="14" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe2" value="MCP Fetch Tool" style="rounded=8;fillColor=#2C5282;strokeColor=none;fontStyle=1;fontSize=13;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="360" y="180" width="160" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow2" value="screen each ▶" style="text;html=1;fontSize=11;fontColor=#718096;align=center;" vertex="1" parent="1">
+          <mxGeometry x="530" y="203" width="120" height="14" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe3" value="CSL API (ITA / BIS)" style="rounded=8;fillColor=#276749;strokeColor=none;fontStyle=1;fontSize=13;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="660" y="180" width="160" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow3" value="tag results ▶" style="text;html=1;fontSize=11;fontColor=#718096;align=center;" vertex="1" parent="1">
+          <mxGeometry x="830" y="203" width="120" height="14" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe4" value="Compliance Tagger" style="rounded=8;fillColor=#744210;strokeColor=none;fontStyle=1;fontSize=13;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="960" y="180" width="160" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow4" value="write ▶" style="text;html=1;fontSize=11;fontColor=#718096;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1130" y="203" width="80" height="14" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe5" value="Sentinel DB (Keppel)" style="rounded=8;fillColor=#C53030;strokeColor=none;fontStyle=1;fontSize=13;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="1220" y="180" width="120" height="60" as="geometry" />
+        </mxCell>
+        <!-- SYNC CONFIG CARD -->
+        <mxCell id="config-bg" value="" style="rounded=8;fillColor=#FFFFFF;strokeColor=#D8DEE8;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="24" y="290" width="480" height="260" as="geometry" />
+        </mxCell>
+        <mxCell id="config-title" value="Sync Configuration" style="text;html=1;fontStyle=1;fontSize=14;fontColor=#1B2B4B;align=left;" vertex="1" parent="1">
+          <mxGeometry x="44" y="306" width="280" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl-scope" value="Entity Scope" style="text;html=1;fontStyle=1;fontSize=12;fontColor=#4A5568;align=left;" vertex="1" parent="1">
+          <mxGeometry x="44" y="338" width="200" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="input-scope" value="[ All Counterparties ▼ ]" style="rounded=4;fillColor=#F4F6FA;strokeColor=#D8DEE8;fontSize=13;fontColor=#4A5568;align=left;" vertex="1" parent="1">
+          <mxGeometry x="44" y="358" width="200" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl-since" value="Changed Since" style="text;html=1;fontStyle=1;fontSize=12;fontColor=#4A5568;align=left;" vertex="1" parent="1">
+          <mxGeometry x="264" y="338" width="200" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="input-since" value="[ 2026-07-05  📅 ]" style="rounded=4;fillColor=#F4F6FA;strokeColor=#D8DEE8;fontSize=13;fontColor=#4A5568;align=left;" vertex="1" parent="1">
+          <mxGeometry x="264" y="358" width="200" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl-batch" value="Batch Size" style="text;html=1;fontStyle=1;fontSize=12;fontColor=#4A5568;align=left;" vertex="1" parent="1">
+          <mxGeometry x="44" y="406" width="200" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="input-batch" value="[ 50 ▼ ]" style="rounded=4;fillColor=#F4F6FA;strokeColor=#D8DEE8;fontSize=13;fontColor=#4A5568;align=left;" vertex="1" parent="1">
+          <mxGeometry x="44" y="426" width="120" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl-pause" value="[  ✓  ]  Pause on first HIT and notify Compliance Officer" style="text;html=1;fontSize=12;fontColor=#4A5568;align=left;" vertex="1" parent="1">
+          <mxGeometry x="44" y="474" width="420" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl-dryrun" value="[     ]  Dry run — screen only, do not write to Sentinel" style="text;html=1;fontSize=12;fontColor=#4A5568;align=left;" vertex="1" parent="1">
+          <mxGeometry x="44" y="496" width="420" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="btn-run" value="▶  Run Sync Now" style="rounded=6;fillColor=#1B2B4B;strokeColor=none;fontStyle=1;fontSize=14;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="44" y="520" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="btn-schedule" value="🕐  Schedule" style="rounded=6;fillColor=#F4F6FA;strokeColor=#D8DEE8;fontSize=13;fontColor=#4A5568;" vertex="1" parent="1">
+          <mxGeometry x="260" y="520" width="130" height="40" as="geometry" />
+        </mxCell>
+        <!-- LIVE PROGRESS CARD -->
+        <mxCell id="prog-bg" value="" style="rounded=8;fillColor=#FFFFFF;strokeColor=#D8DEE8;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="524" y="290" width="860" height="260" as="geometry" />
+        </mxCell>
+        <mxCell id="prog-title" value="Sync Progress  —  Job #SYN-20260706-003" style="text;html=1;fontStyle=1;fontSize=14;fontColor=#1B2B4B;align=left;" vertex="1" parent="1">
+          <mxGeometry x="544" y="306" width="480" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="prog-status" value="● Running" style="text;html=1;fontStyle=1;fontSize=13;fontColor=#276749;align=right;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="306" width="260" height="22" as="geometry" />
+        </mxCell>
+        <!-- Progress bar -->
+        <mxCell id="pbar-bg" value="" style="rounded=4;fillColor=#E2E8F0;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="544" y="342" width="820" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="pbar-fill" value="" style="rounded=4;fillColor=#2C5282;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="544" y="342" width="547" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="pbar-pct" value="67%  —  1,340 of 2,000 entities processed  ·  ETA 2m 14s" style="text;html=1;fontSize=12;fontColor=#4A5568;align=left;" vertex="1" parent="1">
+          <mxGeometry x="544" y="368" width="600" height="18" as="geometry" />
+        </mxCell>
+        <!-- Live counters -->
+        <mxCell id="cnt-clear" value="✓  CLEAR:  1,298" style="text;html=1;fontStyle=1;fontSize=14;fontColor=#276749;align=left;" vertex="1" parent="1">
+          <mxGeometry x="544" y="400" width="200" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="cnt-review" value="◐  REVIEW:  36" style="text;html=1;fontStyle=1;fontSize=14;fontColor=#975A16;align=left;" vertex="1" parent="1">
+          <mxGeometry x="760" y="400" width="180" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="cnt-hit" value="●  HIT:  6" style="text;html=1;fontStyle=1;fontSize=14;fontColor=#C53030;align=left;" vertex="1" parent="1">
+          <mxGeometry x="960" y="400" width="160" height="24" as="geometry" />
+        </mxCell>
+        <!-- Live log -->
+        <mxCell id="log-bg" value="" style="rounded=4;fillColor=#1B2B4B;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="544" y="436" width="820" height="96" as="geometry" />
+        </mxCell>
+        <mxCell id="log-text" value="09:14:32  CLEAR    Sembcorp Marine Ltd (SG)  — no match 09:14:33  HIT      Huawei Technologies (CN)  — BIS Entity List 96%  ⚠ Paused, notifying compliance... 09:14:35  CLEAR    BP Singapore Pte Ltd (SG)  — no match 09:14:36  REVIEW   CNOOC Ltd (CN)  — BIS Entity List 74%  → queued for review 09:14:37  CLEAR    Keppel Infrastructure Trust (SG)  — no match" style="text;html=1;fontSize=11;fontColor=#68D391;fontFamily=Courier New;align=left;" vertex="1" parent="1">
+          <mxGeometry x="556" y="444" width="796" height="80" as="geometry" />
+        </mxCell>
+        <!-- HISTORY TABLE -->
+        <mxCell id="hist-bg" value="" style="rounded=8;fillColor=#FFFFFF;strokeColor=#D8DEE8;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="24" y="570" width="1340" height="280" as="geometry" />
+        </mxCell>
+        <mxCell id="hist-title" value="Recent Sync Jobs" style="text;html=1;fontStyle=1;fontSize=14;fontColor=#1B2B4B;align=left;" vertex="1" parent="1">
+          <mxGeometry x="44" y="586" width="300" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="hist-thead-bg" value="" style="fillColor=#F4F6FA;strokeColor=#D8DEE8;" vertex="1" parent="1">
+          <mxGeometry x="24" y="618" width="1340" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="hist-thead" value="Job ID                 Started              Entities     Clear    Review    HITs    Duration    Status         Action" style="text;html=1;fontStyle=1;fontSize=11;fontColor=#4A5568;align=left;" vertex="1" parent="1">
+          <mxGeometry x="44" y="626" width="1300" height="16" as="geometry" />
+        </mxCell>
+        <mxCell id="hist-r1" value="SYN-20260706-003    09:14:28  Today        2,000      1,298      36        6      ~3m         ● Running      [ View ]" style="text;html=1;fontSize=12;fontColor=#1B2B4B;align=left;" vertex="1" parent="1">
+          <mxGeometry x="44" y="664" width="1300" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="hist-r2" value="SYN-20260705-008    18:00:01  Yesterday    2,000      1,961      31        8      4m 12s      ✓ Complete     [ View ]" style="text;html=1;fontSize=12;fontColor=#4A5568;align=left;" vertex="1" parent="1">
+          <mxGeometry x="44" y="694" width="1300" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="hist-r3" value="SYN-20260704-011    18:00:03  2 days ago   2,000      1,978      18        4      3m 58s      ✓ Complete     [ View ]" style="text;html=1;fontSize=12;fontColor=#4A5568;align=left;" vertex="1" parent="1">
+          <mxGeometry x="44" y="724" width="1300" height="20" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="hit-review" name="4. Hit Review Workflow">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" pageWidth="1400" pageHeight="900">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <!-- NAV -->
+        <mxCell id="nav4" value="" style="rounded=0;fillColor=#1B2B4B;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="0" y="0" width="1400" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="nav-logo4" value="🛡 Keppel Sentinel" style="text;html=1;fontStyle=1;fontSize=16;fontColor=#FFFFFF;align=left;" vertex="1" parent="1">
+          <mxGeometry x="24" y="14" width="220" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="nav-links4" value="Dashboard   |   Screen Entity   |   Bulk Sync   |   Review Queue ◀   |   Audit Log" style="text;html=1;fontSize=13;fontColor=#FFFFFF;align=left;" vertex="1" parent="1">
+          <mxGeometry x="280" y="18" width="660" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="hr-back" value="← Review Queue (23 items)" style="text;html=1;fontSize=13;fontColor=#2C5282;align=left;" vertex="1" parent="1">
+          <mxGeometry x="24" y="72" width="280" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="hr-breadcrumb" value="Case: SCR-20260706-00812  ·  POSSIBLE MATCH  ·  Assigned to: Brijesh P." style="text;html=1;fontSize=13;fontColor=#718096;align=left;" vertex="1" parent="1">
+          <mxGeometry x="24" y="92" width="700" height="20" as="geometry" />
+        </mxCell>
+        <!-- ENTITY HEADER -->
+        <mxCell id="ent-header" value="" style="rounded=8;fillColor=#FFFBEB;strokeColor=#F6AD55;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="24" y="124" width="920" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="ent-name" value="China Ocean Shipping Group Co., Ltd (COSCO)" style="text;html=1;fontStyle=1;fontSize=20;fontColor=#1B2B4B;align=left;" vertex="1" parent="1">
+          <mxGeometry x="44" y="134" width="700" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="ent-meta" value="Country: China (CN)   ·   DJ RCTP ID: DJ-44912837   ·   Type: Maritime / Shipping   ·   Screened: 2026-07-06 08:55" style="text;html=1;fontSize=12;fontColor=#718096;align=left;" vertex="1" parent="1">
+          <mxGeometry x="44" y="166" width="700" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="ent-status-badge" value="◐  POSSIBLE MATCH  —  79%" style="rounded=6;fillColor=#F6AD55;strokeColor=none;fontStyle=1;fontSize=14;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="770" y="146" width="260" height="36" as="geometry" />
+        </mxCell>
+        <!-- MATCH DETAIL -->
+        <mxCell id="match-bg" value="" style="rounded=8;fillColor=#FFFFFF;strokeColor=#D8DEE8;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="24" y="220" width="920" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="match-title" value="Match Detail — BIS Military End-User (MEU) List" style="text;html=1;fontStyle=1;fontSize=14;fontColor=#1B2B4B;align=left;" vertex="1" parent="1">
+          <mxGeometry x="44" y="236" width="540" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="match-score-badge" value="79% match" style="rounded=6;fillColor=#FFFBEB;strokeColor=#F6AD55;fontStyle=1;fontSize=13;fontColor=#975A16;" vertex="1" parent="1">
+          <mxGeometry x="760" y="234" width="120" height="28" as="geometry" />
+        </mxCell>
+        <!-- Comparison table -->
+        <mxCell id="comp-thead" value="" style="fillColor=#F4F6FA;strokeColor=#D8DEE8;" vertex="1" parent="1">
+          <mxGeometry x="44" y="270" width="880" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="comp-th" value="Field                            Submitted (DJ RCTP)                               CSL Record (BIS MEU)" style="text;html=1;fontStyle=1;fontSize=11;fontColor=#4A5568;align=left;" vertex="1" parent="1">
+          <mxGeometry x="56" y="278" width="860" height="14" as="geometry" />
+        </mxCell>
+        <mxCell id="comp-r1" value="Name                             China Ocean Shipping Group Co., Ltd               COSCO Shipping Holdings Co., Ltd" style="text;html=1;fontSize=12;fontColor=#4A5568;align=left;" vertex="1" parent="1">
+          <mxGeometry x="56" y="308" width="860" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="comp-r2" value="Country                          China (CN)                                        China (CN)  ✓" style="text;html=1;fontSize=12;fontColor=#4A5568;align=left;" vertex="1" parent="1">
+          <mxGeometry x="56" y="330" width="860" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="comp-r3" value="Address                          —  (not provided)                                  No. 1188 Dong Da Ming Road, Shanghai" style="text;html=1;fontSize=12;fontColor=#718096;align=left;" vertex="1" parent="1">
+          <mxGeometry x="56" y="352" width="860" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="comp-r4" value="FR Notice                        —                                                  85 FR 83770 (added 2020-12-22)" style="text;html=1;fontSize=12;fontColor=#4A5568;align=left;" vertex="1" parent="1">
+          <mxGeometry x="56" y="374" width="860" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="comp-r5" value="License Req.                     —                                                  For all items subject to EAR" style="text;html=1;fontSize=12;fontColor=#C53030;align=left;" vertex="1" parent="1">
+          <mxGeometry x="56" y="396" width="860" height="18" as="geometry" />
+        </mxCell>
+        <!-- ANALYST DECISION PANEL -->
+        <mxCell id="decision-bg" value="" style="rounded=8;fillColor=#FFFFFF;strokeColor=#D8DEE8;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="24" y="456" width="920" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="decision-title" value="Analyst Decision" style="text;html=1;fontStyle=1;fontSize=14;fontColor=#1B2B4B;align=left;" vertex="1" parent="1">
+          <mxGeometry x="44" y="472" width="280" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl-notes" value="Review Notes" style="text;html=1;fontStyle=1;fontSize=12;fontColor=#4A5568;align=left;" vertex="1" parent="1">
+          <mxGeometry x="44" y="504" width="200" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="input-notes" value="e.g.  Name similarity is due to corporate restructuring; COSCO is the parent entity. Confirmed this is the same group via DJ RCTP entity lineage. Escalating to Compliance for final determination." style="rounded=4;fillColor=#F4F6FA;strokeColor=#D8DEE8;fontSize=12;fontColor=#4A5568;align=left;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="44" y="524" width="848" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="btn-false-positive" value="✓  Clear — False Positive" style="rounded=6;fillColor=#276749;strokeColor=none;fontStyle=1;fontSize=13;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="44" y="614" width="240" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="btn-confirm-hit" value="✗  Confirm — Genuine Hit" style="rounded=6;fillColor=#C53030;strokeColor=none;fontStyle=1;fontSize=13;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="300" y="614" width="240" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="btn-escalate2" value="↑  Escalate to Senior Compliance" style="rounded=6;fillColor=#F4F6FA;strokeColor=#D8DEE8;fontSize=13;fontColor=#4A5568;" vertex="1" parent="1">
+          <mxGeometry x="556" y="614" width="280" height="40" as="geometry" />
+        </mxCell>
+        <!-- SIDEBAR: Entity Context from DJ -->
+        <mxCell id="dj-bg" value="" style="rounded=8;fillColor=#FFFFFF;strokeColor=#D8DEE8;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="964" y="124" width="420" height="552" as="geometry" />
+        </mxCell>
+        <mxCell id="dj-title" value="📊  Entity Context (from DJ RCTP)" style="text;html=1;fontStyle=1;fontSize=14;fontColor=#1B2B4B;align=left;" vertex="1" parent="1">
+          <mxGeometry x="984" y="140" width="360" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="dj-sect1" value="Corporate Profile" style="text;html=1;fontStyle=1;fontSize=12;fontColor=#2C5282;align=left;" vertex="1" parent="1">
+          <mxGeometry x="984" y="172" width="360" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="dj-p1" value="Parent: COSCO Shipping Holdings Co., Ltd HQ: Shanghai, China Type: State-Owned Enterprise Founded: 1961  ·  Employees: 80,000+" style="text;html=1;fontSize=12;fontColor=#4A5568;align=left;" vertex="1" parent="1">
+          <mxGeometry x="984" y="192" width="380" height="68" as="geometry" />
+        </mxCell>
+        <mxCell id="dj-sect2" value="Known Aliases (DJ RCTP)" style="text;html=1;fontStyle=1;fontSize=12;fontColor=#2C5282;align=left;" vertex="1" parent="1">
+          <mxGeometry x="984" y="270" width="360" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="dj-aliases" value="• COSCO  •  China COSCO Holdings  •  中远海运控股" style="text;html=1;fontSize=12;fontColor=#4A5568;align=left;" vertex="1" parent="1">
+          <mxGeometry x="984" y="290" width="380" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="dj-sect3" value="Previous Screening History" style="text;html=1;fontStyle=1;fontSize=12;fontColor=#2C5282;align=left;" vertex="1" parent="1">
+          <mxGeometry x="984" y="320" width="360" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="dj-hist1" value="2026-06-30  REVIEW  79%  →  Cleared by J.Wong" style="text;html=1;fontSize=11;fontColor=#975A16;align=left;" vertex="1" parent="1">
+          <mxGeometry x="984" y="340" width="380" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="dj-hist2" value="2026-05-15  REVIEW  76%  →  Cleared by J.Wong" style="text;html=1;fontSize=11;fontColor=#975A16;align=left;" vertex="1" parent="1">
+          <mxGeometry x="984" y="360" width="380" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="dj-hist3" value="2026-04-01  REVIEW  74%  →  Cleared by M.Tan" style="text;html=1;fontSize=11;fontColor=#975A16;align=left;" vertex="1" parent="1">
+          <mxGeometry x="984" y="380" width="380" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="dj-note" value="ℹ️  This entity has been reviewed 3 times in the last 90 days and cleared each time. Consider adding to Approved List to reduce future review burden." style="rounded=6;fillColor=#EBF8FF;strokeColor=#63B3ED;fontSize=11;fontColor=#2C5282;align=left;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="984" y="408" width="380" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="dj-sect4" value="Quick Actions" style="text;html=1;fontStyle=1;fontSize=12;fontColor=#2C5282;align=left;" vertex="1" parent="1">
+          <mxGeometry x="984" y="476" width="360" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="dj-btn1" value="+ Add to Approved List" style="rounded=4;fillColor=#F0FFF4;strokeColor=#68D391;fontSize=12;fontColor=#276749;" vertex="1" parent="1">
+          <mxGeometry x="984" y="498" width="180" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="dj-btn2" value="View in DJ RCTP ↗" style="rounded=4;fillColor=#EBF8FF;strokeColor=#63B3ED;fontSize=12;fontColor=#2C5282;" vertex="1" parent="1">
+          <mxGeometry x="1176" y="498" width="180" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="dj-btn3" value="Download Full Entity Report" style="rounded=4;fillColor=#F4F6FA;strokeColor=#D8DEE8;fontSize=12;fontColor=#4A5568;" vertex="1" parent="1">
+          <mxGeometry x="984" y="538" width="372" height="30" as="geometry" />
+        </mxCell>
+        <!-- Navigation between queue items -->
+        <mxCell id="queue-nav" value="←  Previous Case (SCR-00811)               Item 4 of 23               Next Case (SCR-00813)  →" style="text;html=1;fontSize=13;fontColor=#2C5282;align=center;" vertex="1" parent="1">
+          <mxGeometry x="24" y="700" width="920" height="24" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

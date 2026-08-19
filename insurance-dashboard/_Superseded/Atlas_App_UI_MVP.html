@@ -1,0 +1,1652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Atlas — Group Insurance Monitoring System (MVP)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink-950:#18130E;
+    --ink-850:#241C15;
+    --ink-800:#2E2419;
+    --crimson:#E51D37;
+    --crimson-deep:#A81530;
+    --crimson-deeper:#87101F;
+    --crimson-tint:#FBE4E8;
+    --parchment:#C9BFAC;
+    --dusk:#9A8E7A;
+    --dusk-dim:#6E6350;
+    --paper:#F7F4EE;
+    --card:#FFFFFF;
+    --ink:#221C16;
+    --muted:#736A5C;
+    --line:#E7E0D3;
+    --band-low:#1F7A5C; --band-low-bg:#E6F3EC;
+    --band-medium:#C9932E; --band-medium-bg:#FBF1DE;
+    --band-high:#C9642E; --band-high-bg:#FBE9DE;
+    --band-critical:#8B2E22; --band-critical-bg:#F5E2DA;
+    --shadow: 0 1px 2px rgba(30,20,10,.05), 0 8px 22px -12px rgba(30,20,10,.15);
+    --sidebar-w:236px;
+    --topbar-h:60px;
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; background:var(--paper); color:var(--ink); font-family:'Inter',system-ui,sans-serif; -webkit-font-smoothing:antialiased; }
+  h1,h2,h3,.serif{ font-family:'Source Serif 4',Georgia,serif; }
+  .mono{ font-family:'JetBrains Mono',monospace; }
+  button{ font-family:'Inter',sans-serif; cursor:pointer; }
+  input,select{ font-family:'Inter',sans-serif; }
+
+  /* ================= APP SHELL ================= */
+  .app{ display:flex; min-height:100vh; }
+
+  /* ---- sidebar ---- */
+  .sidebar{
+    width:var(--sidebar-w); flex:none; background:var(--ink-950); color:#fff;
+    display:flex; flex-direction:column; position:sticky; top:0; height:100vh;
+  }
+  .sb-brand{ display:flex; align-items:center; gap:10px; padding:20px 18px 18px; }
+  .sb-mark{ width:30px; height:30px; border-radius:8px; flex:none;
+    background:var(--crimson-deep); display:flex; align-items:center; justify-content:center; }
+  .sb-mark svg{ width:17px; height:17px; }
+  .sb-title{ font-family:'Source Serif 4',serif; font-weight:600; font-size:16.5px; }
+  .sb-sub{ font-family:'JetBrains Mono',monospace; font-size:9.5px; color:var(--dusk); letter-spacing:.05em; text-transform:uppercase; margin-top:1px;}
+
+  .sb-scope{ margin:2px 14px 14px; }
+  .sb-scope select{
+    width:100%; background:var(--ink-850); color:#EDE7DA; border:1px solid var(--ink-800); border-radius:8px;
+    padding:9px 10px; font-size:12.5px; appearance:none;
+  }
+  .sb-scope label{ font-size:10px; color:var(--dusk-dim); text-transform:uppercase; letter-spacing:.05em; margin:0 0 6px 2px; display:block; font-weight:600;}
+
+  .sb-nav{ flex:1; padding:6px 10px; overflow-y:auto; }
+  .sb-section-label{ font-size:10px; color:var(--dusk-dim); text-transform:uppercase; letter-spacing:.06em; font-weight:700; margin:14px 10px 6px; }
+  .sb-item{
+    display:flex; align-items:center; gap:11px; padding:10px 12px; border-radius:8px; color:var(--parchment);
+    font-size:13px; font-weight:500; margin-bottom:2px; border-left:3px solid transparent; position:relative;
+    transition:background .15s, color .15s;
+  }
+  .sb-item svg{ flex:none; width:18px; height:18px; opacity:.85; }
+  .sb-item:hover{ background:var(--ink-850); color:#fff; }
+  .sb-item.active{ background:var(--ink-800); color:#fff; border-left-color:var(--crimson); }
+  .sb-item.active svg{ opacity:1; }
+  .sb-item:focus-visible{ outline:2px solid var(--crimson); outline-offset:-2px; }
+  .sb-badge{
+    margin-left:auto; background:var(--crimson-deep); color:#fff; font-family:'JetBrains Mono',monospace;
+    font-size:9.5px; font-weight:700; padding:1px 6px; border-radius:20px;
+  }
+  .sb-badge.risk{ background:var(--band-critical); }
+
+  .sb-footer{ padding:14px; border-top:1px solid var(--ink-800); display:flex; align-items:center; gap:10px; }
+  .sb-avatar{ width:32px; height:32px; border-radius:50%; background:var(--crimson-deep); color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex:none;}
+  .sb-user-name{ font-size:12.5px; color:#fff; font-weight:600; }
+  .sb-user-role{ font-size:10.5px; color:var(--dusk); }
+
+  /* ---- main / topbar ---- */
+  .main{ flex:1; min-width:0; display:flex; flex-direction:column; }
+  .topbar{
+    height:var(--topbar-h); flex:none; background:#fff; border-bottom:1px solid var(--line);
+    display:flex; align-items:center; padding:0 24px; gap:18px; position:sticky; top:0; z-index:45;
+  }
+  .breadcrumb{ font-size:13px; color:var(--muted); white-space:nowrap; }
+  .breadcrumb b{ color:var(--ink); font-weight:600; }
+  .topbar-search{
+    flex:1; max-width:360px; display:flex; align-items:center; gap:8px; background:var(--paper);
+    border:1px solid var(--line); border-radius:8px; padding:7px 12px;
+  }
+  .topbar-search input{ border:none; background:transparent; outline:none; font-size:12.5px; width:100%; color:var(--ink); }
+  .topbar-search svg{ flex:none; opacity:.5; width:15px;height:15px; }
+  .filter-pill{
+    display:flex; align-items:center; gap:6px; font-size:12px; color:var(--ink); background:var(--paper);
+    border:1px solid var(--line); border-radius:20px; padding:6px 12px; white-space:nowrap; font-weight:500;
+  }
+  .filter-pill svg{ width:12px; height:12px; opacity:.5; }
+  .line-filter{ position:relative; flex:none; }
+  .line-filter-btn{ cursor:pointer; }
+  .line-filter-btn:hover{ border-color:var(--crimson); }
+  .line-filter.open .line-filter-btn{ border-color:var(--crimson); color:var(--crimson-deep); }
+  .line-filter.open .line-filter-btn svg{ transform:rotate(180deg); }
+  .line-filter-btn svg{ transition:transform .15s ease; }
+  .line-filter-panel{
+    display:none; position:absolute; top:calc(100% + 8px); left:0; width:300px; max-height:400px;
+    overflow-y:auto; background:var(--card); border:1px solid var(--line); border-radius:10px;
+    box-shadow:var(--shadow); z-index:50; padding:12px;
+  }
+  .line-filter.open .line-filter-panel{ display:block; }
+  .line-filter-head{ display:flex; align-items:center; justify-content:space-between; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin-bottom:8px; }
+  .line-filter-clear{ border:none; background:none; color:var(--crimson-deep); font-size:11px; font-weight:600; cursor:pointer; padding:0; text-transform:none; letter-spacing:0; }
+  .line-filter-clear:hover{ text-decoration:underline; }
+  .line-filter-group-label{ font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin:10px 0 6px; }
+  .line-filter-group-label:first-child{ margin-top:0; }
+  .line-filter-row{ display:flex; align-items:center; gap:8px; padding:5px 2px; font-size:12.5px; color:var(--ink); cursor:pointer; border-radius:5px; }
+  .line-filter-row:hover{ background:var(--paper); }
+  .line-filter-row input{ accent-color:var(--crimson-deep); flex:none; }
+  .line-filter-foot{ margin-top:10px; padding-top:10px; border-top:1px solid var(--line); font-size:10.5px; color:var(--muted); line-height:1.4; }
+  .topbar-right{ margin-left:auto; display:flex; align-items:center; gap:14px; }
+  .bell-wrap{ position:relative; display:flex; }
+  .bell-wrap svg{ width:19px; height:19px; color:var(--muted); }
+  .bell-dot{ position:absolute; top:-3px; right:-3px; width:8px; height:8px; border-radius:50%; background:var(--crimson); border:1.5px solid #fff; }
+  .topbar-avatar{ width:30px; height:30px; border-radius:50%; background:var(--crimson-deep); color:#fff; display:flex; align-items:center; justify-content:center; font-size:11.5px; font-weight:700;}
+
+  .content{ padding:28px 340px 60px 32px; max-width:1320px; width:100%; margin:0 auto; }
+  @media (max-width:1259px){ .content{ padding-right:32px; } }
+  .page{ display:none; }
+  .page.active{ display:block; animation:fadein .3s ease; }
+  @keyframes fadein{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+
+  .demo-banner{
+    display:flex; align-items:center; gap:10px; background:var(--band-medium-bg); border:1px solid #EBD8AC;
+    color:#7A5A17; font-size:12px; padding:9px 14px; border-radius:8px; margin-bottom:22px;
+  }
+  .demo-banner svg{ width:15px; height:15px; flex:none; }
+  .demo-banner button{ margin-left:auto; background:none; border:none; color:#7A5A17; font-size:15px; line-height:1; opacity:.6;}
+  .demo-banner button:hover{ opacity:1; }
+
+  .page-head{ display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:22px; flex-wrap:wrap; gap:14px;}
+  .page-eyebrow{ font-family:'JetBrains Mono',monospace; font-size:10.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--crimson-deep); margin:0 0 7px; }
+  .page-head h1{ font-size:26px; font-weight:600; margin:0 0 4px; letter-spacing:-.01em; }
+  .page-head p{ font-size:13.5px; color:var(--muted); margin:0; }
+  .page-actions{ display:flex; gap:10px; }
+  .btn{
+    font-weight:600; font-size:12.5px; border-radius:7px; padding:9px 15px; border:1px solid var(--line);
+    background:#fff; color:var(--ink); transition:border-color .15s, background .15s;
+  }
+  .btn:hover{ border-color:var(--crimson); }
+  .btn-primary{ background:var(--crimson-deep); color:#fff; border-color:var(--crimson-deep); }
+  .btn-primary:hover{ background:var(--crimson-deeper); }
+  button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible{ outline:2px solid var(--crimson); outline-offset:2px; }
+
+  /* ---- kpi cards ---- */
+  .kpi-grid{ display:grid; grid-template-columns:repeat(5,1fr); gap:14px; margin-bottom:22px; }
+  @media (max-width:1100px){ .kpi-grid{grid-template-columns:repeat(3,1fr);} }
+  @media (max-width:680px){ .kpi-grid{grid-template-columns:repeat(2,1fr);} }
+  .kpi-card{ background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; box-shadow:var(--shadow); position:relative; }
+  .kpi-top{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;}
+  .kpi-label{ font-size:11px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.04em; }
+  .kpi-info{ width:14px;height:14px; border-radius:50%; border:1px solid var(--line); color:var(--muted); font-size:9px; display:flex; align-items:center; justify-content:center; cursor:help; }
+  .kpi-value{ font-family:'JetBrains Mono',monospace; font-size:25px; font-weight:600; }
+  .kpi-value.good{ color:var(--band-low); } .kpi-value.warn{ color:var(--band-medium); } .kpi-value.bad{ color:var(--band-critical); } .kpi-value.info{ color:var(--band-high); }
+  .kpi-sub{ font-size:11px; color:var(--muted); margin-top:4px;}
+  .spark{ margin-top:10px; }
+
+  .grid-2{ display:grid; grid-template-columns:1.3fr 1fr; gap:16px; }
+  @media (max-width:960px){ .grid-2{grid-template-columns:1fr;} }
+  .grid-3{ display:grid; grid-template-columns:0.9fr 1.3fr 1fr; gap:16px; }
+  @media (max-width:960px){ .grid-3{grid-template-columns:1fr;} }
+  .panel{ background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px 20px; box-shadow:var(--shadow); }
+  .panel-h{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .panel-h h3{ margin:0; font-size:13.5px; font-weight:700; font-family:'Inter',sans-serif; }
+  .panel-h span{ font-size:11px; color:var(--muted); font-family:'JetBrains Mono',monospace; }
+
+  .heatgrid{ display:grid; grid-template-columns:repeat(5,1fr); gap:8px; }
+  .heatcell{ border-radius:8px; padding:11px 9px; font-size:11px; font-weight:600; color:var(--ink); }
+  .heatcell small{ display:block; font-weight:400; font-family:'JetBrains Mono',monospace; font-size:16px; margin-top:6px;}
+
+  .exc-item{ padding:11px 0; border-bottom:1px solid var(--line); font-size:12.5px; }
+  .exc-item:last-child{ border-bottom:none; }
+  .exc-title{ color:var(--ink); margin-bottom:3px; line-height:1.4; }
+  .exc-meta{ font-size:10.5px; color:var(--muted); font-family:'JetBrains Mono',monospace; }
+
+  /* band chips */
+  .chip{ display:inline-flex; align-items:center; gap:6px; font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:600; padding:3px 9px; border-radius:20px; }
+  .chip .dot{ width:7px;height:7px;border-radius:50%; }
+  .chip-low{ background:var(--band-low-bg); color:var(--band-low); } .chip-low .dot{ background:var(--band-low); }
+  .chip-medium{ background:var(--band-medium-bg); color:#8A6A1E; } .chip-medium .dot{ background:var(--band-medium); }
+  .chip-high{ background:var(--band-high-bg); color:#96481E; } .chip-high .dot{ background:var(--band-high); }
+  .chip-critical{ background:var(--band-critical-bg); color:#6E2418; } .chip-critical .dot{ background:var(--band-critical); }
+
+  /* tables */
+  table.data{ width:100%; border-collapse:collapse; font-size:12.5px; }
+  table.data th{ text-align:left; color:var(--muted); font-weight:600; font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; padding:8px 10px; border-bottom:1px solid var(--line); cursor:pointer; user-select:none; }
+  table.data th:hover{ color:var(--crimson-deep); }
+  table.data td{ padding:11px 10px; border-bottom:1px solid var(--line); }
+  table.data tr:hover td{ background:#FAFBFD; cursor:pointer; }
+  table.data tr.selected td{ background:var(--crimson-tint); }
+
+  /* coverage bars */
+  .cov-row{ margin-bottom:15px; }
+  .cov-top{ display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:6px;}
+  .cov-top .val{ font-family:'JetBrains Mono',monospace; color:var(--muted); }
+  .cov-track{ height:9px; background:var(--paper); border-radius:6px; overflow:hidden; }
+  .cov-fill{ height:100%; border-radius:6px; transition:width .4s ease; }
+  .toggle-group{ display:inline-flex; background:var(--paper); border:1px solid var(--line); border-radius:8px; padding:3px; }
+  .toggle-group button{ border:none; background:transparent; font-size:11.5px; font-weight:600; padding:6px 13px; border-radius:6px; color:var(--muted); }
+  .toggle-group button.active{ background:#fff; color:var(--ink); box-shadow:var(--shadow); }
+
+  /* pipeline */
+  .pipeline{ display:flex; margin-bottom:20px; }
+  .pipe-stage{ flex:1; text-align:center; position:relative; padding:16px 8px; }
+  .pipe-stage:not(:last-child)::after{ content:"→"; position:absolute; right:-2px; top:50%; transform:translateY(-50%); color:var(--line); font-size:14px; }
+  .pipe-num{ font-family:'JetBrains Mono',monospace; font-size:21px; font-weight:600; }
+  .pipe-label{ font-size:10px; color:var(--muted); margin-top:4px; text-transform:uppercase; letter-spacing:.03em; }
+
+  .queue-row{ display:flex; align-items:center; gap:14px; padding:12px 4px; border-bottom:1px solid var(--line); font-size:12.5px; }
+  .queue-row:last-child{ border-bottom:none; }
+  .queue-doc{ flex:1; min-width:0; }
+  .queue-doc b{ display:block; font-size:12.5px; margin-bottom:2px; }
+  .queue-doc span{ font-size:11px; color:var(--muted); font-family:'JetBrains Mono',monospace; }
+  .conf-badge{ font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:600; padding:3px 8px; border-radius:6px; flex:none; }
+  .conf-hi{ background:var(--band-low-bg); color:var(--band-low); }
+  .conf-mid{ background:var(--band-medium-bg); color:#8A6A1E; }
+  .queue-actions{ display:flex; gap:8px; flex:none; }
+  .qbtn{ font-size:11px; font-weight:600; padding:6px 11px; border-radius:6px; border:1px solid var(--line); background:#fff; }
+  .qbtn.approve:hover{ border-color:var(--band-low); color:var(--band-low); }
+  .qbtn.back:hover{ border-color:var(--band-critical); color:var(--band-critical); }
+  .status-approved{ color:var(--band-low); font-weight:600; font-size:11.5px; }
+  .status-returned{ color:var(--band-critical); font-weight:600; font-size:11.5px; }
+
+  /* map */
+  .map-svg-wrap{ background:var(--ink-950); border-radius:8px; overflow:hidden; }
+  .map-marker{ cursor:pointer; }
+  .map-marker:hover circle.core{ stroke:#fff; stroke-width:2; }
+  .map-pulse{ animation:pulsering 2.2s ease-out infinite; transform-origin:center; }
+  @keyframes pulsering{ 0%{opacity:.55; transform:scale(1);} 100%{opacity:0; transform:scale(2.1);} }
+  .legend-row{ display:flex; align-items:center; gap:8px; font-size:12px; margin-bottom:9px; }
+  .legend-row .dot{ width:10px; height:10px; border-radius:50%; flex:none; }
+  .legend-row .range{ font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--muted); margin-left:auto; }
+  .legend-compact{ display:flex; flex-wrap:wrap; gap:6px 16px; }
+  .legend-compact .legend-row{ margin-bottom:0; font-size:11px; gap:6px; }
+  .legend-compact .legend-row .dot{ width:8px; height:8px; }
+  .legend-compact .legend-row .range{ margin-left:4px; }
+  .asset-detail{ font-size:12.5px; line-height:1.6; }
+  .asset-detail .empty{ color:var(--muted); font-style:italic; }
+  .asset-detail-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; gap:8px;}
+  .asset-detail-head .name{ font-weight:700; font-size:13px; }
+  .asset-stat{ display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--line); font-size:12px; }
+  .asset-stat span:first-child{ color:var(--muted); }
+  .asset-stat span:last-child{ font-family:'JetBrains Mono',monospace; }
+  .asset-list{ max-height:270px; overflow-y:auto; margin:0 -6px; }
+  .asset-list-item{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 8px; border-radius:7px; cursor:pointer; border-bottom:1px solid var(--line); }
+  .asset-list-item:last-child{ border-bottom:none; }
+  .asset-list-item:hover{ background:#FAFBFD; }
+  .asset-list-item.selected{ background:var(--crimson-tint); }
+  .asset-list-item .ali-main{ display:flex; flex-direction:column; gap:3px; min-width:0; }
+  .asset-list-item .ali-name{ font-size:12px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .asset-list-item .ali-sub{ font-size:10px; color:var(--muted); font-family:'JetBrains Mono',monospace; }
+  .asset-list-item .ali-right{ display:flex; align-items:center; gap:10px; flex:none; }
+  .asset-list-item .ali-tiv{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted); text-align:right; min-width:52px; }
+
+  .cfg-note{ background:var(--crimson-tint); border-radius:8px; padding:12px 14px; font-size:12px; color:var(--crimson-deep); margin-top:16px; line-height:1.5; }
+
+  .toast{
+    position:fixed; bottom:26px; left:50%; transform:translateX(-50%) translateY(20px); opacity:0; pointer-events:none;
+    background:var(--ink-950); color:#fff; padding:12px 20px; border-radius:9px; font-size:12.5px; z-index:100;
+    box-shadow:0 10px 30px rgba(0,0,0,.25); transition:opacity .25s ease, transform .25s ease; display:flex; align-items:center; gap:10px;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); pointer-events:auto; }
+  .toast .dot{ width:8px; height:8px; border-radius:50%; background:var(--band-low); flex:none;}
+
+  .fine{ font-size:11px; color:var(--muted); margin-top:12px; font-family:'JetBrains Mono',monospace; }
+
+  /* ---- insurance questionnaire modal ---- */
+  .modal-overlay{
+    display:none; position:fixed; inset:0; background:rgba(24,19,14,.55); z-index:80;
+    align-items:flex-start; justify-content:center; padding:40px 20px; overflow-y:auto;
+  }
+  .modal-overlay.open{ display:flex; }
+  .modal{
+    background:var(--card); border-radius:14px; box-shadow:var(--shadow); width:100%; max-width:520px;
+    overflow:hidden; animation:fadein .2s ease;
+  }
+  .modal-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; padding:18px 20px 14px; border-bottom:1px solid var(--line); }
+  .modal-head h3{ margin:0 0 3px; font-size:15.5px; font-family:'Inter',sans-serif; font-weight:700; }
+  .modal-sub{ font-size:11px; color:var(--muted); }
+  .modal-body{ padding:18px 20px; max-height:60vh; overflow-y:auto; }
+  .modal-foot{ display:flex; justify-content:flex-end; gap:10px; padding:14px 20px; border-top:1px solid var(--line); }
+  .q-row{ margin-bottom:14px; }
+  .q-row label{ display:block; font-size:11.5px; font-weight:600; color:var(--muted); margin-bottom:5px; }
+  .q-row-split{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .q-row input, .q-row select, .q-row textarea{
+    width:100%; border:1px solid var(--line); border-radius:7px; padding:8px 10px; font-size:12.5px; color:var(--ink);
+    background:var(--paper); resize:vertical;
+  }
+  .q-row input:focus, .q-row select:focus, .q-row textarea:focus{ outline:2px solid var(--crimson); outline-offset:1px; }
+  .src-tag{
+    font-family:'JetBrains Mono',monospace; font-size:9.5px; font-weight:700; padding:3px 8px; border-radius:6px;
+    flex:none; background:var(--parchment); color:var(--ink-800); text-transform:uppercase; letter-spacing:.03em;
+  }
+
+  /* ---- right rail: action items + chat assistant, permanently stacked, never overlapping ---- */
+  .right-rail{
+    position:fixed; top:76px; right:20px; bottom:20px; width:296px;
+    z-index:40; display:flex; flex-direction:column; gap:16px;
+  }
+  @media (max-width:1259px){ .right-rail{ display:none; } }
+
+  .action-rail{
+    flex:1 1 0; min-height:0;
+    background:var(--card); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow);
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+  .action-rail-head{ display:flex; align-items:center; gap:8px; padding:13px 14px; border-bottom:1px solid var(--line); flex:none; }
+  .action-rail-head h3{ margin:0; font-size:13px; font-weight:700; font-family:'Inter',sans-serif; flex:1; }
+  .action-rail-head .count{ font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--muted); }
+  .rail-toggle{ border:none; background:none; color:var(--muted); font-size:15px; line-height:1; cursor:pointer; padding:2px 6px; border-radius:4px; }
+  .rail-toggle:hover{ color:var(--ink); background:var(--paper); }
+  .action-rail.collapsed .action-list, .action-rail.collapsed .action-rail-foot{ display:none; }
+  .action-list{ overflow-y:auto; padding:6px 8px; }
+  .action-item{ display:flex; gap:9px; align-items:flex-start; padding:9px 8px; border-radius:8px; cursor:pointer; }
+  .action-item:hover{ background:var(--paper); }
+  .action-item + .action-item{ border-top:1px solid var(--line); }
+  .action-item .pdot{ width:8px; height:8px; border-radius:50%; margin-top:5px; flex:none; }
+  .action-item .abody{ flex:1; min-width:0; }
+  .action-item .atitle{ font-size:12px; line-height:1.4; color:var(--ink); margin-bottom:3px; }
+  .action-item .ameta{ font-size:9.5px; color:var(--muted); font-family:'JetBrains Mono',monospace; text-transform:uppercase; letter-spacing:.03em; }
+  .action-rail-foot{ padding:9px 14px; font-size:10.5px; color:var(--muted); border-top:1px solid var(--line); flex:none; }
+
+  /* ---- chat assistant (permanent, always open, cannot be minimized) ---- */
+  .chat-panel{
+    flex:1 1 0; min-height:0; display:flex; flex-direction:column;
+    background:var(--card); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); overflow:hidden;
+  }
+  .chat-head{ display:flex; align-items:center; gap:10px; padding:13px 14px; background:var(--ink-950); color:#fff; flex:none; }
+  .chat-head-mark{ width:26px; height:26px; border-radius:7px; background:var(--crimson-deep); display:flex; align-items:center; justify-content:center; flex:none; }
+  .chat-head-mark svg{ width:15px; height:15px; }
+  .chat-head-title{ font-size:12.5px; font-weight:600; }
+  .chat-head-sub{ font-size:10px; color:var(--dusk); font-family:'JetBrains Mono',monospace; text-transform:uppercase; letter-spacing:.04em; }
+  .chat-body{ flex:1; overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:10px; background:var(--paper); }
+  .chat-msg{ max-width:88%; font-size:12.5px; line-height:1.5; padding:9px 12px; border-radius:10px; }
+  .chat-msg.bot{ background:#fff; border:1px solid var(--line); align-self:flex-start; border-bottom-left-radius:3px; }
+  .chat-msg.user{ background:var(--crimson-deep); color:#fff; align-self:flex-end; border-bottom-right-radius:3px; }
+  .chat-chip-row{ display:flex; flex-wrap:wrap; gap:6px; margin-top:9px; }
+  .chat-chip{ font-size:11px; font-weight:600; padding:6px 11px; border-radius:20px; border:1px solid var(--line); background:#fff; color:var(--ink); }
+  .chat-chip:hover{ border-color:var(--crimson); color:var(--crimson-deep); }
+  .chat-suggest{ border-top:1px solid var(--line); background:#fff; flex:none; }
+  .chat-suggest-toggle{ display:flex; align-items:center; justify-content:space-between; width:100%; padding:8px 12px; border:none; background:none; cursor:pointer; font-size:10px; font-weight:700; color:var(--muted); font-family:'JetBrains Mono',monospace; text-transform:uppercase; letter-spacing:.04em; }
+  .chat-suggest-toggle:hover{ color:var(--crimson-deep); }
+  .chat-suggest-toggle .chev{ flex:none; transition:transform .15s ease; }
+  .chat-suggest.open .chat-suggest-toggle .chev{ transform:rotate(180deg); }
+  .chat-suggest-body{ display:none; max-height:150px; overflow-y:auto; padding:0 12px 9px; }
+  .chat-suggest.open .chat-suggest-body{ display:block; }
+  .chat-suggest .chat-chip-row{ margin-top:0; }
+  .chat-upload-row{ margin-top:10px; }
+  .chat-upload-btn{ display:inline-flex; align-items:center; gap:7px; font-size:11.5px; font-weight:600; padding:8px 13px; border-radius:7px; border:1px dashed var(--muted); background:var(--paper); color:var(--crimson-deep); cursor:pointer; }
+  .chat-upload-btn:hover{ border-color:var(--crimson); }
+  .chat-input-row{ display:flex; align-items:center; gap:8px; padding:11px; border-top:1px solid var(--line); flex:none; background:#fff; }
+  .chat-input-row input{ flex:1; border:1px solid var(--line); border-radius:20px; padding:8px 14px; font-size:12.5px; outline:none; }
+  .chat-input-row input:focus{ border-color:var(--crimson); }
+  .chat-input-row input:disabled{ background:var(--paper); color:var(--muted); cursor:not-allowed; }
+  .chat-send{ width:32px; height:32px; border-radius:50%; border:none; background:var(--crimson-deep); color:#fff; display:flex; align-items:center; justify-content:center; flex:none; }
+  .chat-send:hover{ background:var(--crimson-deeper); }
+  .chat-send:disabled{ background:var(--dusk); cursor:not-allowed; }
+
+  @media (prefers-reduced-motion: reduce){ *{ animation-duration:.001ms !important; transition-duration:.001ms !important; } }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ===================== SIDEBAR ===================== -->
+  <aside class="sidebar">
+    <div class="sb-brand">
+      <div class="sb-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#F3E9D8" stroke-width="1.3">
+          <circle cx="12" cy="12" r="8.2"/>
+          <path d="M12 3.2v2.6M12 18.2v2.6M3.2 12h2.6M18.2 12h2.6"/>
+          <path d="M12 6.2l2.7 5.1-2.7 1.3-2.7-1.3z" fill="#F3E9D8" stroke="none"/>
+        </svg>
+      </div>
+      <div>
+        <div class="sb-title">Atlas</div>
+        <div class="sb-sub">MVP Prototype</div>
+      </div>
+    </div>
+
+    <div class="sb-scope">
+      <label>Scope</label>
+      <select id="scope-select">
+        <option>Group (all entities)</option>
+        <option>Keppel Infrastructure</option>
+        <option>Keppel Energy</option>
+        <option>Keppel Land</option>
+        <option>Keppel Offshore &amp; Marine</option>
+        <option>Keppel Data Centres</option>
+      </select>
+    </div>
+
+    <nav class="sb-nav">
+      <div class="sb-section-label">Monitor</div>
+      <div class="sb-item active" data-page="overview" tabindex="0" role="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>
+        Group Overview
+      </div>
+      <div class="sb-item" data-page="map" tabindex="0" role="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8.3"/><ellipse cx="12" cy="12" rx="3.4" ry="8.3"/><line x1="3.7" y1="12" x2="20.3" y2="12"/></svg>
+        Global Map
+      </div>
+      <div class="sb-item" data-page="hotspots" tabindex="0" role="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3.5c1 3-2.5 4-2.5 7a2.5 2.5 0 0 0 5 0c0-1.2-.7-1.8-1-2.6 1.8.9 3 2.8 3 5.1a4.5 4.5 0 0 1-9 0c0-4 4.5-5.6 4.5-9.5z"/></svg>
+        Risk Hotspots
+        <span class="sb-badge risk">5</span>
+      </div>
+      <div class="sb-item" data-page="coverage" tabindex="0" role="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3.8l6.5 2.4v5.4c0 4.3-2.7 7.4-6.5 8.6-3.8-1.2-6.5-4.3-6.5-8.6V6.2z"/><path d="M9 12.2l2 2 4-4.2"/></svg>
+        Coverage Adequacy
+      </div>
+      <div class="sb-item" data-page="contracts" tabindex="0" role="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 3.5h9l3 3v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-16a1 1 0 0 1 1-1z"/><path d="M15 3.5v3h3"/><line x1="8" y1="11.5" x2="16" y2="11.5"/><line x1="8" y1="14.7" x2="13.5" y2="14.7"/></svg>
+        Contract Requirements
+        <span class="sb-badge risk" id="contracts-badge">0</span>
+      </div>
+      <div class="sb-item" data-page="exclusions" tabindex="0" role="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3.5l7 3.1v5.4c0 4.6-3 7.8-7 8.9-4-1.1-7-4.3-7-8.9V6.6z"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>
+        Insurance Exclusions
+        <span class="sb-badge risk" id="exclusions-badge">0</span>
+      </div>
+
+      <div class="sb-section-label">Ingest</div>
+      <div class="sb-item" data-page="inbox" tabindex="0" role="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 12.5h4.2l1.4 2.3h4.8l1.4-2.3H20"/><path d="M4 12.5L5.8 5h12.4L20 12.5v5A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5z"/></svg>
+        Document Inbox
+        <span class="sb-badge">6</span>
+      </div>
+    </nav>
+
+    <div class="sb-footer">
+      <div class="sb-avatar">DR</div>
+      <div>
+        <div class="sb-user-name">Dayl</div>
+        <div class="sb-user-role">Risk &amp; Compliance</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ===================== MAIN ===================== -->
+  <div class="main">
+    <header class="topbar">
+      <div class="breadcrumb">Atlas / <b id="crumb">Group Overview</b></div>
+      <div class="topbar-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.3" y1="15.3" x2="20" y2="20"/></svg>
+        <input type="text" placeholder="Search policies, sites, entities…">
+      </div>
+      <div class="filter-pill">Period: FY2026 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
+      <div class="line-filter" id="line-filter">
+        <button type="button" class="filter-pill line-filter-btn" id="line-filter-btn" onclick="toggleLineFilter(event)" aria-haspopup="true" aria-expanded="false">
+          <span id="line-filter-label">Coverage: All lines</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="line-filter-panel" id="line-filter-panel">
+          <div class="line-filter-head"><span>Filter by insurance line</span><button type="button" class="line-filter-clear" onclick="clearLineFilter()">Clear</button></div>
+          <div id="line-filter-groups"></div>
+          <div class="line-filter-foot">Applies across dashboard views and combines with the drill-down hierarchy (FR5.4) · saved filter presets ship in V2 (FR5.5).</div>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="bell-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 10a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5H4.5S6 14 6 10z"/><path d="M9.5 18.5a2.5 2.5 0 0 0 5 0"/></svg><span class="bell-dot"></span></div>
+        <div class="topbar-avatar">DR</div>
+      </div>
+    </header>
+
+    <main class="content">
+
+      <div class="demo-banner">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12.5"/><circle cx="12" cy="16" r="0.6" fill="currentColor"/></svg>
+        MVP-scope prototype for internal review — entity names, figures, and documents are illustrative mock data. News &amp; sector intelligence, configurable risk weights, conversational Q&amp;A, and the renewals/carrier/claims/cost-of-risk dashboards are V2 and not shown here.
+        <button onclick="this.parentElement.style.display='none'">✕</button>
+      </div>
+
+      <!-- ============ OVERVIEW ============ -->
+      <section class="page active" id="page-overview">
+        <div class="page-head">
+          <div><div class="page-eyebrow">Monitor</div><h1>Group Overview</h1><p>Real-time position across all in-scope entities · data as of 6 Jul 2026</p></div>
+          <div class="page-actions"><button class="btn">Export</button><button class="btn btn-primary">Add document</button></div>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-top"><span class="kpi-label">Coverage adequacy</span><span class="kpi-info" title="Group ITV, FX-normalised · traces to 214 policies">i</span></div>
+            <div class="kpi-value good">87%</div>
+            <div class="kpi-sub">↑ 2.1pp vs last quarter</div>
+            <svg class="spark" width="100%" height="26" viewBox="0 0 120 26" preserveAspectRatio="none"><polyline points="0,20 15,18 30,19 45,14 60,15 75,10 90,11 105,6 120,7" fill="none" stroke="#1F7A5C" stroke-width="2"/></svg>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-top"><span class="kpi-label">Open coverage gaps</span><span class="kpi-info" title="Contract Requirements below their required minimum, or undermined by a policy exclusion · §7.1/§7.7">i</span></div>
+            <div class="kpi-value warn" id="kpi-gaps-value">14</div>
+            <div class="kpi-sub" id="kpi-gaps-sub">5 sites affected</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-top"><span class="kpi-label">Renewals due (60d)</span><span class="kpi-info" title="S$18.4M sum insured across 6 policies">i</span></div>
+            <div class="kpi-value warn">6</div>
+            <div class="kpi-sub">S$18.4M sum insured</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-top"><span class="kpi-label">High / critical hotspots</span><span class="kpi-info" title="Composite score ≥70, out of sites scored · §10">i</span></div>
+            <div class="kpi-value bad" id="kpi-hotspot-value">5</div>
+            <div class="kpi-sub" id="kpi-hotspot-sub">of 42 sites scored</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-top"><span class="kpi-label">FY premium (Group)</span><span class="kpi-info" title="Across 8 carriers, FX-normalised to SGD">i</span></div>
+            <div class="kpi-value">S$42.6M</div>
+            <div class="kpi-sub">↑ 4.1% YoY</div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="panel">
+            <div class="panel-h"><h3>Exposure &amp; coverage heat map</h3><span id="heatgrid-count">by country</span></div>
+            <div class="heatgrid" id="heatgrid"></div>
+            <div class="fine">Click a cell to drill Group → Entity → Site → Policy · <a href="#" onclick="goTo('map');return false;" style="color:var(--crimson-deep);">open full map →</a></div>
+          </div>
+          <div class="panel">
+            <div class="panel-h"><h3>Exception list</h3><span id="exc-count">4 open</span></div>
+            <div id="exc-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ GLOBAL MAP ============ -->
+      <section class="page" id="page-map">
+        <div class="page-head">
+          <div><div class="page-eyebrow">Monitor</div><h1>Global Map</h1><p>All insured sites, plotted by risk band and total insured value</p></div>
+        </div>
+        <div class="panel" style="padding:14px;">
+          <div class="panel-h" style="padding:0 4px;"><h3>Group asset map</h3><span id="map-site-count">8 sites · marker size = TIV</span></div>
+          <div class="map-svg-wrap">
+            <svg viewBox="0 0 1000 500" width="100%" height="480" role="img" aria-label="World map showing Keppel Group insured sites, rendered as a navigational chart">
+              <rect x="1" y="1" width="998" height="498" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="1"></rect>
+              <g stroke="rgba(255,255,255,.09)" stroke-width="1">
+                <line x1="0" y1="125" x2="1000" y2="125"></line><line x1="0" y1="250" x2="1000" y2="250"></line><line x1="0" y1="375" x2="1000" y2="375"></line>
+                <line x1="250" y1="0" x2="250" y2="500"></line><line x1="500" y1="0" x2="500" y2="500"></line><line x1="750" y1="0" x2="750" y2="500"></line>
+              </g>
+              <g fill="rgba(255,255,255,.4)" font-family="'JetBrains Mono',monospace" font-size="9.5">
+                <text x="10" y="121">45°N</text>
+                <text x="10" y="246">0°</text>
+                <text x="10" y="371">45°S</text>
+                <text x="236" y="493">90°W</text>
+                <text x="491" y="493">0°</text>
+                <text x="739" y="493">90°E</text>
+              </g>
+              <g stroke="rgba(255,255,255,.28)" stroke-width="1.2" fill="none">
+                <path d="M16 16h20M16 16v20"></path>
+                <path d="M984 16h-20M984 16v20"></path>
+                <path d="M16 484h20M16 484v-20"></path>
+                <path d="M984 484h-20M984 484v-20"></path>
+              </g>
+              <g id="world-dots"></g>
+              <g transform="translate(72,432)" stroke="rgba(255,255,255,.38)" stroke-width="1" fill="none">
+                <circle r="26"></circle>
+                <circle r="2" fill="rgba(255,255,255,.5)" stroke="none"></circle>
+                <path d="M0 -26v7M0 26v-7M-26 0h7M26 0h-7"></path>
+                <path d="M0 -26l5 15-5 3-5-3z" fill="#E51D37" stroke="none"></path>
+                <text x="-3" y="-31" fill="rgba(255,255,255,.45)" font-family="'JetBrains Mono',monospace" font-size="8" stroke="none">N</text>
+              </g>
+              <g id="asset-markers"></g>
+            </svg>
+          </div>
+          <div class="fine">Click a marker for site detail · illustrative mock data (FR1.3)</div>
+        </div>
+        <div class="grid-3" style="margin-top:16px;">
+          <div class="panel" style="padding:12px 16px;">
+            <div class="panel-h" style="margin-bottom:8px;"><h3>Risk band legend</h3><span>§10.1</span></div>
+            <div class="legend-compact">
+              <div class="legend-row"><span class="dot" style="background:var(--band-low);"></span>Low<span class="range">0–39</span></div>
+              <div class="legend-row"><span class="dot" style="background:var(--band-medium);"></span>Medium<span class="range">40–69</span></div>
+              <div class="legend-row"><span class="dot" style="background:var(--band-high);"></span>High<span class="range">70–84</span></div>
+              <div class="legend-row"><span class="dot" style="background:var(--band-critical);"></span>Critical<span class="range">85–100</span></div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-h"><h3>All assets</h3><span id="asset-list-count">8 sites</span></div>
+            <div class="asset-list" id="asset-list"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-h" style="margin-bottom:10px;"><h3>Selected site</h3><span id="asset-count">0 / 8</span></div>
+            <div class="asset-detail" id="asset-detail"><span class="empty">Click any marker or asset to see that site's coverage and risk profile.</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ RISK HOTSPOTS ============ -->
+      <section class="page" id="page-hotspots">
+        <div class="page-head">
+          <div><div class="page-eyebrow">Monitor</div><h1>Risk Hotspots</h1><p>Composite score per site, blended from coverage, exposure, and claims drivers</p></div>
+        </div>
+        <div class="grid-2">
+          <div class="panel">
+            <div class="panel-h"><h3>Ranked exposures</h3><span id="hot-count">5 sites</span></div>
+            <table class="data">
+              <thead><tr><th onclick="sortHot('name')">Site / entity</th><th onclick="sortHot('score')">Score ▾</th><th>Band</th><th>Leading driver</th></tr></thead>
+              <tbody id="hot-tbody"></tbody>
+            </table>
+          </div>
+          <div class="panel">
+            <div class="panel-h"><h3 id="driver-title">Why Frankfurt scored 88</h3><span>driver breakdown · FR4.4</span></div>
+            <div id="driver-body"></div>
+            <div class="fine">Every score is explainable end-to-end, down to each driver's contribution (§10.1/§10.2) · weight tuning ships in V2 (FR4.5) · see policy <a href="#" onclick="goTo('exclusions');return false;" style="color:var(--crimson-deep);">exclusions →</a></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ COVERAGE ADEQUACY ============ -->
+      <section class="page" id="page-coverage">
+        <div class="page-head">
+          <div><div class="page-eyebrow">Monitor</div><h1>Coverage Adequacy</h1><p>Insurance-to-value against target, target ≈100% · flagged below 90%</p></div>
+          <div class="toggle-group">
+            <button class="active" onclick="setCovView('entity', this)">By entity</button>
+            <button onclick="setCovView('line', this)">By line of business</button>
+          </div>
+        </div>
+        <div class="panel" id="cov-panel"></div>
+      </section>
+
+      <!-- ============ CONTRACT REQUIREMENTS ============ -->
+      <section class="page" id="page-contracts">
+        <div class="page-head">
+          <div><div class="page-eyebrow">Monitor</div><h1>Contract Requirements</h1><p>Third-Party Contractual Insurance Requirements — obligations imposed by customers, lenders &amp; JV partners, checked against placed coverage</p></div>
+          <div class="toggle-group">
+            <button class="active" onclick="setReqView('all', this)">All</button>
+            <button onclick="setReqView('open', this)">Gaps &amp; at-risk only</button>
+          </div>
+        </div>
+        <div class="kpi-grid" style="grid-template-columns:repeat(5,1fr);">
+          <div class="kpi-card">
+            <div class="kpi-top"><span class="kpi-label">Requirements tracked</span><span class="kpi-info" title="Across customer, lender, JV partner &amp; government/concession obligations">i</span></div>
+            <div class="kpi-value" id="req-total">0</div>
+            <div class="kpi-sub" id="req-total-sub">—</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-top"><span class="kpi-label">Fully met</span><span class="kpi-info" title="Placed limit meets or exceeds the contractual requirement, no conflicting exclusion">i</span></div>
+            <div class="kpi-value good" id="req-met">0</div>
+            <div class="kpi-sub" id="req-met-sub">—</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-top"><span class="kpi-label">At risk</span><span class="kpi-info" title="Placed limit within 10% of the required minimum">i</span></div>
+            <div class="kpi-value warn" id="req-atrisk">0</div>
+            <div class="kpi-sub" id="req-atrisk-sub">—</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-top"><span class="kpi-label">Open gaps</span><span class="kpi-info" title="Placed limit below the contractual minimum — breach exposure">i</span></div>
+            <div class="kpi-value bad" id="req-gap">0</div>
+            <div class="kpi-sub" id="req-gap-sub">—</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-top"><span class="kpi-label">Excluded</span><span class="kpi-info" title="Placed limit satisfies the requirement, but a policy exclusion removes the peril the counterparty actually needs covered">i</span></div>
+            <div class="kpi-value info" id="req-excluded">0</div>
+            <div class="kpi-sub" id="req-excluded-sub">—</div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-h"><h3>Requirements by asset</h3><span id="req-count">0 rows</span></div>
+          <table class="data">
+            <thead><tr><th>Asset</th><th>Counterparty</th><th>Coverage line</th><th>Required</th><th>Placed</th><th>Status</th></tr></thead>
+            <tbody id="req-tbody"></tbody>
+          </table>
+          <div class="fine">Open gaps and exclusion conflicts escalate to the Action items rail · exclusions cross-checked against <a href="#" onclick="goTo('exclusions');return false;" style="color:var(--crimson-deep);">Insurance Exclusions</a> · illustrative mock data</div>
+        </div>
+      </section>
+
+      <!-- ============ INSURANCE EXCLUSIONS ============ -->
+      <section class="page" id="page-exclusions">
+        <div class="page-head">
+          <div><div class="page-eyebrow">Monitor</div><h1>Insurance Exclusions</h1><p>Policy exclusions and sub-limits by asset, cross-checked against Contract Requirements for conflicts</p></div>
+          <div class="toggle-group">
+            <button class="active" onclick="setExclView('all', this)">All</button>
+            <button onclick="setExclView('conflicts', this)">Conflicts only</button>
+          </div>
+        </div>
+        <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);">
+          <div class="kpi-card">
+            <div class="kpi-top"><span class="kpi-label">Exclusions tracked</span><span class="kpi-info" title="Policy wording exclusions and sub-limits captured per asset and coverage line">i</span></div>
+            <div class="kpi-value" id="excl-total">0</div>
+            <div class="kpi-sub" id="excl-total-sub">—</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-top"><span class="kpi-label">Full exclusions</span><span class="kpi-info" title="Peril entirely excluded from the policy">i</span></div>
+            <div class="kpi-value warn" id="excl-full">0</div>
+            <div class="kpi-sub" id="excl-full-sub">—</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-top"><span class="kpi-label">Sub-limited perils</span><span class="kpi-info" title="Peril covered but capped well below TIV or the relevant requirement">i</span></div>
+            <div class="kpi-value warn" id="excl-sublimit">0</div>
+            <div class="kpi-sub" id="excl-sublimit-sub">—</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-top"><span class="kpi-label">Conflicts with requirements</span><span class="kpi-info" title="Exclusion undermines a specific Contract Requirement — see FR7/FR9">i</span></div>
+            <div class="kpi-value bad" id="excl-conflicts">0</div>
+            <div class="kpi-sub" id="excl-conflicts-sub">—</div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-h"><h3>Exclusions by asset</h3><span id="excl-count">0 rows</span></div>
+          <table class="data">
+            <thead><tr><th>Asset</th><th>Coverage line</th><th>Exclusion</th><th>Scope</th><th>Source</th><th>Status</th></tr></thead>
+            <tbody id="excl-tbody"></tbody>
+          </table>
+          <div class="fine">Conflicts mark the affected <a href="#" onclick="goTo('contracts');return false;" style="color:var(--crimson-deep);">Contract Requirement</a> as "Excluded" and escalate to Action items · illustrative mock data</div>
+        </div>
+      </section>
+
+      <!-- ============ DOCUMENT INBOX ============ -->
+      <section class="page" id="page-inbox">
+        <div class="page-head">
+          <div><div class="page-eyebrow">Ingest</div><h1>Document Inbox</h1><p>Ingestion pipeline and human-in-the-loop validation queue</p></div>
+          <div class="page-actions"><button class="btn" onclick="openQuestionnaire()">Fill questionnaire manually</button><button class="btn btn-primary">Upload documents</button></div>
+        </div>
+        <div class="cfg-note" style="margin-bottom:16px;">No JV asset register or P&amp;C schedule available for a site? Use <b>Fill questionnaire manually</b> to capture asset and financial fields directly — entries go through the same validation queue and audit trail as extracted data (FR3.9).</div>
+        <div class="panel" style="margin-bottom:16px;">
+          <div class="panel-h"><h3>Ingestion pipeline — this week</h3><span>3 entities · bulk upload</span></div>
+          <div class="pipeline">
+            <div class="pipe-stage"><div class="pipe-num" id="pipe-intake">18</div><div class="pipe-label">Intake</div></div>
+            <div class="pipe-stage"><div class="pipe-num" id="pipe-classified">18</div><div class="pipe-label">Classified</div></div>
+            <div class="pipe-stage"><div class="pipe-num">15</div><div class="pipe-label">Extracted</div></div>
+            <div class="pipe-stage"><div class="pipe-num" style="color:var(--band-medium);" id="queue-count">6</div><div class="pipe-label">In validation</div></div>
+            <div class="pipe-stage"><div class="pipe-num" style="color:var(--band-low);">142</div><div class="pipe-label">Posted, MTD</div></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-h"><h3>Validation queue</h3><span>lowest confidence first</span></div>
+          <div id="queue-list"></div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- ===================== RIGHT RAIL: ACTION ITEMS + CHAT ASSISTANT (permanent, top-right, stacked) ===================== -->
+<div class="right-rail">
+  <div class="action-rail" id="action-rail">
+    <div class="action-rail-head">
+      <h3>Action items</h3>
+      <span class="count" id="action-count">0 open</span>
+      <button class="rail-toggle" onclick="toggleRail()" id="rail-toggle-btn" aria-label="Collapse action items">−</button>
+    </div>
+    <div class="action-list" id="action-list"></div>
+    <div class="action-rail-foot">Sorted by priority · click an item to open its module</div>
+  </div>
+
+  <div class="chat-panel">
+    <div class="chat-head">
+      <div class="chat-head-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#F3E9D8" stroke-width="1.3">
+          <circle cx="12" cy="12" r="8.2"/>
+          <path d="M12 3.2v2.6M12 18.2v2.6M3.2 12h2.6M18.2 12h2.6"/>
+          <path d="M12 6.2l2.7 5.1-2.7 1.3-2.7-1.3z" fill="#F3E9D8" stroke="none"/>
+        </svg>
+      </div>
+      <div>
+        <div class="chat-head-title">Atlas Assistant</div>
+        <div class="chat-head-sub">Page-aware suggested prompts</div>
+      </div>
+    </div>
+    <div class="chat-body" id="chat-body"></div>
+    <div class="chat-suggest" id="chat-suggest"></div>
+    <div class="chat-input-row">
+      <input type="text" id="chat-input" placeholder="Free-text Q&amp;A ships in V2 (FR8.3–FR8.5)" disabled title="Free-text Q&amp;A ships in V2 (FR8.3–FR8.5)">
+      <button class="chat-send" disabled aria-label="Free-text Q&amp;A ships in V2" title="Free-text Q&amp;A ships in V2">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h15M13 6l6 6-6 6"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== INSURANCE QUESTIONNAIRE (manual entry, no source document) ===================== -->
+<div class="modal-overlay" id="questionnaire-overlay" onclick="if(event.target===this) closeQuestionnaire()">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="q-modal-title">
+    <div class="modal-head">
+      <div>
+        <h3 id="q-modal-title">Insurance questionnaire</h3>
+        <div class="modal-sub">For assets with no JV asset register, SOV, or P&amp;C schedule available · FR3.9</div>
+      </div>
+      <button class="rail-toggle" onclick="closeQuestionnaire()" aria-label="Close questionnaire">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="q-row">
+        <label for="q-entity">Entity / site</label>
+        <select id="q-entity">
+          <option>Keppel Infrastructure — Singapore</option>
+          <option>Keppel Energy — Jurong Island</option>
+          <option>Keppel Offshore &amp; Marine — Batam</option>
+          <option>Keppel Land — Vietnam</option>
+          <option>Keppel Data Centres — Frankfurt</option>
+          <option>Keppel Data Centres — London</option>
+          <option>Keppel Infrastructure — Shanghai</option>
+          <option>Keppel Renewables — São Paulo</option>
+        </select>
+      </div>
+      <div class="q-row-split">
+        <div class="q-row"><label for="q-asset-class">Asset class / occupancy</label><input id="q-asset-class" type="text" placeholder="e.g. Data centre, warehouse, offshore yard"></div>
+        <div class="q-row"><label for="q-currency">Currency</label><select id="q-currency"><option>SGD</option><option>USD</option><option>EUR</option><option>IDR</option><option>VND</option></select></div>
+      </div>
+      <div class="q-row-split">
+        <div class="q-row"><label for="q-tiv">Declared value (TIV)</label><input id="q-tiv" type="number" placeholder="e.g. 210000000"></div>
+        <div class="q-row"><label for="q-pml">PML / MFL (%)</label><input id="q-pml" type="number" placeholder="e.g. 65"></div>
+      </div>
+      <div class="q-row">
+        <label for="q-reason">Why no source document?</label>
+        <select id="q-reason">
+          <option>JV asset register not available</option>
+          <option>P&amp;C schedule not yet issued</option>
+          <option>Asset newly acquired / not yet insured</option>
+          <option>Other (see notes)</option>
+        </select>
+      </div>
+      <div class="q-row">
+        <label for="q-notes">Notes (optional)</label>
+        <textarea id="q-notes" rows="2" placeholder="Any context for the reviewer"></textarea>
+      </div>
+      <div class="cfg-note">This entry will be tagged <b>manual entry — no source document</b> and routed to the validation queue. It follows the same review, versioning, and audit trail as extracted data — nothing reaches live KPIs until a reviewer approves it (§9.1).</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeQuestionnaire()">Cancel</button>
+      <button class="btn btn-primary" onclick="submitQuestionnaire()">Submit for validation</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span class="dot"></span><span id="toast-msg"></span></div>
+
+<script>
+  /* ---------------- navigation ---------------- */
+  const pageNames = {
+    overview:'Group Overview', map:'Global Map', hotspots:'Risk Hotspots',
+    coverage:'Coverage Adequacy', contracts:'Contract Requirements', exclusions:'Insurance Exclusions', inbox:'Document Inbox'
+  };
+  function goTo(page){
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.getElementById('page-'+page).classList.add('active');
+    document.querySelectorAll('.sb-item').forEach(i=>i.classList.toggle('active', i.dataset.page===page));
+    document.getElementById('crumb').textContent = pageNames[page];
+    window.scrollTo({top:0, behavior:'smooth'});
+    currentPage = page;
+    renderActionRail(page);
+    renderChatSuggestions(page);
+  }
+  document.querySelectorAll('.sb-item').forEach(item=>{
+    item.addEventListener('click', ()=>goTo(item.dataset.page));
+    item.addEventListener('keydown', e=>{ if(e.key==='Enter' || e.key===' '){ e.preventDefault(); goTo(item.dataset.page); } });
+  });
+
+  function showToast(msg){
+    const t = document.getElementById('toast');
+    document.getElementById('toast-msg').textContent = msg;
+    t.classList.add('show');
+    clearTimeout(window._toastTimer);
+    window._toastTimer = setTimeout(()=>t.classList.remove('show'), 3200);
+  }
+
+  /* ---------------- world map silhouette (dot-matrix continents) ---------------- */
+  const landPolys = [
+    /* North America */
+    [[-165,68],[-150,71],[-125,74],[-100,73],[-80,68],[-65,60],[-58,50],[-65,46],[-70,42],
+     [-75,35],[-81,26],[-83,25],[-97,26],[-94,18],[-90,15],[-86,10],[-83,8],[-79,9],[-83,11],
+     [-90,16],[-97,20],[-105,21],[-112,25],[-115,28],[-117,32],[-122,37],[-124,44],[-124,48],
+     [-130,52],[-135,57],[-140,60],[-152,58],[-165,60],[-168,65]],
+    /* Greenland */
+    [[-46,83],[-20,82],[-18,70],[-25,61],[-40,60],[-52,65],[-56,72],[-52,80]],
+    /* South America */
+    [[-77,10],[-71,11],[-60,10],[-51,4],[-49,-1],[-35,-8],[-38,-14],[-40,-20],[-43,-23],
+     [-48,-26],[-53,-30],[-58,-35],[-62,-40],[-65,-45],[-68,-52],[-70,-55],[-72,-52],
+     [-73,-45],[-72,-38],[-71,-33],[-71,-25],[-70,-18],[-77,-10],[-81,-4],[-79,3],[-77,10]],
+    /* Europe + Asia + Middle East + India + mainland SE Asia (Eurasia) */
+    [[-9,38],[-6,36],[-1,37],[3,43],[7,44],[12,44],[13,40],[16,38],[19,40],[22,36],[26,40],
+     [30,36],[36,36],[35,31],[33,27],[36,22],[43,25],[48,29],[50,26],[56,26],[58,22],[62,25],
+     [61,29],[55,27],[50,30],[48,30],[44,33],[48,38],[54,37],[58,38],[62,36],[68,23],[72,21],
+     [70,15],[73,10],[77,8],[80,9],[80,13],[80,17],[85,20],[90,22],[92,21],[94,16],[98,10],
+     [102,7],[103,1],[104,4],[100,8],[98,13],[100,17],[103,20],[109,11],[108,16],[106,21],
+     [110,18],[113,22],[117,23],[120,24],[121,26],[121,31],[122,34],[126,35],[129,36],
+     [130,42],[135,45],[142,46],[145,50],[142,54],[150,59],[160,60],[165,65],[172,66],
+     [178,68],[170,70],[155,73],[140,74],[120,73],[100,76],[80,73],[65,72],[60,68],[50,68],
+     [40,66],[30,70],[25,71],[18,69],[10,63],[5,58],[9,54],[13,55],[14,54],[9,53],[4,51],
+     [2,51],[-2,48],[-5,43],[-9,43]],
+    /* United Kingdom & Ireland */
+    [[-10,51],[-8,52],[-8,55],[-6,55],[-5,58],[-3,58],[-1,54],[-2,51],[-5,50]],
+    /* Japan */
+    [[130,32],[132,34],[136,35],[140,36],[141,40],[142,43],[144,44],[141,45],[139,41],[136,37],[133,35],[130,33]],
+    /* Sumatra / Java (Indonesia west) */
+    [[95,5],[98,3],[103,-3],[106,-6],[110,-7],[115,-8],[114,-7],[108,-6],[104,-2],[99,1],[96,4]],
+    /* Borneo / Sulawesi (Indonesia east) */
+    [[109,4],[115,4],[118,1],[117,-3],[114,-4],[110,0]],
+    /* Philippines */
+    [[121,18],[123,17],[125,13],[126,9],[123,7],[121,10],[120,14]],
+    /* New Guinea */
+    [[131,-2],[138,-3],[145,-5],[150,-9],[147,-9],[140,-7],[133,-4]],
+    /* Africa */
+    [[-17,21],[-16,15],[-11,7],[-9,5],[2,5],[9,4],[9,7],[13,4],[9,1],[10,-6],[12,-15],
+     [12,-18],[15,-23],[18,-29],[20,-34],[26,-33],[33,-27],[35,-24],[35,-18],[40,-15],
+     [40,-5],[43,-1],[46,4],[43,10],[43,12],[48,11],[47,9],[43,12],[41,15],[38,16],[36,22],
+     [33,27],[32,31],[29,31],[25,32],[18,33],[10,37],[3,36],[-1,35],[-6,33],[-9,32],[-13,28],
+     [-17,21]],
+    /* Madagascar */
+    [[43,-12],[47,-13],[50,-16],[48,-22],[45,-25],[43,-20],[43,-15]],
+    /* Australia */
+    [[113,-22],[121,-18],[129,-12],[132,-12],[136,-14],[142,-11],[145,-16],[147,-19],
+     [153,-27],[151,-32],[150,-36],[147,-38],[140,-38],[137,-35],[132,-32],[128,-32],
+     [122,-34],[115,-34],[113,-26]],
+    /* Tasmania */
+    [[145,-41],[148,-41],[147,-43],[145,-42]],
+    /* Antarctica (thin band) */
+    [[-180,-65],[180,-65],[180,-85],[-180,-85]]
+  ];
+  function pointInPoly(x, y, poly){
+    let inside = false;
+    for(let i=0, j=poly.length-1; i<poly.length; j=i++){
+      const xi=poly[i][0], yi=poly[i][1], xj=poly[j][0], yj=poly[j][1];
+      const intersect = ((yi>y)!==(yj>y)) && (x < (xj-xi)*(y-yi)/(yj-yi)+xi);
+      if(intersect) inside = !inside;
+    }
+    return inside;
+  }
+  function renderWorldDots(){
+    const g = document.getElementById('world-dots');
+    if(!g) return;
+    const projected = landPolys.map(poly => poly.map(([lon,lat]) => { const p=project(lon,lat); return [p.x,p.y]; }));
+    const step = 8;
+    let out = '';
+    for(let y=6; y<500; y+=step){
+      for(let x=6; x<1000; x+=step){
+        for(let k=0; k<projected.length; k++){
+          if(pointInPoly(x, y, projected[k])){
+            out += '<circle cx="'+x+'" cy="'+y+'" r="1.3" fill="rgba(255,255,255,.34)"></circle>';
+            break;
+          }
+        }
+      }
+    }
+    g.innerHTML = out;
+  }
+
+  /* ---------------- global coverage-line filter (FR5) ---------------- */
+  /* Declared before any page's data/render code so every later section can call
+     filterByLines()/reference selectedLines from its very first render. */
+  const insuranceLines = [
+    {group:'Property & engineering', items:[
+      {key:'iar', label:'Property Damage & Business Interruption (Industrial All Risks)'},
+      {key:'car', label:'Construction All Risks (CAR) / Erection All Risks (EAR)'},
+      {key:'terrorism', label:'Terrorism, Sabotage & Political Violence'},
+      {key:'environmental', label:'Environmental / Pollution Liability'}
+    ]},
+    {group:'Marine', items:[
+      {key:'marine-cargo', label:'Marine Cargo'},
+      {key:'marine-hull', label:'Marine Hull & Machinery'},
+      {key:'marine-liability', label:'Marine Liability (P&I / charterers)'}
+    ]},
+    {group:'Liability & financial lines', items:[
+      {key:'general-liability', label:'Public / General Liability'},
+      {key:'products-liability', label:'Products Liability'},
+      {key:'professional-indemnity', label:'Professional Indemnity'},
+      {key:'do', label:'Directors & Officers (D&O)'},
+      {key:'political-risk', label:'Political Risk / Trade Credit'}
+    ]},
+    {group:'People & specialty', items:[
+      {key:'workmens-comp', label:"Workmen's Compensation / Employer's Liability"},
+      {key:'gpa', label:'Group Personal Accident & Business Travel'},
+      {key:'motor', label:'Motor Fleet'},
+      {key:'cyber', label:'Cyber'},
+      {key:'aviation', label:'Aviation'}
+    ]}
+  ];
+  const selectedLines = new Set();
+  function filterByLines(data){
+    if(selectedLines.size===0) return data;
+    return data.filter(d=> !d.lineKeys || d.lineKeys.some(k=>selectedLines.has(k)));
+  }
+  function renderLineFilterPanel(){
+    document.getElementById('line-filter-groups').innerHTML = insuranceLines.map(g=>
+      '<div class="line-filter-group-label">'+g.group+'</div>' +
+      g.items.map(it=>{
+        const checked = selectedLines.has(it.key) ? 'checked' : '';
+        return '<label class="line-filter-row"><input type="checkbox" '+checked+' onchange="toggleLine(\''+it.key+'\', this.checked)">'+it.label+'</label>';
+      }).join('')
+    ).join('');
+  }
+  function updateLineFilterLabel(){
+    const label = document.getElementById('line-filter-label');
+    if(selectedLines.size===0){ label.textContent = 'Coverage: All lines'; return; }
+    if(selectedLines.size===1){
+      const key = [...selectedLines][0];
+      const found = insuranceLines.flatMap(g=>g.items).find(it=>it.key===key);
+      label.textContent = 'Coverage: '+(found ? found.label : key);
+      return;
+    }
+    label.textContent = 'Coverage: '+selectedLines.size+' lines';
+  }
+  function toggleLine(key, checked){
+    if(checked) selectedLines.add(key); else selectedLines.delete(key);
+    updateLineFilterLabel();
+    applyLineFilter();
+  }
+  function clearLineFilter(){
+    selectedLines.clear();
+    renderLineFilterPanel();
+    updateLineFilterLabel();
+    applyLineFilter();
+  }
+  function applyLineFilter(){
+    renderReqTable(currentReqView);
+    renderReqSummary();
+    renderCov(currentCovView==='entity' ? covByEntity : covByLine);
+    renderAssetMarkers();
+    renderAssetList();
+    document.getElementById('asset-detail').innerHTML = '<span class="empty">Click any marker or asset to see that site\'s coverage and risk profile.</span>';
+    document.getElementById('asset-count').textContent = '0 / '+visibleAssets().length;
+    renderHot();
+    renderQueue();
+    renderHeatgrid();
+    renderExceptions();
+    renderOverviewKPIs();
+    renderExclTable(currentExclView);
+  }
+  function toggleLineFilter(e){
+    if(e) e.stopPropagation();
+    const wrap = document.getElementById('line-filter');
+    const willOpen = !wrap.classList.contains('open');
+    wrap.classList.toggle('open', willOpen);
+    document.getElementById('line-filter-btn').setAttribute('aria-expanded', String(willOpen));
+  }
+  document.addEventListener('click', (e)=>{
+    const wrap = document.getElementById('line-filter');
+    if(wrap && wrap.classList.contains('open') && !wrap.contains(e.target)){
+      wrap.classList.remove('open');
+      document.getElementById('line-filter-btn').setAttribute('aria-expanded','false');
+    }
+  });
+  renderLineFilterPanel();
+
+  /* ---------------- global asset map ---------------- */
+  const bandColor = { low:'#1F7A5C', medium:'#C9932E', high:'#C9642E', critical:'#8B2E22' };
+  const bandLabel = { low:'Low', medium:'Medium', high:'High', critical:'Critical' };
+  /* Canonical mapping of which insurance lines each site carries — derived from the
+     Contract Requirements register (contractReqs) so the coverage-line filter agrees
+     across every page that references the same asset. */
+  const assetLines = {
+    'Keppel Infrastructure — Singapore': ['iar'],
+    'Keppel Energy — Jurong Island': ['iar','environmental'],
+    'Keppel Offshore & Marine — Batam': ['iar','marine-liability'],
+    'Keppel Land — Vietnam': ['iar'],
+    'Keppel Data Centres — Frankfurt': ['iar','cyber'],
+    'Keppel Data Centres — London': ['iar','cyber'],
+    'Keppel Infrastructure — Shanghai': ['iar'],
+    'Keppel Renewables — São Paulo': ['iar']
+  };
+  /* Policy exclusions/sub-limits by asset — declared here (before any page's initial
+     render) so Global Map, Contract Requirements, and the Insurance Exclusions page can
+     all reference it from their first render without a temporal-dead-zone error. */
+  const exclusions = [
+    {asset:'Keppel Data Centres — Frankfurt', line:'Property (IAR)', lineKeys:['iar'], title:'Flood cover sub-limited to S$50M (TIV S$410M)', scope:'sublimit', source:'Policy wording §4.2 — Nat-Cat Schedule',
+      conflict:true, conflictNote:"DBS facility agreement (cl.14.3) requires full reinstatement value — the flood sub-limit leaves roughly S$360M of TIV effectively uninsured for this peril, and this site is inside the active Rhine basin flood advisory."},
+    {asset:'Keppel Data Centres — Frankfurt', line:'Cyber', lineKeys:['cyber'], title:'Silent cyber & state-sponsored cyber-war excluded (LMA5567)', scope:'full', source:'Cyber policy wording cl.9 — War & Cyber-War Exclusion'},
+    {asset:'Keppel Energy — Jurong Island', line:'Property (IAR)', lineKeys:['iar'], title:'Machinery breakdown consequential loss excluded', scope:'full', source:'Policy wording §6.1'},
+    {asset:'Keppel Energy — Jurong Island', line:'Environmental Liability', lineKeys:['environmental'], title:'Gradual pollution excluded — sudden & accidental only', scope:'full', source:'Environmental policy wording cl.3.4',
+      conflict:true, conflictNote:"JTC's Jurong Island site licence requires cover for gradual as well as sudden pollution events — this policy only responds to sudden & accidental releases, so the licence condition isn't met regardless of the limit purchased."},
+    {asset:'Keppel Offshore & Marine — Batam', line:'Marine Liability (P&I)', lineKeys:['marine-liability'], title:'War, piracy & confiscation excluded outside charter trading limits', scope:'full', source:'P&I Club Rules r.24'},
+    {asset:'Keppel Offshore & Marine — Batam', line:'Property (IAR)', lineKeys:['iar'], title:'Named Windstorm sub-limited to S$50M', scope:'sublimit', source:'Policy wording §4.2 — Nat-Cat Schedule'},
+    {asset:'Keppel Land — Vietnam', line:'Property (IAR)', lineKeys:['iar'], title:'Strikes, Riots & Civil Commotion (SRCC) excluded', scope:'full', source:'Policy wording §7'},
+    {asset:'Keppel Data Centres — London', line:'Cyber', lineKeys:['cyber'], title:'Betterment / system-upgrade costs excluded from incident response', scope:'full', source:'Cyber policy wording cl.11'},
+    {asset:'Keppel Data Centres — London', line:'Property (IAR)', lineKeys:['iar'], title:'Subsidence and heave excluded', scope:'full', source:'Policy wording §5.3'},
+    {asset:'Keppel Infrastructure — Shanghai', line:'Property (IAR)', lineKeys:['iar'], title:'Earthquake sub-limited to S$30M (TIV S$190M)', scope:'sublimit', source:'Policy wording §4.2 — Nat-Cat Schedule',
+      conflict:true, conflictNote:'The PPP concession authority requires full reinstatement value cover — the earthquake sub-limit leaves the large majority of TIV uninsured for this peril in a seismically active region.'},
+    {asset:'Keppel Renewables — São Paulo', line:'Property (IAR)', lineKeys:['iar'], title:'Named perils only — flood confined to defined watercourse overflow', scope:'sublimit', source:'Policy wording §4.1'},
+    {asset:'Keppel Infrastructure — Singapore', line:'Property (IAR)', lineKeys:['iar'], title:'Terrorism & sabotage excluded, no buy-back purchased', scope:'full', source:'Policy wording §8'}
+  ];
+  function assetConflicts(name){
+    return exclusions.filter(e=>e.conflict && e.asset===name);
+  }
+  const assets = [
+    {name:'Keppel Infrastructure — Singapore', country:'Singapore', lon:103.80, lat:1.35, score:32, band:'low', tiv:210, premium:1.8, itv:103},
+    {name:'Keppel Energy — Jurong Island', country:'Singapore', lon:103.68, lat:1.27, score:71, band:'high', tiv:340, premium:3.1, itv:94},
+    {name:'Keppel Offshore & Marine — Batam', country:'Indonesia', lon:104.00, lat:1.00, score:76, band:'high', tiv:180, premium:1.4, itv:78},
+    {name:'Keppel Land — Vietnam', country:'Vietnam', lon:106.70, lat:10.80, score:54, band:'medium', tiv:150, premium:1.1, itv:91},
+    {name:'Keppel Data Centres — Frankfurt', country:'Germany', lon:8.68, lat:50.11, score:88, band:'critical', tiv:410, premium:4.6, itv:61},
+    {name:'Keppel Data Centres — London', country:'United Kingdom', lon:-0.13, lat:51.50, score:44, band:'medium', tiv:265, premium:2.3, itv:96},
+    {name:'Keppel Infrastructure — Shanghai', country:'China', lon:121.47, lat:31.23, score:61, band:'high', tiv:190, premium:1.7, itv:85},
+    {name:'Keppel Renewables — São Paulo', country:'Brazil', lon:-46.60, lat:-23.50, score:39, band:'medium', tiv:120, premium:0.9, itv:99}
+  ].map(a => ({...a, lineKeys: assetLines[a.name]}));
+  function project(lon, lat){ return { x:(lon+180)/360*1000, y:(90-lat)/180*500 }; }
+  function visibleAssets(){
+    return assets
+      .map((a,i)=>({a,i}))
+      .filter(({a})=> selectedLines.size===0 || !a.lineKeys || a.lineKeys.some(k=>selectedLines.has(k)));
+  }
+  function renderAssetMarkers(){
+    const svgNS='http://www.w3.org/2000/svg';
+    const g=document.getElementById('asset-markers');
+    if(!g) return;
+    g.innerHTML = '';
+    visibleAssets().forEach(({a,i})=>{
+      const p=project(a.lon,a.lat);
+      const r=6+Math.sqrt(a.tiv)*0.55;
+      const wrap=document.createElementNS(svgNS,'g');
+      wrap.setAttribute('class','map-marker');
+      wrap.setAttribute('tabindex','0'); wrap.setAttribute('role','button'); wrap.setAttribute('aria-label',a.name);
+      wrap.onclick=()=>selectAsset(i);
+      wrap.onkeypress=(e)=>{ if(e.key==='Enter') selectAsset(i); };
+      if(a.band==='critical'){
+        const halo=document.createElementNS(svgNS,'circle');
+        halo.setAttribute('cx',p.x); halo.setAttribute('cy',p.y); halo.setAttribute('r',r);
+        halo.setAttribute('fill',bandColor[a.band]); halo.setAttribute('class','map-pulse');
+        wrap.appendChild(halo);
+      }
+      const core=document.createElementNS(svgNS,'circle');
+      core.setAttribute('cx',p.x); core.setAttribute('cy',p.y); core.setAttribute('r',r);
+      core.setAttribute('fill',bandColor[a.band]); core.setAttribute('fill-opacity','0.85');
+      core.setAttribute('stroke','#18130E'); core.setAttribute('stroke-width','1.5'); core.setAttribute('class','core');
+      const title=document.createElementNS(svgNS,'title');
+      title.textContent=a.name+' — score '+a.score+' ('+bandLabel[a.band]+')';
+      wrap.appendChild(core); wrap.appendChild(title);
+      g.appendChild(wrap);
+    });
+  }
+  function selectAsset(i){
+    const a=assets[i];
+    const conflicts = assetConflicts(a.name);
+    document.getElementById('asset-count').textContent=(i+1)+' / '+assets.length;
+    document.getElementById('asset-detail').innerHTML =
+      '<div class="asset-detail-head"><span class="name">'+a.name+'</span><span class="chip chip-'+a.band+'"><span class="dot"></span>'+bandLabel[a.band]+'</span></div>'+
+      '<div class="asset-stat"><span>Country</span><span>'+a.country+'</span></div>'+
+      '<div class="asset-stat"><span>Composite risk score</span><span>'+a.score+' / 100</span></div>'+
+      '<div class="asset-stat"><span>Insurance-to-value</span><span>'+a.itv+'%</span></div>'+
+      '<div class="asset-stat"><span>Total insured value</span><span>S$'+a.tiv+'M</span></div>'+
+      '<div class="asset-stat"><span>Premium (FY)</span><span>S$'+a.premium+'M</span></div>'+
+      (conflicts.length
+        ? '<div class="asset-stat"><span>Policy exclusion conflicts</span><span style="color:var(--band-high); font-weight:600;">'+conflicts.length+'</span></div>'+
+          '<div style="margin-top:8px; padding:8px 10px; background:var(--band-high-bg); border-radius:8px; font-size:11.5px; line-height:1.4; color:#6E3A16;">⚠ '+conflicts.map(c=>c.title).join('; ')+' — <a href="#" onclick="goTo(\'exclusions\');return false;" style="color:var(--crimson-deep); font-weight:600;">view in Insurance Exclusions →</a></div>'
+        : '<div class="asset-stat"><span>Policy exclusion conflicts</span><span>None</span></div>');
+    document.querySelectorAll('#asset-list .asset-list-item').forEach(el=>{
+      el.classList.toggle('selected', Number(el.dataset.idx)===i);
+    });
+  }
+  function renderAssetList(){
+    const list=document.getElementById('asset-list');
+    if(!list) return;
+    const visible = visibleAssets();
+    document.getElementById('asset-list-count').textContent=visible.length+' sites';
+    document.getElementById('map-site-count').textContent=visible.length+' sites · marker size = TIV';
+    list.innerHTML = visible.length ? visible.map(({a,i})=>{
+      const conflictCount = assetConflicts(a.name).length;
+      const warnBadge = conflictCount ? ' <span style="color:var(--band-high); font-weight:600;">⚠ '+conflictCount+'</span>' : '';
+      return '<div class="asset-list-item" data-idx="'+i+'" tabindex="0" role="button" aria-label="'+a.name+'" onclick="selectAsset('+i+')" onkeypress="if(event.key===\'Enter\')selectAsset('+i+')">'+
+        '<div class="ali-main">'+
+          '<span class="ali-name">'+a.name+'</span>'+
+          '<span class="ali-sub">'+a.country+' · score '+a.score+warnBadge+'</span>'+
+        '</div>'+
+        '<div class="ali-right">'+
+          '<span class="ali-tiv">S$'+a.tiv+'M</span>'+
+          '<span class="chip chip-'+a.band+'"><span class="dot"></span>'+bandLabel[a.band]+'</span>'+
+        '</div>'+
+      '</div>';
+    }).join('') : '<div style="padding:16px 8px; font-size:12px; color:var(--muted); font-style:italic;">No assets carry the selected coverage line.</div>';
+  }
+  renderWorldDots();
+  renderAssetMarkers();
+  renderAssetList();
+
+  /* ---------------- risk hotspots ---------------- */
+  const hotspots = [
+    {name:'Keppel Data Centres — Frankfurt', score:88, band:'critical', driver:'Coverage gap + nat-cat exposure'},
+    {name:'Keppel Offshore & Marine — Batam', score:76, band:'high', driver:'Uninsured TIV'},
+    {name:'Keppel Energy — Jurong Island', score:71, band:'high', driver:'Carrier concentration'},
+    {name:'Keppel Land — Vietnam', score:54, band:'medium', driver:'Political / country risk'},
+    {name:'Keppel Infrastructure — Singapore', score:32, band:'low', driver:'—'}
+  ].map(h => ({...h, lineKeys: assetLines[h.name]}));
+  let hotSortAsc = false;
+  let hotSelectedName = 'Keppel Data Centres — Frankfurt';
+  const driverData = {
+    'Keppel Data Centres — Frankfurt': [
+      {label:'Coverage gap severity', weight:'28%', pct:92, color:'critical'},
+      {label:'Nat-cat exposure (flood index)', weight:'14%', pct:81, color:'high'},
+      {label:'Uninsured TIV', weight:'18%', pct:66, color:'medium'}
+    ]
+  };
+  function visibleHotspots(){ return filterByLines(hotspots); }
+  function renderHot(){
+    const tbody=document.getElementById('hot-tbody');
+    tbody.innerHTML='';
+    const visible = visibleHotspots();
+    if(!visible.length){
+      tbody.innerHTML = '<tr><td colspan="4" style="color:var(--muted); font-style:italic;">No sites match the selected coverage filter.</td></tr>';
+      document.getElementById('hot-count').textContent = '0 sites';
+      document.getElementById('driver-title').textContent = 'No site selected';
+      document.getElementById('driver-body').innerHTML = '';
+      return;
+    }
+    if(!visible.some(h=>h.name===hotSelectedName)) hotSelectedName = visible[0].name;
+    visible.forEach(h=>{
+      const tr=document.createElement('tr');
+      if(h.name===hotSelectedName) tr.classList.add('selected');
+      tr.innerHTML = '<td>'+h.name+'</td><td class="mono">'+h.score+'</td>'+
+        '<td><span class="chip chip-'+h.band+'"><span class="dot"></span>'+bandLabel[h.band]+'</span></td>'+
+        '<td>'+h.driver+'</td>';
+      tr.onclick=()=>{ hotSelectedName=h.name; renderHot(); renderDriver(h.name); };
+      tbody.appendChild(tr);
+    });
+    document.getElementById('hot-count').textContent = visible.length+' sites';
+    renderDriver(hotSelectedName);
+  }
+  function renderDriver(name){
+    const h = hotspots.find(h=>h.name===name);
+    if(!h) return;
+    document.getElementById('driver-title').textContent = 'Why '+name.split('—')[1].trim()+' scored '+h.score;
+    const data = driverData[name] || [
+      {label:'Coverage gap severity', weight:'28%', pct:30, color:'low'},
+      {label:'Uninsured TIV', weight:'18%', pct:20, color:'low'},
+      {label:'Nat-cat exposure', weight:'14%', pct:25, color:'low'}
+    ];
+    document.getElementById('driver-body').innerHTML = data.map(d=>
+      '<div class="cov-row"><div class="cov-top"><span>'+d.label+'</span><span class="val">'+d.weight+' weight</span></div>'+
+      '<div class="cov-track"><div class="cov-fill" style="width:'+d.pct+'%;background:var(--band-'+d.color+');"></div></div></div>'
+    ).join('');
+  }
+  function sortHot(key){
+    if(key==='score'){ hotSortAsc=!hotSortAsc; hotspots.sort((a,b)=> hotSortAsc ? a.score-b.score : b.score-a.score); }
+    else { hotspots.sort((a,b)=> a.name.localeCompare(b.name)); }
+    renderHot();
+  }
+  renderHot();
+
+  /* ---------------- coverage adequacy ---------------- */
+  const covByEntity = [
+    {label:'Keppel Infrastructure — Singapore', pct:103, color:'low'},
+    {label:'Keppel Energy — Jurong Island', pct:94, color:'low'},
+    {label:'Keppel Land — Vietnam', pct:91, color:'medium'},
+    {label:'Keppel Offshore & Marine — Batam', pct:78, color:'high'},
+    {label:'Keppel Data Centres — Frankfurt', pct:61, color:'critical'}
+  ];
+  const covByLine = [
+    {label:'Property (all risks)', pct:88, color:'medium', lineKeys:['iar']},
+    {label:'Business interruption', pct:74, color:'high', lineKeys:['iar']},
+    {label:'Marine cargo & hull', pct:96, color:'low', lineKeys:['marine-cargo','marine-hull']},
+    {label:'Directors & officers', pct:100, color:'low', lineKeys:['do']},
+    {label:'Public / product liability', pct:82, color:'medium', lineKeys:['general-liability','products-liability']}
+  ];
+  let currentCovView = 'entity';
+  function renderCov(data){
+    const filtered = filterByLines(data);
+    document.getElementById('cov-panel').innerHTML =
+      '<div class="panel-h"><h3>Insurance-to-value</h3><span>target ≈100% · flag &lt;90%</span></div>' +
+      (filtered.length ? filtered.map(d=>
+        '<div class="cov-row"><div class="cov-top"><span>'+d.label+'</span><span class="val">'+d.pct+'%</span></div>'+
+        '<div class="cov-track"><div class="cov-fill" style="width:'+Math.min(d.pct,100)+'%;background:var(--band-'+d.color+');"></div></div></div>'
+      ).join('') : '<div class="fine" style="margin:8px 0;">No lines of business match the selected coverage filter.</div>') +
+      '<div class="fine">Click a bar → underlying sum insured, TIV source, and FX rate used (FR2.4 lineage) · a high ITV% doesn\'t guarantee the peril isn\'t excluded — see <a href="#" onclick="goTo(\'exclusions\');return false;" style="color:var(--crimson-deep);">Insurance Exclusions</a></div>';
+  }
+  function setCovView(which, btn){
+    document.querySelectorAll('#page-coverage .toggle-group button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    currentCovView = which;
+    renderCov(which==='entity' ? covByEntity : covByLine);
+  }
+  renderCov(covByEntity);
+
+  /* ---------------- contract requirements ---------------- */
+  const contractReqs = [
+    {asset:'Keppel Data Centres — Frankfurt', ctype:'Lender', counterparty:'DBS Bank (Facility Agent) · Facility Agmt cl.14.3', line:'Property (IAR)', lineKeys:['iar'], unit:'sgd', required:410, placed:410, status:'met'},
+    {asset:'Keppel Data Centres — Frankfurt', ctype:'Customer', counterparty:'Hyperscaler tenant · Lease Sched. 4', line:'Cyber', lineKeys:['cyber'], unit:'sgd', required:50, placed:30, status:'gap'},
+    {asset:'Keppel Data Centres — Frankfurt', ctype:'Lender', counterparty:'DBS Bank (Facility Agent) · Facility Agmt cl.14.3', line:'Business Interruption', lineKeys:['iar'], unit:'months', required:24, placed:18, status:'gap'},
+    {asset:'Keppel Energy — Jurong Island', ctype:'JV Partner', counterparty:"Sembcorp · Shareholders' Agmt cl.9", line:'Property (IAR)', lineKeys:['iar'], unit:'sgd', required:300, placed:340, status:'met'},
+    {asset:'Keppel Energy — Jurong Island', ctype:'Government', counterparty:'JTC · Jurong Island site licence', line:'Environmental Liability', lineKeys:['environmental'], unit:'sgd', required:20, placed:15, status:'gap'},
+    {asset:'Keppel Offshore & Marine — Batam', ctype:'Customer', counterparty:'Charter counterparty · Charterparty cl.22', line:'Marine Liability (P&I)', lineKeys:['marine-liability'], unit:'sgd', required:150, placed:150, status:'met'},
+    {asset:'Keppel Offshore & Marine — Batam', ctype:'Lender', counterparty:'Local facility bank · Loan agmt', line:'Property (IAR)', lineKeys:['iar'], unit:'sgd', required:180, placed:172, status:'at-risk'},
+    {asset:'Keppel Land — Vietnam', ctype:'JV Partner', counterparty:"Local JV partner · Shareholders' Agmt", line:'Property (IAR)', lineKeys:['iar'], unit:'sgd', required:160, placed:150, status:'gap'},
+    {asset:'Keppel Data Centres — London', ctype:'Customer', counterparty:'Tier-1 bank tenant · Lease Sched. 6', line:'Cyber', lineKeys:['cyber'], unit:'sgd', required:40, placed:40, status:'met'},
+    {asset:'Keppel Data Centres — London', ctype:'Lender', counterparty:'HSBC · Facility Agmt', line:'Business Interruption', lineKeys:['iar'], unit:'months', required:18, placed:24, status:'met'},
+    {asset:'Keppel Infrastructure — Shanghai', ctype:'Government', counterparty:'PPP concession authority', line:'Property (IAR)', lineKeys:['iar'], unit:'sgd', required:200, placed:190, status:'at-risk'},
+    {asset:'Keppel Renewables — São Paulo', ctype:'Lender', counterparty:'IFC · Loan covenant sched. B', line:'Property + Business Interruption', lineKeys:['iar'], unit:'sgd', required:130, placed:118, status:'gap'}
+  ];
+  const reqStatusMeta = {
+    met:{label:'Met', chip:'chip-low'},
+    'at-risk':{label:'At risk', chip:'chip-medium'},
+    gap:{label:'Gap', chip:'chip-critical'},
+    excluded:{label:'Excluded', chip:'chip-high'}
+  };
+  function fmtReq(v, unit){ return unit==='months' ? v+' mo' : 'S$'+v+'M'; }
+  function reqConflict(r){
+    /* Matched on the exact line label, not the broader lineKeys bucket used by the
+       topbar filter — Property (IAR) and Business Interruption share the 'iar' key
+       for filtering purposes, but a flood sub-limit on the IAR line shouldn't also
+       flag an unrelated BI requirement as excluded. */
+    return exclusions.find(e=> e.conflict && e.asset===r.asset && e.line===r.line);
+  }
+  function reqEffectiveStatus(r){
+    return reqConflict(r) ? 'excluded' : r.status;
+  }
+  function renderReqSummary(){
+    const total = contractReqs.length;
+    const scored = contractReqs.map(r=>reqEffectiveStatus(r));
+    const met = scored.filter(s=>s==='met').length;
+    const atRisk = scored.filter(s=>s==='at-risk').length;
+    const gap = scored.filter(s=>s==='gap').length;
+    const excluded = scored.filter(s=>s==='excluded').length;
+    const assetCount = new Set(contractReqs.map(r=>r.asset)).size;
+    document.getElementById('req-total').textContent = total;
+    document.getElementById('req-total-sub').textContent = 'across '+assetCount+' assets';
+    document.getElementById('req-met').textContent = met;
+    document.getElementById('req-met-sub').textContent = Math.round(met/total*100)+'% of requirements';
+    document.getElementById('req-atrisk').textContent = atRisk;
+    document.getElementById('req-atrisk-sub').textContent = 'within 10% of minimum';
+    document.getElementById('req-gap').textContent = gap;
+    document.getElementById('req-gap-sub').textContent = 'below contractual minimum';
+    document.getElementById('req-excluded').textContent = excluded;
+    document.getElementById('req-excluded-sub').textContent = 'peril excluded by policy wording';
+    document.getElementById('contracts-badge').textContent = gap + excluded;
+  }
+  let currentReqView = 'all';
+  function renderReqTable(filter){
+    currentReqView = filter;
+    const byStatus = filter==='open' ? contractReqs.filter(r=>reqEffectiveStatus(r)!=='met') : contractReqs;
+    const rows = filterByLines(byStatus);
+    document.getElementById('req-count').textContent = rows.length+' rows';
+    document.getElementById('req-tbody').innerHTML = rows.length ? rows.map(r=>{
+      const status = reqEffectiveStatus(r);
+      const sm = reqStatusMeta[status];
+      const conflict = status==='excluded' ? reqConflict(r) : null;
+      const note = conflict ? '<div style="color:var(--band-high); font-size:10.5px; margin-top:4px; line-height:1.4;">⚠ '+conflict.title+' — '+conflict.conflictNote+'</div>' : '';
+      return '<tr>'+
+        '<td>'+r.asset+'</td>'+
+        '<td>'+r.ctype+' <span style="color:var(--muted);">· '+r.counterparty+'</span>'+note+'</td>'+
+        '<td>'+r.line+'</td>'+
+        '<td class="mono">'+fmtReq(r.required, r.unit)+'</td>'+
+        '<td class="mono">'+fmtReq(r.placed, r.unit)+'</td>'+
+        '<td><span class="chip '+sm.chip+'"><span class="dot"></span>'+sm.label+'</span></td>'+
+      '</tr>';
+    }).join('') : '<tr><td colspan="6" style="color:var(--muted); font-style:italic;">No requirements match the selected coverage filter.</td></tr>';
+  }
+  function setReqView(which, btn){
+    document.querySelectorAll('#page-contracts .toggle-group button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    renderReqTable(which);
+  }
+  /* Initial render of Contract Requirements is deferred to the end of the
+     Insurance Exclusions block below — reqEffectiveStatus()/reqConflict() need
+     the `exclusions` array to exist first, or this throws before it's declared. */
+
+  /* ---------------- insurance exclusions ---------------- */
+  function renderExclSummary(){
+    const total = exclusions.length;
+    const full = exclusions.filter(e=>e.scope==='full').length;
+    const sublimit = exclusions.filter(e=>e.scope==='sublimit').length;
+    const conflicts = exclusions.filter(e=>e.conflict).length;
+    const assetCount = new Set(exclusions.map(e=>e.asset)).size;
+    document.getElementById('excl-total').textContent = total;
+    document.getElementById('excl-total-sub').textContent = 'across '+assetCount+' assets';
+    document.getElementById('excl-full').textContent = full;
+    document.getElementById('excl-full-sub').textContent = Math.round(full/total*100)+'% of exclusions';
+    document.getElementById('excl-sublimit').textContent = sublimit;
+    document.getElementById('excl-sublimit-sub').textContent = Math.round(sublimit/total*100)+'% of exclusions';
+    document.getElementById('excl-conflicts').textContent = conflicts;
+    document.getElementById('excl-conflicts-sub').textContent = 'undermine a contract requirement';
+    document.getElementById('exclusions-badge').textContent = conflicts;
+  }
+  let currentExclView = 'all';
+  function renderExclTable(filter){
+    currentExclView = filter;
+    const byFilter = filter==='conflicts' ? exclusions.filter(e=>e.conflict) : exclusions;
+    const rows = filterByLines(byFilter);
+    document.getElementById('excl-count').textContent = rows.length+' rows';
+    document.getElementById('excl-tbody').innerHTML = rows.length ? rows.map(e=>{
+      const scopeLabel = e.scope==='full' ? 'Full exclusion' : 'Sub-limit';
+      const statusCell = e.conflict
+        ? '<span class="chip chip-high"><span class="dot"></span>Conflict</span>'
+        : '<span style="color:var(--muted); font-size:11.5px;">Informational</span>';
+      const note = e.conflict ? '<div style="color:var(--band-high); font-size:10.5px; margin-top:4px; line-height:1.4;">⚠ '+e.conflictNote+'</div>' : '';
+      return '<tr>'+
+        '<td>'+e.asset+'</td>'+
+        '<td>'+e.line+'</td>'+
+        '<td>'+e.title+note+'</td>'+
+        '<td>'+scopeLabel+'</td>'+
+        '<td style="color:var(--muted); font-size:11.5px;">'+e.source+'</td>'+
+        '<td>'+statusCell+'</td>'+
+      '</tr>';
+    }).join('') : '<tr><td colspan="6" style="color:var(--muted); font-style:italic;">No exclusions match the selected coverage filter.</td></tr>';
+  }
+  function setExclView(which, btn){
+    document.querySelectorAll('#page-exclusions .toggle-group button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    renderExclTable(which);
+  }
+  renderExclSummary();
+  renderExclTable('all');
+  renderReqSummary();
+  renderReqTable('all');
+
+  /* ---------------- document inbox ---------------- */
+  const queue = [
+    {doc:'Frankfurt_property_slip_2026.pdf', entity:'Keppel Data Centres — Frankfurt', field:'BI sum insured', conf:94, status:'pending'},
+    {doc:'Batam_SOV_schedule.xlsx', entity:'Keppel Offshore & Marine — Batam', field:'PML valuation', conf:61, status:'pending'},
+    {doc:'Vietnam_wording_scan.pdf', entity:'Keppel Land — Vietnam', field:'Territorial limits', conf:58, status:'pending'},
+    {doc:'Jurong_renewal_endorsement.pdf', entity:'Keppel Energy — Jurong Island', field:'Retention / SIR', conf:88, status:'pending'},
+    {doc:'Shanghai_debit_note.pdf', entity:'Keppel Infrastructure — Shanghai', field:'Premium & levies', conf:76, status:'pending'},
+    {doc:'London_broker_cover_note.msg', entity:'Keppel Data Centres — London', field:'Named insureds', conf:69, status:'pending'}
+  ].map(q => ({...q, lineKeys: assetLines[q.entity]}));
+  function renderQueue(){
+    const list=document.getElementById('queue-list');
+    list.innerHTML='';
+    const visible = queue.map((q,i)=>({q,i})).filter(({q})=> selectedLines.size===0 || !q.lineKeys || q.lineKeys.some(k=>selectedLines.has(k)));
+    const pendingCount = visible.filter(({q})=>q.status==='pending').length;
+    document.getElementById('queue-count').textContent = pendingCount;
+    if(!visible.length){
+      list.innerHTML = '<div style="padding:16px 8px; font-size:12px; color:var(--muted); font-style:italic;">No queued documents match the selected coverage filter.</div>';
+      return;
+    }
+    visible.forEach(({q,i})=>{
+      const row=document.createElement('div');
+      row.className='queue-row';
+      let right;
+      if(q.status==='pending'){
+        right = '<div class="queue-actions"><button class="qbtn approve" onclick="actOnQueue('+i+',\'approved\')">Approve</button><button class="qbtn back" onclick="actOnQueue('+i+',\'returned\')">Send back</button></div>';
+      } else if(q.status==='approved'){
+        right = '<span class="status-approved">✓ Approved</span>';
+      } else {
+        right = '<span class="status-returned">↩ Returned to '+q.entity.split('—')[0].trim()+'</span>';
+      }
+      const badge = q.source==='manual'
+        ? '<div class="src-tag" title="No source document — entered via insurance questionnaire">Manual</div>'
+        : '<div class="conf-badge '+(q.conf>=80?'conf-hi':'conf-mid')+'">'+q.conf+'%</div>';
+      row.innerHTML =
+        badge+
+        '<div class="queue-doc"><b>'+q.doc+'</b><span>'+q.entity+' · flagged: '+q.field+'</span></div>'+
+        right;
+      list.appendChild(row);
+    });
+  }
+  function actOnQueue(i, status){
+    queue[i].status = status;
+    renderQueue();
+    showToast(status==='approved' ? 'Field confirmed and posted to live KPIs.' : 'Sent back to entity champion for review.');
+  }
+  renderQueue();
+
+  /* ---------------- insurance questionnaire (manual entry, no source document) ---------------- */
+  function openQuestionnaire(){
+    document.getElementById('questionnaire-overlay').classList.add('open');
+    document.getElementById('q-asset-class').focus();
+  }
+  function closeQuestionnaire(){
+    document.getElementById('questionnaire-overlay').classList.remove('open');
+  }
+  document.addEventListener('keydown', e=>{
+    if(e.key==='Escape' && document.getElementById('questionnaire-overlay').classList.contains('open')) closeQuestionnaire();
+  });
+  function submitQuestionnaire(){
+    const entity = document.getElementById('q-entity').value;
+    const assetClass = document.getElementById('q-asset-class').value.trim();
+    const tiv = document.getElementById('q-tiv').value;
+    const reason = document.getElementById('q-reason').value;
+    queue.unshift({
+      doc: 'Questionnaire — ' + (assetClass || 'asset details') + (tiv ? ' (TIV ' + document.getElementById('q-currency').value + ' ' + Number(tiv).toLocaleString() + ')' : ''),
+      entity: entity,
+      field: reason,
+      conf: null,
+      source: 'manual',
+      status: 'pending',
+      lineKeys: assetLines[entity]
+    });
+    renderQueue();
+    closeQuestionnaire();
+    ['q-asset-class','q-tiv','q-pml','q-notes'].forEach(id=>document.getElementById(id).value='');
+    goTo('inbox');
+    showToast('Questionnaire submitted — routed to the validation queue for review.');
+  }
+
+  /* ---------------- action items rail ---------------- */
+  const actionItems = [
+    {title:'Frankfurt DC — BI sum insured below annual gross profit', meta:'Exceptions · Overview', priority:'critical', page:'overview'},
+    {title:'Batam — single-carrier concentration above 25%', meta:'Exceptions · Hotspots', priority:'high', page:'hotspots'},
+    {title:'Jurong Island — renewal due in 11 days, broker unconfirmed', meta:'Renewal risk · Overview', priority:'high', page:'overview'},
+    {title:'Vietnam — policy schedule missing PML valuation', meta:'Validation queue · 58% confidence', priority:'medium', page:'inbox'},
+    {title:'Batam SOV schedule — PML valuation flagged at 61% confidence', meta:'Validation queue', priority:'medium', page:'inbox'},
+    {title:'Frankfurt DC — cyber cover S$30M placed vs S$50M required by tenant lease', meta:'Contract gap · Customer', priority:'critical', page:'contracts'},
+    {title:'Vietnam — Property (IAR) S$150M placed vs S$160M required by JV shareholders\' agreement', meta:'Contract gap · JV Partner', priority:'high', page:'contracts'},
+    {title:'Frankfurt DC — flood sub-limited to S$50M, conflicts with lender\'s full-reinstatement requirement', meta:'Exclusion conflict · Lender', priority:'critical', page:'contracts'},
+    {title:'Jurong Island — gradual pollution excluded, conflicts with site licence requirement', meta:'Exclusion conflict · Government', priority:'high', page:'contracts'},
+    {title:'Shanghai — earthquake sub-limited to S$30M, conflicts with concession requirement', meta:'Exclusion conflict · Government', priority:'high', page:'contracts'}
+  ];
+  const priorityOrder = {critical:0, high:1, medium:2, low:3};
+  const railShowAllPages = ['overview','map'];
+  let railCollapsed = false;
+  let currentPage = 'overview';
+  function renderActionRail(page){
+    const showAll = railShowAllPages.includes(page);
+    const scoped = showAll ? actionItems : actionItems.filter(a=>a.page===page);
+    const sorted = [...scoped].sort((a,b)=>priorityOrder[a.priority]-priorityOrder[b.priority]);
+    document.getElementById('action-count').textContent = showAll ? sorted.length+' open' : sorted.length+' open · '+pageNames[page];
+    document.getElementById('action-list').innerHTML = sorted.length ? sorted.map(a=>
+      '<div class="action-item" onclick="goTo(\''+a.page+'\')">'+
+      '<span class="pdot" style="background:var(--band-'+a.priority+');"></span>'+
+      '<div class="abody"><div class="atitle">'+a.title+'</div><div class="ameta">'+bandLabel[a.priority].toUpperCase()+' · '+a.meta+'</div></div>'+
+      '</div>'
+    ).join('') : '<div style="padding:16px 10px; font-size:12px; color:var(--muted); font-style:italic;">No open action items for '+pageNames[page]+'.</div>';
+  }
+  function toggleRail(){
+    railCollapsed = !railCollapsed;
+    document.getElementById('action-rail').classList.toggle('collapsed', railCollapsed);
+    document.getElementById('rail-toggle-btn').textContent = railCollapsed ? '+' : '−';
+  }
+  renderActionRail(currentPage);
+
+  /* ---------------- chat assistant ---------------- */
+  const promptsByPage = {
+    overview: [
+      "What's our group TIV?",
+      'Which sites are under-insured?',
+      'Any renewals due soon?',
+      'Summarize open exceptions'
+    ],
+    map: [
+      'Which region has the highest exposure?',
+      'Which site has the largest TIV?',
+      'Any sites in a nat-cat exposed zone?',
+      "Explain Frankfurt's risk score"
+    ],
+    hotspots: [
+      'Which sites score High or Critical?',
+      "What's driving Batam's score?",
+      'Any renewal risk at high-scoring sites?'
+    ],
+    coverage: [
+      'Which entities are below 90% ITV?',
+      'Which line of business is most underinsured?',
+      "What's our group ITV trend?",
+      'Show gaps by entity'
+    ],
+    contracts: [
+      'Which contract requirements have gaps?',
+      'What does the Frankfurt lease require for cyber cover?',
+      'Which lender covenants are at risk?',
+      'Which requirements are excluded, not just underinsured?'
+    ],
+    exclusions: [
+      'Which exclusions conflict with a contract requirement?',
+      'What perils are excluded at Frankfurt?',
+      'Which sites have a nat-cat sub-limit?',
+      'Show all full exclusions'
+    ],
+    inbox: [
+      'What documents are pending validation?',
+      'Which fields have low confidence?',
+      'Any documents flagged for return?',
+      'How many documents processed this week?'
+    ]
+  };
+  const v2AnswerNote = "Answering natural-language questions with live Atlas data — and tracing each answer back to its source record — ships in V2 (FR8.3–FR8.5). In this MVP, suggested prompts show what you'll be able to ask; open the relevant dashboard on the left for the underlying data today.";
+  function appendChatMessage(role, text){
+    const body = document.getElementById('chat-body');
+    const div = document.createElement('div');
+    div.className = 'chat-msg ' + role;
+    div.textContent = text;
+    body.appendChild(div);
+    body.scrollTop = body.scrollHeight;
+  }
+  function sendChatMessage(presetText){
+    const text = (presetText || '').trim();
+    if(!text) return;
+    appendChatMessage('user', text);
+    setTimeout(()=>appendChatMessage('bot', v2AnswerNote), 380);
+  }
+  function renderChatSuggestions(page){
+    const el = document.getElementById('chat-suggest');
+    if(!el) return;
+    const wasOpen = el.classList.contains('open');
+    const prompts = promptsByPage[page] || promptsByPage.overview;
+    el.innerHTML = '<button type="button" class="chat-suggest-toggle" onclick="toggleChatSuggest()" aria-expanded="'+wasOpen+'">' +
+        '<span>Suggested prompts ('+prompts.length+')</span>' +
+        '<svg class="chev" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>' +
+      '</button>' +
+      '<div class="chat-suggest-body"><div class="chat-chip-row">' +
+        prompts.map(p=>'<button type="button" class="chat-chip" onclick="sendChatMessage(this.textContent)">'+p+'</button>').join('') +
+      '</div></div>';
+    if(wasOpen) el.classList.add('open');
+  }
+  function toggleChatSuggest(){
+    const el = document.getElementById('chat-suggest');
+    if(!el) return;
+    el.classList.toggle('open');
+    const btn = el.querySelector('.chat-suggest-toggle');
+    if(btn) btn.setAttribute('aria-expanded', el.classList.contains('open'));
+  }
+  function renderChatIntro(){
+    appendChatMessage('bot', "Hi, I'm the Atlas Assistant. Suggested prompts below change to match whatever page you're viewing — full conversational answers ship in V2.");
+  }
+  renderChatIntro();
+  renderChatSuggestions(currentPage);
+
+  /* ---------------- group overview: heat map, exceptions, reactive KPIs ---------------- */
+  const heatgridData = [
+    {country:'Vietnam', score:54, color:'#F3D9A2', lineKeys:assetLines['Keppel Land — Vietnam']},
+    {country:'Indonesia', score:76, color:'#F0BE94', lineKeys:assetLines['Keppel Offshore & Marine — Batam']},
+    {country:'Germany', score:88, color:'#F0A08F', lineKeys:assetLines['Keppel Data Centres — Frankfurt']},
+    {country:'Singapore', score:32, color:'#8FDBBE', lineKeys:[...new Set([...assetLines['Keppel Infrastructure — Singapore'], ...assetLines['Keppel Energy — Jurong Island']])]},
+    {country:'China', score:71, color:'#F0BE94', lineKeys:assetLines['Keppel Infrastructure — Shanghai']}
+  ];
+  const exceptions = [
+    {title:'Keppel Data Centres — Frankfurt: BI sum insured below annual gross profit', meta:'FLAGGED · recalculated 2h ago', lineKeys:['iar']},
+    {title:'Keppel Land — Vietnam: policy schedule missing PML valuation', meta:'LOW-CONFIDENCE FIELD · in validation queue', lineKeys:['iar']},
+    {title:'Keppel O&amp;M — Batam: single-carrier concentration &gt; 25%', meta:'THRESHOLD BREACH · §7.5', lineKeys:['iar','marine-liability']},
+    {title:'Keppel Energy — Jurong Island: renewal due in 11 days, broker unconfirmed', meta:'RENEWAL RISK', lineKeys:['iar']}
+  ];
+  function renderHeatgrid(){
+    const el = document.getElementById('heatgrid');
+    if(!el) return;
+    const visible = filterByLines(heatgridData);
+    document.getElementById('heatgrid-count').textContent = visible.length===heatgridData.length ? 'by country' : visible.length+' of '+heatgridData.length+' countries';
+    el.innerHTML = visible.length ? visible.map(c=>
+      '<div class="heatcell" style="background:'+c.color+';">'+c.country+'<small>'+c.score+'</small></div>'
+    ).join('') : '<div class="fine" style="grid-column:1/-1;">No countries match the selected coverage filter.</div>';
+  }
+  function renderExceptions(){
+    const el = document.getElementById('exc-list');
+    if(!el) return;
+    const visible = filterByLines(exceptions);
+    document.getElementById('exc-count').textContent = visible.length+' open';
+    el.innerHTML = visible.length ? visible.map(x=>
+      '<div class="exc-item"><div class="exc-title">'+x.title+'</div><div class="exc-meta">'+x.meta+'</div></div>'
+    ).join('') : '<div class="fine">No open exceptions for the selected coverage filter.</div>';
+  }
+  function renderOverviewKPIs(){
+    const gapEl = document.getElementById('kpi-gaps-value');
+    if(!gapEl) return;
+    const visibleGaps = filterByLines(contractReqs).filter(r=>{ const s=reqEffectiveStatus(r); return s==='gap'||s==='excluded'; });
+    document.getElementById('kpi-gaps-value').textContent = visibleGaps.length;
+    document.getElementById('kpi-gaps-sub').textContent = new Set(visibleGaps.map(r=>r.asset)).size+' sites affected';
+    const visibleHot = filterByLines(hotspots).filter(h=>h.band==='high'||h.band==='critical');
+    document.getElementById('kpi-hotspot-value').textContent = visibleHot.length;
+    document.getElementById('kpi-hotspot-sub').textContent = 'of '+filterByLines(hotspots).length+' sites scored';
+  }
+  renderHeatgrid();
+  renderExceptions();
+  renderOverviewKPIs();
+</script>
+</body>
+</html>

@@ -1,0 +1,80 @@
+@import "tailwindcss";
+
+:root {
+  --ink: #1c1712;
+  --paper: #f6f2ea;
+  --card: #ffffff;
+  --line: #e4dcc9;
+  --muted: #756b58;
+  --accent: #0f6e63;
+  --accent-deep: #0a4f47;
+  --accent-tint: #dcefeb;
+  --low: #1f7a5c;
+  --low-bg: #e3f1e9;
+  --med: #a97417;
+  --med-bg: #f8edd8;
+  --high: #b0552a;
+  --high-bg: #f8e7d9;
+  --crit: #8b2e22;
+  --crit-bg: #f3dfd6;
+  --v-mvp: #3d6b8c;
+  --v-mvp-bg: #e3edf3;
+  --v2: #7a5aa8;
+  --v2-bg: #eee7f5;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #f1ece0;
+    --paper: #15120e;
+    --card: #1e1913;
+    --line: #3a3226;
+    --muted: #a79c86;
+    --accent: #5fd3c0;
+    --accent-deep: #8ae3d3;
+    --accent-tint: rgba(95, 211, 192, 0.14);
+    --low: #5fcb9c;
+    --low-bg: rgba(95, 203, 156, 0.14);
+    --med: #e3b24e;
+    --med-bg: rgba(227, 178, 78, 0.14);
+    --high: #e38a54;
+    --high-bg: rgba(227, 138, 84, 0.14);
+    --crit: #e8776a;
+    --crit-bg: rgba(232, 119, 106, 0.16);
+    --v-mvp: #7fb3d9;
+    --v-mvp-bg: rgba(127, 179, 217, 0.14);
+    --v2: #b79ee0;
+    --v2-bg: rgba(183, 158, 224, 0.14);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family:
+    -apple-system, "Segoe UI", system-ui, sans-serif;
+  line-height: 1.5;
+}
+
+.font-serif-heading {
+  font-family: ui-serif, "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+}
+
+.font-mono {
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+}
+
+::selection {
+  background: var(--accent-tint);
+}

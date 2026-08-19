@@ -1,0 +1,25 @@
+Field Name,Type,Source (Functional Spec sheet),What to Extract,Predetermined Answer List,Selection Rule,Field Class,Mandatory,High-Risk to Edit
+Entity Company Number,Text,Onboarding,Company Number (or equivalent),N/A,Extract verbatim,Factual,No,TBD
+Entity Registered Address,Text,Onboarding,Registered Address,N/A,Extract verbatim,Factual,No,TBD
+Entity Registered Country,Single List,Onboarding,Registered Country/Territory,See TPA Reference - Countries Territories 2025.md,Choose single best-fit item,Factual,Yes,TBD
+Entity Third Party Legal Name,Text,Onboarding,Legal Name of the Third Party,N/A,Extract verbatim,Factual,Yes,TBD
+Entity Website,Text,Onboarding,Company Website,N/A,Extract verbatim,Factual,No,TBD
+Gender,Single List,Onboarding,Gender,Male | Female | Unknown,Choose single best-fit item,Factual,No,TBD
+Person Business Address,Text,Onboarding,Business Address,N/A,Extract verbatim,Factual,No,TBD
+Person Country of Residence,Single List,Onboarding,Country/Territory of Residence,See TPA Reference - Countries Territories 2025.md,Choose single best-fit item,Factual,Yes,TBD
+Person Third Party Legal Name,Text,Onboarding,Legal Name of the Third Party,N/A,Extract verbatim,Factual,Yes,TBD
+Person Year of Birth,Number,Onboarding,Year of Birth,N/A,Extract verbatim,Factual,No,TBD
+Third Party Legal Structure,Single List,Onboarding,Is the Third Party an Entity or a Person?,Person | Entity,Choose single best-fit item,Factual,Yes,TBD
+CEO legal name,Text,Risk Assessment,Legal name of CEO,N/A,Extract verbatim,Factual,Yes,TBD
+Nature of commercial relationship and biz justification,Text,Risk Assessment,"Please describe the proposed nature of the commercial relationship, and business justification for selection.",N/A,Extract verbatim,Factual,Yes,TBD
+Notable Org specific RF,List with multi select,Risk Assessment,Select all applicable Organisation-specific red flags relating to the TPA or the transaction (if any),See TPA Reference - Predetermined Answer Lists.csv (List ID: 6.3),Choose all applicable best-fit item(s),Judgment,Yes,TBD
+Notable Txn specific RF,List with multi select,Risk Assessment,Select all applicable Transaction-specific red flags relating to the TPA or the transaction (if any),See TPA Reference - Predetermined Answer Lists.csv (List ID: 6.4),Choose all applicable best-fit item(s),Judgment,Yes,TBD
+Payment terms,Text,Risk Assessment,"What are the payment terms and schedule (if applicable)? (e.g. 30 days, 60 days, payment schedule)",N/A,Extract verbatim,Factual,Yes,TBD
+TPA Contract sum or annual spend,Single List,Risk Assessment,What is the estimated contract sum / annual spend for the Third-Party?,<$20k | $20k–$200k | $200k–$1m | >$1m,Choose single best-fit item,Factual,Yes,TBD
+TPA Interaction with Third parties,List with multi select,Risk Assessment,What is the extent of interaction with Third-Parties required (inclusive of both Government Officials/Entities and Non-Government)?,See TPA Reference - Predetermined Answer Lists.csv (List ID: 6.2),"Choose single best-fit item from EACH group (up to two selections total, one per group) — see List ID 6.2 for group definitions",Factual,Yes,TBD
+TPA Keppel Entity,Text,Risk Assessment,Name of Keppel Contracting Entity,N/A,Extract verbatim,Factual,No,TBD
+TPA Services provided or Industry,Single List,Risk Assessment,What are the services provided / industry of the Third-Party?,See TPA Reference - Predetermined Answer Lists.csv (List ID: 6.1),Choose single best-fit item,Factual,Yes,TBD
+Other Associated Entities,Table,Name Screening (Int DD),"Ultimate Parent Entity (Legal structure: Entity) — Full Legal Name, Country",N/A (table of records),Extract every row,Factual,Yes,TBD
+Shareholders,Table,Name Screening (Int DD),Register of Shareholders / ACRA Bizfile — shareholder list (no discrete question text in Functional Spec; table structure inferred from source document),N/A (table of records),Extract every row,Factual,No,TBD
+Third Party Directors,Table,Name Screening (Int DD),"List of Directors (Legal structure: Person) — Full Legal Name, Country",N/A (table of records),Extract every row,Factual,Yes,TBD
+Ultimate Beneficial Owners,Table,Name Screening (Int DD),"Ultimate Beneficial Owner(s) (Legal structure: Unknown) — Full Legal Name, Country, % Stake",N/A (table of records),"SIMPLE only — extract every row. COMPLEX — leave blank, deferred to KYC/Screening Agent (see DocReviewer §4 Field Scope Rule)",Judgment,Yes,TBD

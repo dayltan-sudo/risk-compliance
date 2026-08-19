@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Atlas — Executive Approval Pitch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ===========================================
+   CSS CUSTOM PROPERTIES — Paper & Ink theme
+   (house style, matched to Atlas_Presentation.html)
+   =========================================== */
+:root{
+  --bg-cream:#faf9f7;
+  --paper-2:#f2efe9;
+  --ink:#1a1a1a;
+  --muted:#5b5652;
+  --crimson:#c41e3a;
+  --crimson-tint:#f7e3e6;
+  --green:#2f6b46;
+  --green-tint:#e9f0e7;
+  --amber:#b06c1a;
+  --amber-tint:#f6ecdc;
+  --line:#ddd6cc;
+
+  --font-serif:'Source Serif 4', serif;
+  --font-script:'Cormorant Garamond', serif;
+  --font-sans:'Work Sans', sans-serif;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --stage-bg:#2a2622;
+  --slide-bg:var(--bg-cream);
+}
+*{ box-sizing:border-box; margin:0; padding:0; }
+
+/* ===========================================
+   FIXED 16:9 STAGE — mandatory viewport-base.css
+   =========================================== */
+html,body{ width:100%; height:100%; margin:0; overflow:hidden; background:var(--stage-bg,#000); }
+.deck-viewport{ position:fixed; inset:0; overflow:hidden; background:var(--stage-bg,#000); }
+.deck-stage{ position:absolute; left:0; top:0; width:1920px; height:1080px; overflow:hidden; transform-origin:0 0; background:var(--slide-bg,#fff); }
+.slide{ position:absolute; inset:0; width:1920px; height:1080px; overflow:hidden; display:block; visibility:hidden; opacity:0; pointer-events:none; background:var(--slide-bg,#fff); }
+.slide.active,.slide.visible{ visibility:visible; opacity:1; pointer-events:auto; z-index:1; }
+img,video,canvas,svg{ max-width:100%; max-height:100%; }
+.deck-controls{ position:fixed; left:50%; bottom:22px; transform:translateX(-50%); z-index:1000; }
+@media print{
+  html,body{ width:1920px; height:auto; overflow:visible; background:#fff; }
+  .deck-viewport{ position:static; overflow:visible; background:#fff; }
+  .deck-stage{ position:static; width:auto; height:auto; transform:none !important; background:none; }
+  .slide{ position:relative; display:block !important; visibility:visible !important; opacity:1 !important; pointer-events:auto !important; width:1920px; height:1080px; break-after:page; page-break-after:always; }
+  .slide:last-child{ break-after:auto; page-break-after:auto; }
+  .deck-controls{ display:none !important; }
+}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{ animation-duration:0.01ms !important; transition-duration:0.2s !important; }
+}
+
+/* ===========================================
+   BASE TYPE
+   =========================================== */
+body{ font-family:var(--font-sans); color:var(--ink); }
+
+/* ===========================================
+   REVEAL ANIMATIONS — staggered fade/rise
+   =========================================== */
+.reveal{ opacity:0; transform:translateY(26px); transition:opacity .7s var(--ease-out-expo), transform .7s var(--ease-out-expo); }
+.slide.visible .reveal{ opacity:1; transform:translateY(0); }
+.slide.visible .reveal.d1{ transition-delay:.08s; }
+.slide.visible .reveal.d2{ transition-delay:.18s; }
+.slide.visible .reveal.d3{ transition-delay:.28s; }
+.slide.visible .reveal.d4{ transition-delay:.38s; }
+.slide.visible .reveal.d5{ transition-delay:.48s; }
+.slide.visible .reveal.d6{ transition-delay:.58s; }
+.slide.visible .reveal.d7{ transition-delay:.68s; }
+.slide.visible .reveal.d8{ transition-delay:.78s; }
+
+/* ===========================================
+   SHARED SLIDE CHROME
+   =========================================== */
+.slide-inner{ position:relative; height:100%; padding:84px 160px 52px; display:flex; flex-direction:column; }
+.s-head{ margin-bottom:34px; display:flex; align-items:center; gap:16px; }
+.s-head .tick{ width:56px; height:2px; background:var(--crimson); flex:none; }
+.kicker{ font-family:var(--font-sans); font-weight:600; font-size:21px; letter-spacing:.14em; text-transform:uppercase; color:var(--crimson); }
+.s-body{ flex:1; display:flex; flex-direction:column; justify-content:center; min-height:0; }
+.s-foot{ display:flex; justify-content:space-between; align-items:center; padding-top:20px; border-top:1px solid var(--line); font-size:17px; color:var(--muted); letter-spacing:.02em; }
+.s-foot b{ color:var(--ink); font-weight:600; }
+
+h2.title{ font-family:var(--font-serif); font-weight:600; font-size:68px; line-height:1.14; max-width:1560px; margin-bottom:22px; }
+h2.title em{ font-style:italic; color:var(--crimson); font-family:var(--font-script); font-weight:600; font-size:1.05em; }
+p.sub{ font-family:var(--font-script); font-style:italic; font-size:31px; color:var(--muted); max-width:1260px; line-height:1.5; margin-bottom:12px; }
+
+/* ===========================================
+   SLIDE 1 — TITLE
+   =========================================== */
+.title-slide .slide-inner{ justify-content:center; padding:0 220px; }
+.title-slide .kicker-row{ margin-bottom:34px; }
+.title-slide h1{ font-family:var(--font-serif); font-weight:600; font-size:104px; line-height:1.1; max-width:1500px; margin-bottom:36px; }
+.title-slide h1 em{ font-style:italic; color:var(--crimson); font-family:var(--font-script); font-weight:600; }
+.title-slide .lede{ font-family:var(--font-script); font-style:italic; font-size:37px; color:var(--muted); max-width:1140px; line-height:1.5; margin-bottom:52px; }
+.title-slide .meta-row{ display:flex; gap:44px; border-top:1px solid var(--line); padding-top:26px; font-size:19px; color:var(--muted); }
+.title-slide .meta-row b{ color:var(--ink); font-weight:600; }
+.title-slide::before{ content:""; position:absolute; top:96px; left:220px; width:60px; height:2px; background:var(--crimson); }
+
+/* ===========================================
+   INDEX LIST — problem & differentiator slides
+   =========================================== */
+.idx-list{ display:flex; flex-direction:column; }
+.idx-row{ display:flex; align-items:baseline; gap:36px; padding:17px 0; border-bottom:1px solid var(--line); }
+.idx-list .idx-row:first-child{ border-top:1px solid var(--line); }
+.idx-num{ font-family:var(--font-sans); font-weight:700; color:var(--crimson); font-size:22px; width:58px; flex:none; letter-spacing:.03em; }
+.idx-title{ font-family:var(--font-serif); font-weight:600; font-size:30px; width:400px; flex:none; line-height:1.2; }
+.idx-desc{ font-family:var(--font-sans); font-size:21px; color:var(--muted); line-height:1.5; }
+.idx-desc .tag-v2{ font-family:var(--font-sans); font-style:normal; font-weight:700; font-size:14px; letter-spacing:.08em; color:var(--amber); background:var(--amber-tint); padding:3px 9px; border-radius:20px; margin-left:8px; vertical-align:middle; }
+
+/* ===========================================
+   DRIVER GRID — business value slide
+   =========================================== */
+.driver-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:22px; }
+.driver-card{ border:1px solid var(--line); border-radius:6px; padding:26px 26px 28px; background:var(--paper-2); }
+.driver-card .dr-name{ font-family:var(--font-serif); font-weight:600; font-size:26px; line-height:1.22; margin-bottom:12px; }
+.driver-card .dr-name::before{ content:""; display:block; width:34px; height:2px; background:var(--crimson); margin-bottom:14px; }
+.driver-card .dr-change{ font-family:var(--font-sans); font-size:19px; color:var(--muted); line-height:1.5; }
+
+/* ===========================================
+   SOLUTION — drill-down chain + supporting points
+   =========================================== */
+.chain{ display:flex; align-items:stretch; gap:0; margin:8px 0 46px; }
+.chain-step{ flex:1; text-align:center; padding:20px 8px; border:1px solid var(--line); border-right:none; background:var(--paper-2); position:relative; }
+.chain-step:first-child{ border-radius:8px 0 0 8px; }
+.chain-step:last-child{ border-right:1px solid var(--line); border-radius:0 8px 8px 0; background:var(--crimson-tint); border-color:#eecdd3; }
+.chain-step .cs-k{ font-family:var(--font-sans); font-weight:700; font-size:14px; letter-spacing:.08em; text-transform:uppercase; color:var(--crimson); margin-bottom:8px; }
+.chain-step .cs-t{ font-family:var(--font-serif); font-weight:600; font-size:27px; color:var(--ink); }
+.chain-step::after{ content:"›"; position:absolute; right:-11px; top:50%; transform:translateY(-50%); font-family:var(--font-serif); font-size:26px; color:var(--muted); z-index:2; background:var(--bg-cream); width:22px; height:22px; line-height:20px; text-align:center; border-radius:50%; }
+.chain-step:last-child::after{ content:none; }
+.sol-points{ display:grid; grid-template-columns:repeat(3,1fr); gap:44px; border-top:1px solid var(--line); padding-top:30px; }
+.sol-point .sp-t{ font-family:var(--font-serif); font-weight:600; font-size:25px; margin-bottom:9px; }
+.sol-point .sp-d{ font-family:var(--font-sans); font-size:19px; color:var(--muted); line-height:1.5; }
+
+/* ===========================================
+   CAPABILITY GRID — six core capabilities
+   =========================================== */
+.view-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:22px; }
+.view-card{ border:1px solid var(--line); border-radius:6px; padding:28px 26px; background:var(--paper-2); }
+.view-num{ font-family:var(--font-sans); font-weight:700; color:var(--crimson); font-size:16px; letter-spacing:.08em; margin-bottom:15px; }
+.view-title{ font-family:var(--font-serif); font-weight:600; font-size:27px; margin-bottom:10px; line-height:1.2; }
+.view-desc{ font-family:var(--font-sans); font-size:19px; color:var(--muted); line-height:1.5; }
+.view-num .v2{ color:var(--amber); }
+
+/* ===========================================
+   METRIC GRID — outcomes / success metrics
+   =========================================== */
+.metric-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:22px; }
+.metric-tile{ border:1px solid var(--line); border-radius:6px; padding:26px 28px 28px; background:var(--paper-2); }
+.metric-num{ font-family:var(--font-serif); font-weight:700; font-size:52px; line-height:1.05; color:var(--crimson); margin-bottom:12px; }
+.metric-num.green{ color:var(--green); }
+.metric-label{ font-family:var(--font-sans); font-size:19px; color:var(--ink); font-weight:600; line-height:1.35; margin-bottom:4px; }
+.metric-note{ font-family:var(--font-sans); font-size:17px; color:var(--muted); line-height:1.45; }
+
+/* ===========================================
+   ROADMAP — three phase columns
+   =========================================== */
+.road-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:26px; }
+.road-col{ border:1px solid var(--line); border-radius:8px; padding:28px 26px 30px; background:var(--paper-2); display:flex; flex-direction:column; }
+.road-col.mvp{ border-color:#d8c4c8; box-shadow:inset 0 3px 0 var(--crimson); }
+.road-col.v2{ box-shadow:inset 0 3px 0 var(--amber); }
+.road-col.v3{ box-shadow:inset 0 3px 0 var(--muted); }
+.road-rel{ font-family:var(--font-sans); font-weight:700; font-size:16px; letter-spacing:.1em; text-transform:uppercase; color:var(--crimson); margin-bottom:6px; }
+.road-col.v2 .road-rel{ color:var(--amber); }
+.road-col.v3 .road-rel{ color:var(--muted); }
+.road-theme{ font-family:var(--font-serif); font-weight:600; font-size:30px; margin-bottom:18px; padding-bottom:16px; border-bottom:1px solid var(--line); }
+.road-list{ list-style:none; }
+.road-list li{ font-family:var(--font-sans); font-size:19px; color:var(--muted); line-height:1.4; padding:8px 0 8px 18px; position:relative; }
+.road-list li::before{ content:""; position:absolute; left:0; top:15px; width:6px; height:6px; border-radius:50%; background:var(--crimson); }
+.road-col.v2 .road-list li::before{ background:var(--amber); }
+.road-col.v3 .road-list li::before{ background:var(--muted); }
+
+/* ===========================================
+   CTA — launch prototype link (slide 8 close)
+   =========================================== */
+.cta-row{ margin-top:30px; padding-top:26px; border-top:1px solid var(--line); display:flex; }
+.cta-btn{ display:inline-flex; align-items:center; gap:14px; font-family:var(--font-sans); font-weight:600; font-size:22px; color:var(--bg-cream); background:var(--ink); padding:20px 36px; border-radius:9px; text-decoration:none; transition:background .2s var(--ease-out-expo), transform .2s var(--ease-out-expo); }
+.cta-btn:hover{ background:var(--crimson); transform:translateY(-2px); }
+.cta-btn .cta-arrow{ transition:transform .2s var(--ease-out-expo); }
+.cta-btn:hover .cta-arrow{ transform:translateX(5px); }
+
+/* ===========================================
+   THE ASK — approvals + next steps
+   =========================================== */
+.ask-grid{ display:grid; grid-template-columns:1fr 1fr; gap:72px; }
+.ask-col h4{ font-family:var(--font-sans); font-weight:700; font-size:15px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin-bottom:20px; }
+.ask-list{ list-style:none; }
+.ask-list li{ display:flex; gap:16px; font-family:var(--font-sans); font-size:18.5px; padding:14px 0; border-bottom:1px solid var(--line); line-height:1.42; align-items:baseline; }
+.ask-list li:first-child{ border-top:1px solid var(--line); }
+.ask-list li b{ font-weight:600; color:var(--ink); }
+.ask-list li span.role{ font-weight:600; color:var(--ink); }
+.mark{ flex:none; width:24px; height:24px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; margin-top:1px; }
+.mark.sign{ background:var(--green-tint); color:var(--green); }
+.mark.step{ background:var(--crimson-tint); color:var(--crimson); font-family:var(--font-serif); }
+.ask-close{ font-family:var(--font-script); font-style:italic; font-size:26px; color:var(--muted); line-height:1.5; margin-top:40px; padding-top:26px; border-top:1px solid var(--line); max-width:1400px; }
+.ask-close b{ font-style:normal; font-family:var(--font-serif); color:var(--ink); font-weight:600; }
+
+/* ===========================================
+   DECK CONTROLS (outside the stage)
+   =========================================== */
+.deck-controls{ display:flex; align-items:center; gap:10px; background:rgba(26,26,26,.78); padding:10px 16px; border-radius:30px; backdrop-filter:blur(6px); }
+.dc-dot{ width:8px; height:8px; border-radius:50%; background:rgba(250,249,247,.35); cursor:pointer; transition:background .2s, transform .2s; border:none; }
+.dc-dot.active{ background:#faf9f7; transform:scale(1.25); }
+.dc-count{ font-family:var(--font-sans); font-size:12px; color:#faf9f7; opacity:.7; padding-left:6px; letter-spacing:.04em; }
+
+/* ===========================================
+   INLINE EDITING
+   =========================================== */
+.edit-hotzone{ position:fixed; top:0; left:0; width:80px; height:80px; z-index:10000; cursor:pointer; }
+.edit-toggle{ position:fixed; top:16px; left:16px; z-index:10001; opacity:0; pointer-events:none; transition:opacity .3s ease; background:#1a1a1a; color:#faf9f7; border:none; border-radius:50%; width:40px; height:40px; font-size:16px; cursor:pointer; }
+.edit-toggle.show,.edit-toggle.active{ opacity:1; pointer-events:auto; }
+.edit-toggle.active{ background:var(--crimson); }
+[contenteditable="true"]{ outline:1.5px dashed var(--crimson); outline-offset:4px; border-radius:2px; }
+.edit-export{ position:fixed; top:16px; left:66px; z-index:10001; opacity:0; pointer-events:none; transition:opacity .3s ease; background:var(--ink); color:#faf9f7; border:none; border-radius:20px; padding:0 16px; height:40px; font-family:var(--font-sans); font-size:13px; font-weight:600; cursor:pointer; }
+.edit-export.show{ opacity:1; pointer-events:auto; }
+</style>
+</head>
+<body>
+<div class="deck-viewport">
+  <main class="deck-stage" id="deckStage">
+
+    <!-- ============ SLIDE 1 — TITLE ============ -->
+    <section class="slide title-slide active visible" id="slide-1">
+      <div class="slide-inner">
+        <div class="kicker-row reveal d1"><span class="kicker">Keppel · Risk &amp; Compliance</span></div>
+        <h1 class="reveal d2">One view of how well<br>the Group is <em>actually insured.</em></h1>
+        <p class="lede reveal d3">Atlas — Keppel's Global Insurance Monitoring System — is a group-wide insurance dashboard and policy-intelligence platform that consolidates every policy, across every entity, into a single screen.</p>
+        <div class="meta-row reveal d4">
+          <span><b>Atlas</b> — Global Insurance Monitoring System</span>
+          <span>PRD v0.6 · Draft for review</span>
+          <span>Confidential — Internal Use Only</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SLIDE 2 — THE PROBLEM ============ -->
+    <section class="slide" id="slide-2">
+      <div class="slide-inner">
+        <div class="s-head reveal d1"><span class="tick"></span><span class="kicker editable" data-edit="text">The problem</span></div>
+        <div class="s-body">
+          <h2 class="title reveal d2 editable" data-edit="text">Today, no one can answer <em>“how well is the Group insured?”</em> quickly, or with confidence.</h2>
+          <p class="sub reveal d3 editable" data-edit="text">Our programme spans many insurance lines, dozens of legal entities, and operations across multiple countries — but the data describing it is not consolidated, standardised, or continuously monitored.</p>
+          <div class="idx-list" style="margin-top:20px;">
+            <div class="idx-row reveal d3"><span class="idx-num">01</span><span class="idx-title editable" data-edit="text">Fragmented data</span><span class="idx-desc editable" data-edit="text">Policy terms live in PDFs, broker slips, emails, and local spreadsheets — no common schema, no single repository.</span></div>
+            <div class="idx-row reveal d4"><span class="idx-num">02</span><span class="idx-title editable" data-edit="text">Invisible under-insurance</span><span class="idx-desc editable" data-edit="text">No systematic comparison of sums insured against value or PML, so under-covered assets surface only when a claim exposes the gap.</span></div>
+            <div class="idx-row reveal d5"><span class="idx-num">03</span><span class="idx-title editable" data-edit="text">Manual, slow capture</span><span class="idx-desc editable" data-edit="text">Extracting key terms from documents is manual and error-prone — and does not scale across renewals or new acquisitions.</span></div>
+            <div class="idx-row reveal d6"><span class="idx-num">04</span><span class="idx-title editable" data-edit="text">No risk-prioritised view</span><span class="idx-desc editable" data-edit="text">The Group cannot easily see which countries, sites, or entities carry the highest uninsured or under-insured exposure.</span></div>
+            <div class="idx-row reveal d7"><span class="idx-num">05</span><span class="idx-title editable" data-edit="text">Renewal &amp; lapse risk, limited assurance</span><span class="idx-desc editable" data-edit="text">Expiries are tracked locally — a missed renewal can leave an asset uninsured — while auditors and the Board expect evidence assembled by hand each cycle.</span></div>
+          </div>
+        </div>
+        <div class="s-foot reveal d8"><span><b>Atlas</b> — Global Insurance Monitoring System</span><span>02 / 08</span></div>
+      </div>
+    </section>
+
+    <!-- ============ SLIDE 3 — WHY IT MATTERS (BUSINESS VALUE) ============ -->
+    <section class="slide" id="slide-3">
+      <div class="slide-inner">
+        <div class="s-head reveal d1"><span class="tick"></span><span class="kicker editable" data-edit="text">Why it matters now</span></div>
+        <div class="s-body">
+          <h2 class="title reveal d2 editable" data-edit="text">Six reasons this can't wait for the next renewal cycle.</h2>
+          <div class="driver-grid" style="margin-top:14px;">
+            <div class="driver-card reveal d3"><div class="dr-name editable" data-edit="text">Capital &amp; balance-sheet protection</div><div class="dr-change editable" data-edit="text">Detect and close coverage gaps before they become uninsured losses.</div></div>
+            <div class="driver-card reveal d3"><div class="dr-name editable" data-edit="text">Total cost of risk</div><div class="dr-change editable" data-edit="text">Compare premium, retention, and loss data across the Group to inform placement strategy.</div></div>
+            <div class="driver-card reveal d4"><div class="dr-name editable" data-edit="text">Governance &amp; assurance</div><div class="dr-change editable" data-edit="text">An audit-ready, traceable record of cover, with lineage back to every source document.</div></div>
+            <div class="driver-card reveal d4"><div class="dr-name editable" data-edit="text">Operational efficiency</div><div class="dr-change editable" data-edit="text">Automate extraction and ratio computation, freeing R&amp;C and Group Insurance from manual collation.</div></div>
+            <div class="driver-card reveal d5"><div class="dr-name editable" data-edit="text">M&amp;A and growth</div><div class="dr-change editable" data-edit="text">Onboard newly acquired entities into a standard insurance data model quickly.</div></div>
+            <div class="driver-card reveal d5"><div class="dr-name editable" data-edit="text">Regulatory compliance</div><div class="dr-change editable" data-edit="text">Track mandatory covers — workmen's compensation, motor third-party — by jurisdiction.</div></div>
+          </div>
+        </div>
+        <div class="s-foot reveal d6"><span><b>Atlas</b> — Global Insurance Monitoring System</span><span>03 / 08</span></div>
+      </div>
+    </section>
+
+    <!-- ============ SLIDE 4 — THE SOLUTION ============ -->
+    <section class="slide" id="slide-4">
+      <div class="slide-inner">
+        <div class="s-head reveal d1"><span class="tick"></span><span class="kicker editable" data-edit="text">The solution</span></div>
+        <div class="s-body">
+          <h2 class="title reveal d2 editable" data-edit="text">One platform — every policy, entity, country, and site, <em>drillable to a single document.</em></h2>
+          <p class="sub reveal d3 editable" data-edit="text">Atlas ingests broker and policy documents, extracts their key terms, computes coverage and risk ratios, and surfaces where cover is insufficient relative to the underlying risk.</p>
+          <div class="chain reveal d4">
+            <div class="chain-step"><div class="cs-k">01</div><div class="cs-t editable" data-edit="text">Group</div></div>
+            <div class="chain-step"><div class="cs-k">02</div><div class="cs-t editable" data-edit="text">Business Unit</div></div>
+            <div class="chain-step"><div class="cs-k">03</div><div class="cs-t editable" data-edit="text">Entity</div></div>
+            <div class="chain-step"><div class="cs-k">04</div><div class="cs-t editable" data-edit="text">Country</div></div>
+            <div class="chain-step"><div class="cs-k">05</div><div class="cs-t editable" data-edit="text">Site</div></div>
+            <div class="chain-step"><div class="cs-k">06</div><div class="cs-t editable" data-edit="text">Policy</div></div>
+          </div>
+          <div class="sol-points reveal d5">
+            <div class="sol-point"><div class="sp-t editable" data-edit="text">Interactive global map</div><div class="sp-d editable" data-edit="text">Every site plotted, sized by total insurable value and coloured by risk band, beside a filterable asset list.</div></div>
+            <div class="sol-point"><div class="sp-t editable" data-edit="text">Coverage adequacy at a glance</div><div class="sp-d editable" data-edit="text">KPI tiles for coverage, premium, gaps, and renewals — with a persistent Action Items panel on every page.</div></div>
+            <div class="sol-point"><div class="sp-t editable" data-edit="text">Traceable to source</div><div class="sp-d editable" data-edit="text">Every figure is click-through to its underlying policies and the source documents that produced it.</div></div>
+          </div>
+        </div>
+        <div class="s-foot reveal d6"><span><b>Atlas</b> — Global Insurance Monitoring System</span><span>04 / 08</span></div>
+      </div>
+    </section>
+
+    <!-- ============ SLIDE 5 — SIX CORE CAPABILITIES ============ -->
+    <section class="slide" id="slide-5">
+      <div class="slide-inner">
+        <div class="s-head reveal d1"><span class="tick"></span><span class="kicker editable" data-edit="text">What it does</span></div>
+        <div class="s-body">
+          <h2 class="title reveal d2 editable" data-edit="text">Six core capabilities, one source of truth.</h2>
+          <div class="view-grid" style="margin-top:16px;">
+            <div class="view-card reveal d3"><div class="view-num">01 / DASHBOARD</div><div class="view-title editable" data-edit="text">Interactive global dashboard</div><div class="view-desc editable" data-edit="text">Group-to-policy drill-down, world map, and KPI tiles — the whole programme on one screen.</div></div>
+            <div class="view-card reveal d3"><div class="view-num">02 / RATIO ENGINE</div><div class="view-title editable" data-edit="text">Coverage &amp; risk ratio engine</div><div class="view-desc editable" data-edit="text">FX-normalised KPIs, recalculated automatically, with full calculation lineage for audit.</div></div>
+            <div class="view-card reveal d4"><div class="view-num">03 / INGESTION</div><div class="view-title editable" data-edit="text">Document ingestion</div><div class="view-desc editable" data-edit="text">Reads slips, wordings, schedules, and endorsements — with human-in-the-loop validation before anything posts.</div></div>
+            <div class="view-card reveal d4"><div class="view-num">04 / HOTSPOTS</div><div class="view-title editable" data-edit="text">Risk-hotspot scoring</div><div class="view-desc editable" data-edit="text">A tunable composite score ranks the highest-risk, under-covered countries, sites, and entities.</div></div>
+            <div class="view-card reveal d5"><div class="view-num">05 / FILTERS</div><div class="view-title editable" data-edit="text">Multi-select filtering</div><div class="view-desc editable" data-edit="text">Toggle any insurance line or dimension and the whole dashboard focuses on the slice you care about.</div></div>
+            <div class="view-card reveal d5"><div class="view-num">06 / INTELLIGENCE <span class="v2">· V2</span></div><div class="view-title editable" data-edit="text">News &amp; sector risk intelligence</div><div class="view-desc editable" data-edit="text">Monitors the sectors and geographies Keppel invests in to pre-emptively flag emerging risk.</div></div>
+          </div>
+          <p class="metric-note reveal d6 editable" data-edit="text" style="margin-top:16px;">Only two things in this platform are AI making a judgement call — document extraction and the news assistant. The ratios and risk score are deterministic and reproducible, the way a number in an audit pack has to be.</p>
+        </div>
+        <div class="s-foot reveal d7"><span><b>Atlas</b> — Global Insurance Monitoring System</span><span>05 / 08</span></div>
+      </div>
+    </section>
+
+    <!-- ============ SLIDE 6 — THE DIFFERENTIATOR ============ -->
+    <section class="slide" id="slide-6">
+      <div class="slide-inner">
+        <div class="s-head reveal d1"><span class="tick"></span><span class="kicker editable" data-edit="text">The difference</span></div>
+        <div class="s-body">
+          <h2 class="title reveal d2 editable" data-edit="text">Atlas doesn't just record cover — it warns you <em>before a gap becomes a loss.</em></h2>
+          <p class="sub reveal d3 editable" data-edit="text">A shift from reactive to pre-emptive: linking external developments and contractual obligations to specific assets and their coverage.</p>
+          <div class="idx-list" style="margin-top:18px;">
+            <div class="idx-row reveal d4"><span class="idx-num">→</span><span class="idx-title editable" data-edit="text">News &amp; sector risk intelligence</span><span class="idx-desc editable" data-edit="text">Flags where projected exposure may breach risk appetite or exceed cover, before renewal or loss.<span class="tag-v2">V2</span></span></div>
+            <div class="idx-row reveal d5"><span class="idx-num">→</span><span class="idx-title editable" data-edit="text">Contractual requirements tracking</span><span class="idx-desc editable" data-edit="text">Every insurance obligation imposed by customers, lenders, and JV partners, checked against what is actually placed — Met, At-risk, or Gap.</span></div>
+            <div class="idx-row reveal d6"><span class="idx-num">→</span><span class="idx-title editable" data-edit="text">Exclusion &amp; conflict detection</span><span class="idx-desc editable" data-edit="text">Surfaces where a numerically compliant limit still fails because the peril the counterparty needs is excluded — a distinct “Excluded” status.</span></div>
+            <div class="idx-row reveal d7"><span class="idx-num">→</span><span class="idx-title editable" data-edit="text">Always-on Atlas Assistant</span><span class="idx-desc editable" data-edit="text">Ask plain-language questions about coverage, renewals, and risk on any page — every answer traceable to source.</span></div>
+          </div>
+        </div>
+        <div class="s-foot reveal d8"><span><b>Atlas</b> — Global Insurance Monitoring System</span><span>06 / 08</span></div>
+      </div>
+    </section>
+
+    <!-- ============ SLIDE 7 — THE OUTCOMES ============ -->
+    <section class="slide" id="slide-7">
+      <div class="slide-inner">
+        <div class="s-head reveal d1"><span class="tick"></span><span class="kicker editable" data-edit="text">The outcomes</span></div>
+        <div class="s-body">
+          <h2 class="title reveal d2 editable" data-edit="text">Measurable benefits, evidenced against a baseline.</h2>
+          <p class="sub reveal d3 editable" data-edit="text">Proposed targets for the sponsor to confirm, measured against a documented pre-launch baseline so improvement is auditable rather than anecdotal.</p>
+          <div class="metric-grid" style="margin-top:16px;">
+            <div class="metric-tile reveal d3"><div class="metric-num">100%</div><div class="metric-label editable" data-edit="text">Active policies captured in Atlas</div><div class="metric-note editable" data-edit="text">Within 6 months of go-live — a single source of truth.</div></div>
+            <div class="metric-tile reveal d3"><div class="metric-num">≥80%</div><div class="metric-label editable" data-edit="text">Less manual data-entry time per policy</div><div class="metric-note editable" data-edit="text">Reduction versus the current manual process.</div></div>
+            <div class="metric-tile reveal d4"><div class="metric-num">≥95%</div><div class="metric-label editable" data-edit="text">Field-level accuracy after validation</div><div class="metric-note editable" data-edit="text">Straight-through accuracy on extracted terms.</div></div>
+            <div class="metric-tile reveal d4"><div class="metric-num">≥50%</div><div class="metric-label editable" data-edit="text">Reduction in under-insured TIV</div><div class="metric-note editable" data-edit="text">Assets with insurance-to-value below 90%, within 12 months.</div></div>
+            <div class="metric-tile reveal d5"><div class="metric-num green">Zero</div><div class="metric-label editable" data-edit="text">Unplanned coverage lapses</div><div class="metric-note editable" data-edit="text">All renewals actioned at least 60 days pre-expiry.</div></div>
+            <div class="metric-tile reveal d5"><div class="metric-num green">Days&nbsp;→&nbsp;hours</div><div class="metric-label editable" data-edit="text">To produce a Board / audit insurance pack</div><div class="metric-note editable" data-edit="text">From a manual collation cycle to on-demand.</div></div>
+          </div>
+        </div>
+        <div class="s-foot reveal d6"><span><b>Proposed targets</b> · for sponsor confirmation (PRD §3)</span><span>07 / 08</span></div>
+      </div>
+    </section>
+
+    <!-- ============ SLIDE 8 — PHASED ROADMAP ============ -->
+    <section class="slide" id="slide-8">
+      <div class="slide-inner">
+        <div class="s-head reveal d1"><span class="tick"></span><span class="kicker editable" data-edit="text">Phased delivery</span></div>
+        <div class="s-body">
+          <h2 class="title reveal d2 editable" data-edit="text">Value from the MVP — before full automation.</h2>
+          <div class="road-grid" style="margin-top:18px;">
+            <div class="road-col mvp reveal d3">
+              <div class="road-rel">MVP</div>
+              <div class="road-theme editable" data-edit="text">Consolidate &amp; see</div>
+              <ul class="road-list">
+                <li class="editable" data-edit="text">Data model &amp; assisted ingestion with validation</li>
+                <li class="editable" data-edit="text">Core coverage &amp; cost ratios</li>
+                <li class="editable" data-edit="text">Group, coverage &amp; policy-explorer dashboards</li>
+                <li class="editable" data-edit="text">Multi-select filters</li>
+                <li class="editable" data-edit="text">Baseline risk score &amp; heat map</li>
+                <li class="editable" data-edit="text">Role-based access &amp; audit trail</li>
+              </ul>
+            </div>
+            <div class="road-col v2 reveal d4">
+              <div class="road-rel">V2</div>
+              <div class="road-theme editable" data-edit="text">Automate &amp; alert</div>
+              <ul class="road-list">
+                <li class="editable" data-edit="text">Higher-automation ingestion (bulk, multi-language)</li>
+                <li class="editable" data-edit="text">Configurable thresholds &amp; risk weights</li>
+                <li class="editable" data-edit="text">Full alerting &amp; renewals dashboards</li>
+                <li class="editable" data-edit="text">News &amp; sector risk intelligence</li>
+                <li class="editable" data-edit="text">ERP &amp; index integrations</li>
+                <li class="editable" data-edit="text">Remediation tracking</li>
+              </ul>
+            </div>
+            <div class="road-col v3 reveal d5">
+              <div class="road-rel">V3</div>
+              <div class="road-theme editable" data-edit="text">Predict &amp; extend</div>
+              <ul class="road-list">
+                <li class="editable" data-edit="text">Predictive analytics</li>
+                <li class="editable" data-edit="text">Automated renewal workflow</li>
+                <li class="editable" data-edit="text">Broker self-service portal</li>
+                <li class="editable" data-edit="text">Cat-model &amp; climate overlays</li>
+                <li class="editable" data-edit="text">Mobile companion app</li>
+              </ul>
+            </div>
+          </div>
+          <div class="cta-row reveal d6">
+            <a class="cta-btn" href="Atlas_App_UI%20v0.5.html" target="_blank" rel="noopener">See it live — launch the Atlas prototype <span class="cta-arrow">→</span></a>
+          </div>
+        </div>
+        <div class="s-foot reveal d7"><span><b>Phasing de-risks the investment</b> — each release delivers standalone value</span><span>08 / 08</span></div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- DECK CONTROLS -->
+<nav class="deck-controls" id="deckControls" aria-label="Slide navigation"></nav>
+
+<!-- INLINE EDITING CHROME -->
+<div class="edit-hotzone" id="editHotzone"></div>
+<button class="edit-toggle" id="editToggle" title="Toggle edit mode (E)">✎</button>
+<button class="edit-export" id="editExport" title="Download edited copy">Download</button>
+
+<script>
+/* ===========================================
+   SLIDE PRESENTATION CONTROLLER
+   =========================================== */
+class SlidePresentation {
+  constructor(){
+    this.slides = Array.from(document.querySelectorAll('.slide'));
+    this.currentSlide = 0;
+    this.stage = document.getElementById('deckStage');
+    this.controls = document.getElementById('deckControls');
+    this.buildControls();
+    this.setupStageScale();
+    this.setupKeyboardNav();
+    this.setupTouchNav();
+    this.setupWheelNav();
+    this.showSlide(0);
+  }
+  buildControls(){
+    this.slides.forEach((_, i)=>{
+      const b = document.createElement('button');
+      b.className = 'dc-dot';
+      b.setAttribute('aria-label', `Go to slide ${i+1}`);
+      b.onclick = ()=> this.showSlide(i);
+      this.controls.appendChild(b);
+    });
+    const count = document.createElement('span');
+    count.className = 'dc-count';
+    count.id = 'dcCount';
+    this.controls.appendChild(count);
+  }
+  setupStageScale(){
+    const scale = ()=>{
+      const factor = Math.min(window.innerWidth/1920, window.innerHeight/1080);
+      const x = (window.innerWidth - 1920*factor)/2;
+      const y = (window.innerHeight - 1080*factor)/2;
+      this.stage.style.transform = `translate(${x}px, ${y}px) scale(${factor})`;
+    };
+    scale();
+    window.addEventListener('resize', scale);
+  }
+  setupKeyboardNav(){
+    document.addEventListener('keydown', (e)=>{
+      if(document.activeElement && document.activeElement.getAttribute('contenteditable')) return;
+      if(['ArrowRight','ArrowDown','PageDown',' '].includes(e.key)){ e.preventDefault(); this.next(); }
+      else if(['ArrowLeft','ArrowUp','PageUp'].includes(e.key)){ e.preventDefault(); this.prev(); }
+      else if(e.key === 'Home'){ this.showSlide(0); }
+      else if(e.key === 'End'){ this.showSlide(this.slides.length-1); }
+    });
+  }
+  setupTouchNav(){
+    let startX = 0;
+    document.addEventListener('touchstart', (e)=>{ startX = e.touches[0].clientX; }, {passive:true});
+    document.addEventListener('touchend', (e)=>{
+      const dx = e.changedTouches[0].clientX - startX;
+      if(Math.abs(dx) > 60){ dx < 0 ? this.next() : this.prev(); }
+    }, {passive:true});
+  }
+  setupWheelNav(){
+    let locked = false;
+    document.addEventListener('wheel', (e)=>{
+      if(locked) return;
+      if(Math.abs(e.deltaY) < 24) return;
+      locked = true;
+      e.deltaY > 0 ? this.next() : this.prev();
+      setTimeout(()=> locked = false, 650);
+    }, {passive:true});
+  }
+  next(){ this.showSlide(this.currentSlide + 1); }
+  prev(){ this.showSlide(this.currentSlide - 1); }
+  showSlide(index){
+    this.currentSlide = Math.max(0, Math.min(index, this.slides.length - 1));
+    this.slides.forEach((slide, i)=>{
+      slide.classList.toggle('active', i === this.currentSlide);
+      slide.classList.toggle('visible', i === this.currentSlide);
+    });
+    Array.from(this.controls.querySelectorAll('.dc-dot')).forEach((d,i)=>{
+      d.classList.toggle('active', i === this.currentSlide);
+    });
+    const count = document.getElementById('dcCount');
+    if(count) count.textContent = `${this.currentSlide+1} / ${this.slides.length}`;
+  }
+}
+const presentation = new SlidePresentation();
+
+/* ===========================================
+   INLINE EDITING — hover-reveal toggle, JS-driven
+   =========================================== */
+class InlineEditor {
+  constructor(){
+    this.isActive = false;
+    this.toggle = document.getElementById('editToggle');
+    this.exportBtn = document.getElementById('editExport');
+    this.hotzone = document.getElementById('editHotzone');
+    this.storageKey = 'atlas-pitch-deck-edits';
+    this.hideTimeout = null;
+    this.bind();
+    this.restore();
+  }
+  bind(){
+    this.toggle.addEventListener('click', ()=> this.toggleEditMode());
+    this.hotzone.addEventListener('mouseenter', ()=>{ clearTimeout(this.hideTimeout); this.toggle.classList.add('show'); this.exportBtn.classList.toggle('show', this.isActive); });
+    this.hotzone.addEventListener('mouseleave', ()=>{ this.hideTimeout = setTimeout(()=>{ if(!this.isActive) this.toggle.classList.remove('show'); }, 400); });
+    this.toggle.addEventListener('mouseenter', ()=> clearTimeout(this.hideTimeout));
+    this.toggle.addEventListener('mouseleave', ()=>{ this.hideTimeout = setTimeout(()=>{ if(!this.isActive) this.toggle.classList.remove('show'); }, 400); });
+    this.hotzone.addEventListener('click', ()=> this.toggleEditMode());
+    document.addEventListener('keydown', (e)=>{
+      if((e.key === 'e' || e.key === 'E') && !(document.activeElement && document.activeElement.getAttribute('contenteditable'))){
+        this.toggleEditMode();
+      }
+    });
+    this.exportBtn.addEventListener('click', ()=> this.exportHtml());
+    document.querySelectorAll('.editable').forEach(el=>{
+      el.addEventListener('input', ()=> this.save());
+    });
+  }
+  toggleEditMode(){
+    this.isActive = !this.isActive;
+    this.toggle.classList.toggle('active', this.isActive);
+    this.exportBtn.classList.toggle('show', this.isActive);
+    document.querySelectorAll('.editable').forEach(el=>{
+      el.setAttribute('contenteditable', this.isActive ? 'true' : 'false');
+    });
+  }
+  save(){
+    const data = {};
+    document.querySelectorAll('.editable').forEach((el, i)=>{
+      const key = el.closest('.slide').id + ':' + i;
+      data[key] = el.innerHTML;
+    });
+    try{ localStorage.setItem(this.storageKey, JSON.stringify(data)); }catch(e){}
+  }
+  restore(){
+    try{
+      const raw = localStorage.getItem(this.storageKey);
+      if(!raw) return;
+      const data = JSON.parse(raw);
+      document.querySelectorAll('.editable').forEach((el, i)=>{
+        const key = el.closest('.slide').id + ':' + i;
+        if(data[key] !== undefined) el.innerHTML = data[key];
+      });
+    }catch(e){}
+  }
+  exportHtml(){
+    const html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+    const blob = new Blob([html], {type:'text/html'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'Atlas_Pitch_Deck_edited.html';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+}
+new InlineEditor();
+</script>
+</body>
+</html>
