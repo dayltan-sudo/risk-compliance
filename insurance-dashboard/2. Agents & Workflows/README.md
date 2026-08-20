@@ -14,36 +14,70 @@ Twelve underlying functions, consolidated into **five subagent files**, all in `
 | CoverageAnalyst *(Coverage & Ratio + Risk Scoring + Contract Compliance + Config Change-Control)* | Deterministic | MVP\*\* | [main](a.%20Agents/CoverageAnalyst.md) |
 | InsuranceCustodian *(Reporting & Export + Audit & Access Log)* | Deterministic / Infra | Mixed\*\*\*\* | [main](a.%20Agents/InsuranceCustodian.md) |
 
-\* Alerts (inside Orchestrator) ships at MVP but not every §12.1 trigger row does.
+\* Alerts (inside Orchestrator) ships at MVP but not every PRD §12.1 trigger row does.
 
 \*\* Coverage & Ratio, Risk Scoring, and Contract Compliance are MVP; Config Change-Control (inside the same file) is Should/V2 — see that file's §3.
 
-\*\*\* Reclassified from V2 to MVP: only RiskScanner's baseline tier (ingestion, tagging, entity-linking, curated feed, confirm/dismiss) — its impact-scoring/appetite-comparison/weighted-risk-score-input capability (FR6.4–FR6.6) stays Stretch/V2 — see RiskScanner.md §6.
+\*\*\* Reclassified from V2 to MVP: only RiskScanner's baseline tier (ingestion, tagging, entity-linking, curated feed, confirm/dismiss) — its impact-scoring/appetite-comparison/weighted-risk-score-input capability (FR6.4–FR6.6) stays Stretch/V2 — see RiskScanner.md §7.
 
 \*\*\*\* Split release: Audit & Access Log is back to **MVP** (restored, after a brief V2 reclassification that would have left every other component's "writes `atlas_write_audit` unconditionally" claim with nothing to write to at go-live); Reporting & Export stays **V2** — it never had an explicit PRD tag and nothing else depends on it structurally. See InsuranceCustodian.md §1.
 
-## Shared references
+## Where the reference material lives
 
-| Doc | Contents |
+There is no separate state or reference tier — each PRD reference table now sits in the agent that owns it, as a labelled appendix reproducing the PRD section verbatim.
+
+| Reference | Home |
 | :--- | :--- |
-| [Google ADK State Reference](c.%20State/Atlas%20-%20Google%20ADK%20State%20Reference.md) | Every `app:`/`user:`/session/`temp:` key, who writes and reads it, and all five convergence formulas |
-| [Data Lifecycle & Versioning](c.%20State/Atlas%20-%20Data%20Lifecycle%20%26%20Versioning%20Reference.md) | Bitemporal pattern, entity lifecycle classification, four retention clocks, storage patterns |
-| [Output Templates](c.%20State/Atlas%20-%20Output%20Templates.md) | Worked examples — cited answer, exception-queue entry, driver breakdown, `Excluded` status row |
-| [KPI Formulas](d.%20Reference/Atlas%20Reference%20-%20KPI%20Formulas.md) | PRD §7.1–7.8 |
-| [Risk Score Drivers](d.%20Reference/Atlas%20Reference%20-%20Risk%20Score%20Drivers.md) | PRD §10 weights, bands, change control |
-| [Extraction Field Set](d.%20Reference/Atlas%20Reference%20-%20Extraction%20Field%20Set.md) | PRD §8.2 data dictionary |
-| [Alert Triggers](d.%20Reference/Atlas%20Reference%20-%20Alert%20Triggers.md) | PRD §12.1–12.2 |
-| [RBAC & Access Scoping](d.%20Reference/Atlas%20Reference%20-%20RBAC%20%26%20Access%20Scoping.md) | PRD §4.1–4.2, §13 PII handling |
+| KPI formulas (PRD §7.1–7.8) | [CoverageAnalyst](a.%20Agents/CoverageAnalyst.md) §8 |
+| Risk score drivers, bands, scoring approach (PRD §10) | [CoverageAnalyst](a.%20Agents/CoverageAnalyst.md) §9 |
+| KPI / Risk Score Snapshot + Configuration Version entities | [CoverageAnalyst](a.%20Agents/CoverageAnalyst.md) §4, §3 |
+| Policy field set (PRD §8.2) + contractual requirement field set | [Insurance DocAnalyst](a.%20Agents/Insurance%20DocAnalyst.md) §14, §15 |
+| Alert triggers, channels, scheduled reports (PRD §12.1–12.2) | [Atlas Orchestrator](a.%20Agents/Atlas%20Orchestrator.md) §10; report list in [InsuranceCustodian](a.%20Agents/InsuranceCustodian.md) §3 |
+| Personas, role-capability matrix (PRD §4.1–4.2) | [InsuranceCustodian](a.%20Agents/InsuranceCustodian.md) §5 |
+| Bitemporal model, entity lifecycle, retention clocks, storage patterns (PRD §8.1, PRD §13) | [InsuranceCustodian](a.%20Agents/InsuranceCustodian.md) §6 |
+| Convergence formulas | Each in its owning agent — Validation/Posting: DocAnalyst §6/§7 · Snapshot: CoverageAnalyst §3 · Answer: Orchestrator §5 · Signal: RiskScanner §2 |
+| Alert resolution (data-change auto-close vs. risk-acceptance override) | [Atlas Orchestrator](a.%20Agents/Atlas%20Orchestrator.md) §11 |
+| Worked output examples | Inline in the producing agent — Orchestrator §5/§6, DocAnalyst §4, CoverageAnalyst §5/§6 |
+
+## State keys & ownership
+
+All `app:` keys — application scope, persistent.
+
+| Key | Written By | Read By |
+| :--- | :--- | :--- |
+| `app:entity_site_master` | *(integration — HR/entity master)* | Insurance DocAnalyst (Flow H), Orchestrator, RiskScanner |
+| `app:document_store` | Insurance DocAnalyst (Flow A) | Insurance DocAnalyst (Flow B), InsuranceCustodian |
+| `app:validation_queue` | Insurance DocAnalyst | Insurance DocAnalyst, Orchestrator (status read + alert dispatch) |
+| `app:contract_requirement_inputs` | Insurance DocAnalyst (Flow G, PRD §13) | CoverageAnalyst (Contract Compliance — required-limit input, all four counterparty types) |
+| `app:policy_registry` | Insurance DocAnalyst (Flow H) **only** | Orchestrator, CoverageAnalyst, InsuranceCustodian |
+| `app:kpi_snapshot_store` | CoverageAnalyst (all three engines) | Orchestrator, InsuranceCustodian |
+| `app:contract_requirements_register` | CoverageAnalyst (Contract Compliance) | Orchestrator, InsuranceCustodian |
+| `app:exclusions_register` | CoverageAnalyst (Contract Compliance) | Orchestrator, InsuranceCustodian |
+| `app:config_versions` | CoverageAnalyst (Config Change-Control) **only** | Same agent's three engines, Orchestrator |
+| `app:fx_rates` | *(integration — FX service; append-only)* | Insurance DocAnalyst (Flow H), CoverageAnalyst (Coverage & Ratio) |
+| `app:risk_indices` | *(integration — nat-cat/country-risk/sanctions/carrier ratings)* | CoverageAnalyst (Risk Scoring), Insurance DocAnalyst (Flow H) |
+| `app:alert_trigger_table` | *(configured — PRD §12.1)* | Atlas Orchestrator (Flow F/G) |
+| `app:alert_registry` | Atlas Orchestrator (`atlas_acknowledge_alert`) **only** | Atlas Orchestrator (Flow F Node 1a) |
+| `app:news_signals` | RiskScanner | CoverageAnalyst (Risk Scoring, optional weighted input, FR6.6), Orchestrator |
+| `app:user_scope_registry` | *(integration — Entra ID/SSO)* | Orchestrator (access gate), InsuranceCustodian (both functions) |
+| `app:audit_log` | **Every component** (append-only) — owned by InsuranceCustodian's Audit & Access Log, **MVP** | Auditor, Treasury, R&C, Group Insurance per InsuranceCustodian §5 |
+
+**`user:` keys** (configured, never agent-written): `user:assistant_response_rules`, `user:notification_preferences` (Orchestrator) · `user:extraction_confidence_config` (Insurance DocAnalyst) · `user:news_relevance_config` (RiskScanner) · `user:reporting_templates` (InsuranceCustodian).
+
+**`temp:` keys** (discarded after turn): `temp:grounding_payloads` (Orchestrator) · `temp:extraction_raw`, `temp:fx_lookup` (Insurance DocAnalyst) · `temp:driver_breakdown`, `temp:conflict_candidates` (CoverageAnalyst) · `temp:render_buffer` (InsuranceCustodian).
+
+**Two structural rules, no exceptions:**
+1. `app:policy_registry` has exactly one writer — Insurance DocAnalyst, and only via its Flow H. No engine, no Orchestrator path, no other flow anywhere ever writes it.
+2. `app:audit_log` is append-only. Every component writes to it via `atlas_write_audit` (no exceptions), but **no component has an UPDATE or DELETE path** to it — enforced structurally, not by convention.
 
 ## Cross-cutting guardrails
 
 Bind every component; each doc restates only the ones that apply to it.
 
-1. **Validation gate** — a field stays `unconfirmed` and is excluded from every KPI until a human validates it (§9.1).
+1. **Validation gate** — a field stays `unconfirmed` and is excluded from every KPI until a human validates it (PRD §9.1).
 2. **Never silently overwrite** — every change is a new version, prior values retrievable, audit entry every time (FR3.7). Audit & Access Log (inside InsuranceCustodian) is MVP, so this guardrail holds in full from go-live.
-3. **Entity/site scoping** — scope the *request* before it reaches a grounding service, not the response afterward (§4.2).
+3. **Entity/site scoping** — scope the *request* before it reaches a grounding service, not the response afterward (PRD §4.2).
 4. **News is advisory only** — a signal never changes coverage or KPI data without human confirmation (FR6.9).
-5. **Role-based PII redaction** — masking on answers, posted records, and generated packs; source-document export restricted (§13). **No component owns this end-to-end.**
 
 ## Build sequence
 
@@ -62,17 +96,16 @@ The Orchestrator's core Q&A sequences last within MVP: it needs prompt design an
 
 ## Sponsor decisions (21 Jul 2026)
 
-Every open item from the first pass is resolved except PII ownership — a deliberate deferral, not a gap.
+Every open item from the first pass is resolved.
 
 | # | Item | Resolution |
 | :--- | :--- | :--- |
-| 1 | PII redaction ownership | **Deferred** — in-scope source documents aren't expected to carry named-individual data in practice; revisit before onboarding D&O, GPA, or workmen's-comp lines. |
-| 2, 8 | "Configuration Version" and KPI values not named §8.1 entities | **Resolved** — both formalized as first-class entities (Option A): **Configuration Version**, and **KPI / Risk Score Snapshot** (its `config_version_id` FK required the former too). See [Data Lifecycle & Versioning Reference](c.%20State/Atlas%20-%20Data%20Lifecycle%20%26%20Versioning%20Reference.md). |
+| 2, 8 | "Configuration Version" and KPI values not named PRD §8.1 entities | **Resolved** — both formalized as first-class entities (Option A): **Configuration Version**, and **KPI / Risk Score Snapshot** (its `config_version_id` FK required the former too). Field lists in [CoverageAnalyst](a.%20Agents/CoverageAnalyst.md) §3 and §4. |
 | 3 | Regulatory-retention duration unspecified | **Resolved** — retain indefinitely for now; revisit if a shorter Group policy duration is confirmed. |
 | 4 | Dismissed news-signal retention | **Resolved** — indefinite, surfaced in an Archived Signals section separate from the active watchlist. |
 | 5 | Claim tracking after policy retirement | **Resolved** — Atlas keeps following an open claim past its policy's expiry; ends at settlement. |
 | 6 | No tool for the FR3.9 manual-questionnaire path | **Resolved** — new maker-checker process, tool `atlas_submit_questionnaire`; a second user (never the preparer) confirms every field. See [Insurance DocAnalyst](a.%20Agents/Insurance%20DocAnalyst.md) §5. |
-| 7 | 6 of 9 §12.1 alert triggers untagged | **Resolved** — Renewal due and Low-confidence extraction ship MVP; Coverage gap, Carrier downgrade, Aggregate erosion, New high-risk hotspot are V2. Low-confidence extraction also gains a reviewer capability to confirm/adjust a field's confidence level. See [Alert Triggers](d.%20Reference/Atlas%20Reference%20-%20Alert%20Triggers.md). |
+| 7 | 6 of 9 PRD §12.1 alert triggers untagged | **Resolved** — Renewal due and Low-confidence extraction ship MVP; Coverage gap, Carrier downgrade, Aggregate erosion, New high-risk hotspot are V2. Low-confidence extraction also gains a reviewer capability to confirm/adjust a field's confidence level. See [Atlas Orchestrator](a.%20Agents/Atlas%20Orchestrator.md) §10. |
 | 9 | InsuranceCustodian's audit-log gap, raised after a brief MVP→V2 reclassification of the whole agent (later addition, not part of the 21 Jul 2026 pass) | **Resolved** — split the release instead of moving the whole agent: Audit & Access Log reverted to MVP (every other component's "writes `atlas_write_audit` unconditionally" claim now holds from go-live); Reporting & Export stays V2, since it never had a PRD tag and nothing depends on it structurally. |
 
 Config Change-Control's release tag (Should/V2, governing threshold/weight *changes*) is unaffected — already correct as documented.
