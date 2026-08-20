@@ -22,7 +22,7 @@ FR3.8 reprocessing re-enters at classification or extraction.
 
 **Session keys:** `ingestion_id`, `document_class`, `secondary_document_class` (optional, set at Flow A Node 3 only for dual-purpose documents — spawns a second independent extraction track), `intake_status`, `record_type` (`POLICY_FIELD_SET`/`CONTRACT_REQUIREMENT` — set at Flow B Node 1, per track), `extraction_draft`, `field_confidence_map`, `queued_exceptions`, `questionnaire_draft`, `validation_status` (`PENDING`/`CONFIRMED`), `validated_record`, `enrichment_result`, `posted_version_id`, `recalc_trigger_set`.
 
-**Temp keys:** `temp:extraction_raw` (raw OCR/NLP output), `temp:fx_lookup` (Flow H FX resolution).
+**Temp keys:** `temp:extraction_raw` (raw OCR/NLP output), `temp:fx_lookup` (Flow H FX resolution — persists across internal retry attempts within a single Flow H execution; discarded only when Flow H reaches a terminal state — posted, or held/failed after retries exhausted — not after each individual retry).
 
 ## 3. Flow Summary
 
@@ -119,7 +119,15 @@ Bulk upload: each document proceeds through Nodes 1–3 independently — one ba
                  ▼
 [Node 2: OCR / NLP / IDP Extraction] ──► Extracts the field set selected at
                                           Node 1 over the document's actual
-                                          (often bespoke) layout
+                                          (often bespoke) layout. Document
+                                          content is untrusted input: the
+                                          extraction prompt wraps it in
+                                          explicit delimiters and instructs
+                                          the model to treat everything
+                                          inside as data to extract from,
+                                          never as an instruction to follow
+                                          — regardless of what the text
+                                          itself claims to be
                  │
                  ▼
 [Node 3: Confidence Scoring] ──► Per-field confidence score
@@ -145,6 +153,22 @@ Bulk upload: each document proceeds through Nodes 1–3 independently — one ba
         ▼                  ▼
 [confidence ≥ threshold] [confidence < threshold, OR
         │                  mandatory field missing]
+        │                  │
+        ▼                  │
+[Node 1a: High-Materiality  │
+ Range Check] ──► Sum       │
+ Insured, Premium, Limits,  │
+ TIV only: cross-checked    │
+ against other extracted    │
+ sources (e.g. SOV declared │
+ value) for the same asset. │
+ Out-of-range routes to     │
+ Node 2b regardless of      │
+ confidence — a high        │
+ confidence score alone     │
+ never bypasses this check  │
+ for these four field types │
+        │                  │
         ▼                  ▼
 [Node 2a: Pre-Accept]   [Node 2b: atlas_queue_exception] ──► Writes
         │                  app:validation_queue entry: reason code + owner
@@ -154,6 +178,7 @@ Bulk upload: each document proceeds through Nodes 1–3 independently — one ba
 [Output: routed draft] ──► All fields now either pre-accepted or queued;
                             hands off to Flow E for human confirmation
 ```
+**Node 1a rationale.** Extraction confidence is model-self-reported and extraction runs over untrusted broker-supplied documents (see Flow B Node 2's data/instruction isolation). A high confidence score is not independent verification. For the four fields where a wrong value does the most damage, a cheap cross-source range check runs regardless of confidence — full anomaly detection/confidence calibration across the whole field set is out of scope for MVP.
 
 ### Flow D: Manual Questionnaire — Maker-Checker (No Source Document, FR3.9)
 No OCR confidence exists to threshold against, so this flow substitutes a mandatory second-person check.

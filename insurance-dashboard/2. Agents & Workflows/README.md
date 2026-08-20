@@ -67,8 +67,16 @@ All `app:` keys — application scope, persistent.
 **`temp:` keys** (discarded after turn): `temp:grounding_payloads` (Orchestrator) · `temp:extraction_raw`, `temp:fx_lookup` (Insurance DocAnalyst) · `temp:driver_breakdown`, `temp:conflict_candidates` (CoverageAnalyst) · `temp:render_buffer` (InsuranceCustodian).
 
 **Two structural rules, no exceptions:**
-1. `app:policy_registry` has exactly one writer — Insurance DocAnalyst, and only via its Flow H. No engine, no Orchestrator path, no other flow anywhere ever writes it.
+1. `app:policy_registry` has exactly one writer — Insurance DocAnalyst, and only via its Flow H. No engine, no Orchestrator path, no other flow anywhere ever writes it. **Enforced structurally, not by convention:** the underlying table grants INSERT/UPDATE only to the service identity Insurance DocAnalyst's Flow H runs as; every other agent's DB credential is read-only against it — the same enforcement pattern as rule 2, applied to the architecture's other single-writer, high-blast-radius table.
 2. `app:audit_log` is append-only. Every component writes to it via `atlas_write_audit` (no exceptions), but **no component has an UPDATE or DELETE path** to it — enforced structurally, not by convention.
+
+## MVP Scope — RBAC Deferred
+
+Permission checks against the InsuranceCustodian §5 role-capability matrix are **stubbed to always-allow** through the closed-group testing period — every frontend user is treated as holding whatever permission an action requires. This is a deliberate MVP scoping decision, not an oversight.
+
+**What stays live regardless:** identity and entity/site resolution (`app:user_scope_registry` → `access_scope`), and audit attribution (`atlas_write_audit` actor field). Nothing about *who did what* is lost — only the *deny* branch of each permission check is disabled. This keeps re-enabling enforcement later a matter of flipping the stub, not retrofitting identity capture after the fact.
+
+**Do not defer past this testing period:** widening access beyond the closed group, or any production rollout, without first re-enabling enforcement — entity-scoped data (Entity Risk Champion's cross-entity isolation in particular) has real sensitivity once the user base isn't a small trusted group.
 
 ## Cross-cutting guardrails
 

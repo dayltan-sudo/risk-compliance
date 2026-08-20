@@ -107,6 +107,8 @@ Reference data binding all five agents — not this agent's own behaviour.
 
 **Role-capability matrix (PRD §4.2).** `R` Read · `W` Create/Edit · `V` Validate extractions · `C` Configure · `A` Admin · `—` no access. Always scoped by entity/BU per the user's assignment.
 
+> **MVP scope note.** Enforcement against this matrix is stubbed to always-allow through the closed testing group (README "MVP Scope — RBAC Deferred") — identity capture and `app:user_scope_registry` resolution stay live, but no query, write, or config action is currently denied on a role basis, including the "Acknowledge alert / risk-acceptance override" row above (`atlas_acknowledge_alert`, Orchestrator §11) — assigned to R&C Manager, enforced once RBAC is switched on.
+
 | Capability | Grp Ins | R&C Mgr | Entity Champ | Treasury | Auditor | Admin |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | View dashboards & KPIs | R | R | R* | R | R | R |
@@ -118,6 +120,7 @@ Reference data binding all five agents — not this agent's own behaviour.
 | View audit trail | R | R | — | R | R | A |
 | Manage third-party contractual requirements | W | W | W* | R | R | W |
 | Manage insurance exclusions | W | W | W* | R | R | W |
+| Acknowledge alert / risk-acceptance override | — | W | — | — | — | — |
 
 **\*** Entity Risk Champion access is restricted to their assigned entity/site only — every `*`-marked cell is entity/site-scoped, not Group-wide, even where the letter grant matches other roles.
 

@@ -259,7 +259,9 @@ When no grounding service returns a usable result, say so rather than guess. `an
 ## 8. Access-Scope Gate
 Guardrail 3: filter the *request* by caller role and assigned entity/site before it reaches a grounding service — never generate an out-of-scope answer and filter it afterward. An Entity Risk Champion never receives an answer outside their assigned entity.
 
-`app:user_scope_registry` (integration-sourced, Entra ID/SSO) resolves into `access_scope`, a per-session binding of role + entity/site — not a cached copy of the registry. It is one of three Answer Convergence terms (§5): an answer cannot compose without it resolved. Full role-capability matrix: [`InsuranceCustodian.md`](InsuranceCustodian.md) §5.
+`access_scope` is resolved fresh from `app:user_scope_registry` (integration-sourced, Entra ID/SSO) at Flow B Node 1 on every query — never cached across turns. A role or entity reassignment takes effect on the caller's very next query. It is one of three Answer Convergence terms (§5): an answer cannot compose without it resolved. Full role-capability matrix: [`InsuranceCustodian.md`](InsuranceCustodian.md) §5.
+
+> **MVP scope note.** Identity/entity resolution stays live (needed for audit attribution and citation scoping), but the permission *check* against the role-capability matrix is stubbed to always-allow through the closed testing group — see README "MVP Scope — RBAC Deferred." `atlas_acknowledge_alert` (§11) is included in this stub: any caller can currently file a risk-acceptance override, though its assigned role (R&C Manager, InsuranceCustodian §5) is now recorded for when enforcement is re-enabled. Re-enable enforcement before any wider or production rollout.
 
 ## 9. Failure & Denial Handling
 

@@ -51,6 +51,8 @@ Every run writes a row keyed to the current `config_version_id`, never a mutated
 ```
 Trigger: `atlas_propose_config_change`, sole caller this agent, precondition proposer holds `C` (Configure) per InsuranceCustodian §5.
 
+> **MVP scope note.** This precondition is stubbed to always-allow for now — see README "MVP Scope — RBAC Deferred." The permission check's data source, once enforced, is `app:user_scope_registry`; this key should be added to §2's reads for this function at that point (currently undeclared).
+
 **Review cadence.** Annual at minimum, or earlier on a material risk-environment change (new peril category, regulatory requirement) — a scheduled re-entry into Node 2, not a new proposal type.
 
 **Configuration Version entity** — backed by `app:config_versions`; append-on-change, current version has no `superseded_by` set.
