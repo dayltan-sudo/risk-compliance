@@ -18,13 +18,15 @@ Agentic AI architecture for risk & compliance workflows — third-party onboardi
 
 ```mermaid
 flowchart LR
-    O[Orchestrator] --> R[DocReviewer / Screener]
-    R --> C[Custodian]
+    O[Sentinel Orchestrator] --> Ex[Entity Extractor<br/>horizontal, on upload]
+    Ex --> D[TPA DocReviewer]
+    D --> S[Screener]
+    S --> C[Custodian]
     C --> G{Field confirmation<br/>+ R&C sign-off}
-    G -->|both clear| E[RCTP export]
+    G -->|both clear| E[RCTP manual-entry export]
 ```
 
-Single chatbot surface (three-pane: chat / canvas / roster) that Requesters and R&C reviewers use to run TPA onboarding/renewal and FM&I KYC cases, backed by four agents (`Orchestrator`, `DocReviewer`/`Screener`, `Custodian`, `TPA DocReviewer`) writing to the platform's own record store — **not** a live integration with Dow Jones RCTP.
+Single chatbot surface (three-pane: chat / canvas / roster) that Requesters and R&C reviewers use to run TPA onboarding/renewal and FM&I KYC cases, backed by five agents writing to the platform's own record store — **not** a live integration with Dow Jones RCTP: `Sentinel` (orchestrator — coordinates the pipeline and synthesizes output, doesn't parse or call APIs itself), `Entity Extractor` (horizontal — runs on upload, before any pipeline, to pre-fill company name/UEN), `TPA DocReviewer` (the "Maker" — sole parser of every document set, resolves ownership structure in full), `Screener` (KYC/sanctions screening against the platform's own CSL data), `Custodian` (the "Checker" — portfolio governance, audit, and scheduled remediation forecasting).
 
 - **Review, not create.** Agents pre-fill from source documents with per-field confidence and citations; a human confirms or amends every field. Judgment fields (PEP, beneficial ownership, sanctions exposure) are never guessed — left blank and flagged if the source doesn't state the answer.
 - **Two blocking gates.** (1) field confirmation, (2) R&C sign-off on the Custodian audit report (screening recommendations + risk tier). No field export is generated for RCTP until both clear.
