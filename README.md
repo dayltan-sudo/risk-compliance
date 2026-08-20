@@ -2,6 +2,10 @@
 
 Agentic AI architecture for risk & compliance workflows — third-party onboarding/KYC, insurance portfolio monitoring, and trade credit assessment.
 
+![Status](https://img.shields.io/badge/status-active_development-blue)
+![Projects](https://img.shields.io/badge/projects-3-informational)
+![Classification](https://img.shields.io/badge/classification-confidential-critical)
+
 ## Projects
 
 | Project | Codename | What it does | Status |
@@ -10,7 +14,15 @@ Agentic AI architecture for risk & compliance workflows — third-party onboardi
 | [`insurance-dashboard/`](insurance-dashboard) | **Atlas** | Conversational assistant + document-extraction pipeline for the Keppel Global Insurance Monitoring System — policy/broker document ingestion, ratio & risk scoring, contract requirements and exclusions registers | PRD v0.8, architecture plan v1.5 |
 | [`credit-assessment/`](credit-assessment) | — | GUI + agentic backend for trade credit risk — extracts financials from customer statements, computes ratios and an internal credit rating, and routes a two-step analyst→approver limit/terms recommendation | PRD v0.10, working prototype |
 
-## Sentinel — Third-Party Onboarding & KYC
+## 🛡️ Sentinel — Third-Party Onboarding & KYC
+
+```mermaid
+flowchart LR
+    O[Orchestrator] --> R[DocReviewer / Screener]
+    R --> C[Custodian]
+    C --> G{Field confirmation<br/>+ R&C sign-off}
+    G -->|both clear| E[RCTP export]
+```
 
 Single chatbot surface (three-pane: chat / canvas / roster) that Requesters and R&C reviewers use to run TPA onboarding/renewal and FM&I KYC cases, backed by four agents (`Orchestrator`, `DocReviewer`/`Screener`, `Custodian`, `TPA DocReviewer`) writing to the platform's own record store — **not** a live integration with Dow Jones RCTP.
 
@@ -21,16 +33,34 @@ Single chatbot surface (three-pane: chat / canvas / roster) that Requesters and 
 
 Key docs: [Sentinel Host Client PRD](<third-party-onboarding/1. Planning & Prototyping/a. TPA/2. PRD v2/Sentinel Host Client - Product Requirements Document.md>) · [FM&I KYC PRD](<third-party-onboarding/1. Planning & Prototyping/b. FM&I KYC/Onboarding Host Client - FM&I KYC - Product Requirements Document.md>) · [Agentic Workflows](<third-party-onboarding/3. Agentic Workflows>)
 
-## Atlas — Insurance Portfolio Monitoring
+## 📊 Atlas — Insurance Portfolio Monitoring
 
-One orchestrator agent handling intent-routing, access control, and answer composition for the Keppel Global Insurance Monitoring System, backed by a document-analysis pipeline (broker/policy paperwork → validated records), a ratio engine, a risk score, and three registers: Contract Requirements, Insurance Exclusions, and News & Sector Intelligence.
+```mermaid
+flowchart LR
+    D[Insurance DocAnalyst<br/>doc ingestion] --> C[CoverageAnalyst<br/>ratios · risk score · contract compliance]
+    N[RiskScanner<br/>news signals] --> C
+    C --> O[Atlas Orchestrator<br/>NL Q&A · alerts]
+    D -. status .-> O
+    N -. signals .-> O
+    O --> Au[InsuranceCustodian<br/>audit log · reporting]
+```
 
-- **Answers only from live data, fully traceable** — replaces the prototype's hard-coded chat replies and static action-items rail.
-- Components are split into agents vs. deterministic workflows (§02 of the architecture plan draws the line) — document extraction and background/governance jobs (alerts, audit log, config change-control) are event- or schedule-driven, not conversational.
+Five agents for the Keppel Global Insurance Monitoring System. `Atlas Orchestrator` handles intent routing, access-scope gating, cited answer composition, and the Action Items rail/alert dispatch — grounding every answer against `CoverageAnalyst`, a deterministic engine (no LLM, no judgment calls) that computes coverage/ratio KPIs, the composite risk score, and one merged Contract Requirements/Exclusions compliance status, gated by its own Config Change-Control workflow. `Insurance DocAnalyst` runs the document ingestion pipeline (intake → extract → validate → post) that feeds CoverageAnalyst; `RiskScanner` turns external news into confirmed, entity-linked risk signals (MVP baseline; impact scoring and appetite comparison are V2). `InsuranceCustodian` owns the audit log every write passes through, plus reporting/export (V2).
+
+- **Answers only from live data, fully traceable** — every answer cites the record it came from; no answer ships without a citation.
+- **Agents vs. deterministic workflows.** Only `Atlas Orchestrator`, `Insurance DocAnalyst`'s extraction step, and `RiskScanner` involve judgment calls; `CoverageAnalyst` and `InsuranceCustodian` are pure functions of their inputs — same inputs + config version always produce the same output.
 
 Key docs: [Keppel_Atlas_PRD_v0_8.docx](<insurance-dashboard/1. Planning & Prototyping/Keppel_Atlas_PRD_v0_8.docx>) · [Atlas_Agent_Architecture_Plan.html](<insurance-dashboard/1. Planning & Prototyping/Atlas_Agent_Architecture_Plan.html>) · [Agents & Workflows](<insurance-dashboard/2. Agents & Workflows>)
 
-## Credit Assessment — Trade Credit Risk
+## 💳 Credit Assessment — Trade Credit Risk
+
+```mermaid
+flowchart LR
+    X[Extraction] --> S[Scorecard]
+    S --> An[Analyst]
+    An --> Ap[Approver]
+    Ap --> L[Limit / Terms + Audit Trail]
+```
 
 Internal tool for a credit/treasury team to assess trade customers' creditworthiness (accounts-receivable risk, not bank lending) from uploaded financial statements.
 
