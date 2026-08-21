@@ -1,6 +1,6 @@
 # risk-compliance
 
-Agentic AI architecture for risk & compliance workflows — third-party onboarding/KYC, insurance portfolio monitoring, and trade credit assessment.
+Agentic AI architecture for risk & compliance workflows — third-party onboarding, insurance portfolio monitoring, and trade credit assessment.
 
 ![Status](https://img.shields.io/badge/status-active_development-blue)
 ![Projects](https://img.shields.io/badge/projects-3-informational)
@@ -10,14 +10,14 @@ Agentic AI architecture for risk & compliance workflows — third-party onboardi
 
 | Project | Codename | What it does | Status |
 |---|---|---|---|
-| [`third-party-onboarding/`](third-party-onboarding) | **Sentinel** / KAI Sentinel | Chatbot host client + agent pipeline for third-party (TPA) onboarding, renewal, and FM&I (MAS-regulated) KYC — document extraction, sanctions/watchlist screening, and a manual-entry handoff to Dow Jones RCTP | Draft PRDs (TPA v9, FM&I KYC v1.8), agents in build |
+| [`third-party-onboarding/`](third-party-onboarding) | **Sentinel** / KAI Sentinel | Chatbot host client + agent pipeline for third-party (TPA) onboarding and renewal — document extraction, sanctions/watchlist screening, and a manual-entry handoff to Dow Jones RCTP | Draft PRD (TPA v9), agents in build |
 | [`insurance-dashboard/`](insurance-dashboard) | **Atlas** | Conversational assistant + document-extraction pipeline for the Keppel Global Insurance Monitoring System — policy/broker document ingestion, ratio & risk scoring, contract requirements and exclusions registers | PRD v0.8, architecture plan v1.5 |
 | [`credit-assessment/`](credit-assessment) | — | GUI + agentic backend for trade credit risk — extracts financials from customer statements, computes ratios and an internal credit rating, and routes a two-step analyst→approver limit/terms recommendation | PRD v0.10, working prototype |
 
-## 🛡️ Sentinel — Third-Party Onboarding & KYC
+## 🛡️ Sentinel — Third-Party Onboarding
 
 ```mermaid
-flowchart LR
+flowchart TD
     O[Sentinel Orchestrator] --> Ex[Entity Extractor<br/>horizontal, on upload]
     Ex --> D[TPA DocReviewer]
     D --> S[Screener]
@@ -26,83 +26,79 @@ flowchart LR
     G -->|both clear| E[RCTP manual-entry export]
 ```
 
-Single chatbot surface (three-pane: chat / canvas / roster) that Requesters and R&C reviewers use to run TPA onboarding/renewal and FM&I KYC cases, backed by five agents writing to the platform's own record store — **not** a live integration with Dow Jones RCTP: `Sentinel` (orchestrator — coordinates the pipeline and synthesizes output, doesn't parse or call APIs itself), `Entity Extractor` (horizontal — runs on upload, before any pipeline, to pre-fill company name/UEN), `TPA DocReviewer` (the "Maker" — sole parser of every document set, resolves ownership structure in full), `Screener` (KYC/sanctions screening against the platform's own CSL data), `Custodian` (the "Checker" — portfolio governance, audit, and scheduled remediation forecasting).
+Single chatbot surface (three-pane: chat / canvas / roster) that Requesters and R&C reviewers use to run TPA onboarding/renewal cases, backed by five agents writing to the platform's own record store — **not** a live integration with Dow Jones RCTP: `Sentinel` (orchestrator — coordinates the pipeline and synthesizes output, doesn't parse or call APIs itself), `Entity Extractor` (horizontal — runs on upload, before any pipeline, to pre-fill company name/UEN), `TPA DocReviewer` (the "Maker" — sole parser of every document set, resolves ownership structure in full), `Screener` (sanctions screening against the platform's own CSL data), `Custodian` (the "Checker" — portfolio governance, audit, and scheduled remediation forecasting).
 
 - **Review, not create.** Agents pre-fill from source documents with per-field confidence and citations; a human confirms or amends every field. Judgment fields (PEP, beneficial ownership, sanctions exposure) are never guessed — left blank and flagged if the source doesn't state the answer.
 - **Two blocking gates.** (1) field confirmation, (2) R&C sign-off on the Custodian audit report (screening recommendations + risk tier). No field export is generated for RCTP until both clear.
 - **Screening is evidence, not verdicts.** The platform's own sanctions/watchlist screening (CSL) produces recommended classifications only; a human confirms every classification at sign-off.
-- **FM&I KYC** runs as a second process on the same shell: a two-wave document chase (Wave 1 upfront, Wave 2 gated by CDD tier — Simplified/Standard/Enhanced), CTC (certified-true-copy) factual completeness detection, and human-gated rectification emails (deferred to v2).
 
-Key docs: [Sentinel Host Client PRD](<third-party-onboarding/1. Planning & Prototyping/a. TPA/2. PRD v2/Sentinel Host Client - Product Requirements Document.md>) · [FM&I KYC PRD](<third-party-onboarding/1. Planning & Prototyping/b. FM&I KYC/Onboarding Host Client - FM&I KYC - Product Requirements Document.md>) · [Agentic Workflows](<third-party-onboarding/3. Agentic Workflows>)
+Key docs: [Sentinel Host Client PRD](<third-party-onboarding/1. Planning & Prototyping/a. TPA/2. PRD v2/Sentinel Host Client - Product Requirements Document.md>) · [Agentic Workflows](<third-party-onboarding/3. Agentic Workflows>)
 
 <details>
 <summary><strong>🤖 Agents & subagents</strong></summary>
 
-Two sibling agent sets share the host-client shell: **TPA** (onboarding/renewal) and **FM&I KYC**. Each has its own Orchestrator, its own "Maker" (DocReviewer) and "Checker" (Custodian); only the Orchestrator in each set is allowed to call platform task tools — every other agent is provisional-output-only.
+Five agents share the host-client shell, each writing to the platform's own record store: an Orchestrator, a horizontal extractor, a "Maker" (DocReviewer), a Screener, and a "Checker" (Custodian). Only the Orchestrator is allowed to call platform task tools — every other agent is provisional-output-only.
 
-| Agent | Set | Purpose | Flows it participates in |
-|---|---|---|---|
-| **Sentinel (TPA Orchestrator)** | TPA | User-facing interface, intent routing, identity resolution, sole caller of TPA task tools; aggregates the other agents' output into an executive report | Flow A–I (all TPA flows) |
-| **Entity Extractor / Doc Analyst** (horizontal) | Shared | Fast, non-judgmental first-pass extractor that runs on every upload before any pipeline starts; extracts entity IDs, key persons, contract terms verbatim with value/confidence/locator — never infers risk | TPA Flow B (feeds TPADocReviewer); KYC Flow B & D (feeds KYC DocReviewer) |
-| **TPA DocReviewer (the "Maker")** | TPA | Sole parser of TPA document sets — maps content to the 24-field schema, resolves full (multi-layer) ownership structure to natural persons, computes renewal deltas, runs gap analysis | Flow B (Ingestion & Renewal Delta Analysis) |
-| **Screener (KYC & Sanctions Screening Agent)** | TPA | Screens the fully-resolved party list against sanctions/watchlist/PEP/adverse-media sources; produces recommended classifications only, never a confirmed determination | Flow B (post-confirmation screening step); Flow H (Screening Action Proposal) |
-| **Custodian (the "Checker")** | TPA | Produces the executive compliance audit report (risk tiering, exceptions, remediation plan) automatically after screening; also runs an independently-scheduled portfolio sweep for renewal/remediation forecasting | Flow B (governance audit step); scheduled Portfolio-Level Remediation Sweep; feeds Flow I |
-| **KYC Orchestrator** | FM&I KYC | Sibling to Sentinel — sole caller of `kyc_*` tools; owns three sequential human confirmation gates (Wave 1 → CDD Typing → Wave 2) and wave/tier checklist assignment | Flow A–J (all KYC flows) |
-| **KYC DocReviewer** | FM&I KYC | Sibling "Maker" — checklist-matching against Wave 1/2 documents, baseline identity extraction, drafts the CDD-typing questionnaire, and performs the factual-only CTC completeness check | Flow A (Wave 1 matching), Flow B (CDD-typing draft), Flow C (Wave 2 matching) |
-| **KYC Custodian** | FM&I KYC | Sibling "Checker" — runs an independently-scheduled sweep over the case registry; trigger is case **staleness** (days since contact/at a gate), not expiry, since KYC cases don't expire, they stall | Scheduled Portfolio-Level Remediation/Staleness Sweep (own execution flow, not part of A–J) |
-| **CTC Reviewer** *(deferred/KIV — not live)* | FM&I KYC | Preserved v2 design only, removed from the live chain 17 Jul 2026: would have characterized (never certified) whether a certification stamp plausibly meets MAS's certified-true-copy standard | v2 Flow A (Certifier Eligibility Characterization) — design only |
+| Agent | Purpose | Flows it participates in |
+|---|---|---|
+| **Sentinel (Orchestrator)** | User-facing interface, intent routing, identity resolution, sole caller of TPA task tools; aggregates the other agents' output into an executive report | Flow A–I (all TPA flows) |
+| **Entity Extractor** (horizontal) | Fast, non-judgmental first-pass extractor that runs on every upload before any pipeline starts; extracts entity IDs, key persons, contract terms verbatim with value/confidence/locator — never infers risk | Flow B (feeds TPA DocReviewer) |
+| **TPA DocReviewer** (the "Maker") | Sole parser of TPA document sets — maps content to the 24-field schema, resolves full (multi-layer) ownership structure to natural persons, computes renewal deltas, runs gap analysis | Flow B (Ingestion & Renewal Delta Analysis) |
+| **Screener** | Screens the fully-resolved party list against sanctions/watchlist/PEP/adverse-media sources; produces recommended classifications only, never a confirmed determination | Flow B (post-confirmation screening step); Flow H (Screening Action Proposal) |
+| **Custodian** (the "Checker") | Produces the executive compliance audit report (risk tiering, exceptions, remediation plan) automatically after screening; also runs an independently-scheduled portfolio sweep for renewal/remediation forecasting | Flow B (governance audit step); scheduled Portfolio-Level Remediation Sweep; feeds Flow I |
 
 </details>
 
 <details>
 <summary><strong>🔀 Workflow flows</strong></summary>
 
-```mermaid
-flowchart TD
-    subgraph TPA["TPA — Flow B (onboarding/renewal)"]
-        T1[Entity Extractor] --> T2[TPA DocReviewer<br/>schema + ownership + deltas]
-        T2 --> T3{Requester<br/>confirmation gate}
-        T3 -->|confirmed| T4[Screener]
-        T4 --> T5[Custodian<br/>audit report]
-        T5 --> T6[Platform record commit<br/>rc_review_status=PENDING_RC_REVIEW]
-        T6 --> T7{R&C sign-off<br/>Flow I}
-        T7 -->|Clear| T8[Manual-entry export]
-        T7 -->|Escalate| T9[Off-system risk acceptance]
-    end
-    subgraph KYC["FM&I KYC — Flow B/C/D"]
-        K1[Doc Analyst] --> K2[KYC DocReviewer<br/>Wave 1 checklist]
-        K2 --> K3{Wave 1<br/>confirmation gate}
-        K3 --> K4[Case staged in registry]
-        K4 --> K5{Screening gate<br/>human-set, no API}
-        K5 -->|cleared| K6[CDD Typing<br/>questionnaire]
-        K6 --> K7{CDD Typing<br/>confirmation gate}
-        K7 -->|Simplified| K10[Case Complete]
-        K7 -->|Standard/Enhanced| K8[Wave 2 document chase]
-        K8 --> K9{Wave 2<br/>confirmation gate}
-        K9 --> K10
-    end
-```
+Sentinel Orchestrator owns 9 named flows:
 
-**TPA flows** — Sentinel Orchestrator owns 9 named flows: **A** Pre-Flight Identity Resolution (fuzzy match against the portfolio registry, confidence-scored) · **B** End-to-End Onboarding & Renewal Coordination (the pipeline above — one blocking Requester gate, then automatic screening + audit, committed to the platform's own record store *before* R&C review) · **C** Exception & Gap Reporting · **D** Scheduled Temporal Recompute (background, renewal countdowns) · **E** Review Pack Generation (evidence table, no verdict column) · **F** Record Status Lookup · **G** Due-for-Renewal Portfolio View (BU-scoped) · **H** Screening Action Proposal (Confirm/Clear/Escalate, never auto-applied) · **I** R&C Review & Clearance (the second, separate blocking gate — Clear produces the manual RCTP export, Escalate defers to off-system management risk acceptance).
+- **A — Pre-Flight Identity Resolution.** Fuzzy match against the portfolio registry, confidence-scored.
 
-**FM&I KYC flows** — KYC Orchestrator owns a parallel 10-flow set (**A**–**J**), differing from TPA in three structural ways: three sequential confirmation gates instead of one; screening-hit resolution happens entirely outside the agent system (a human sets a `CLEARED` flag — no screening sub-agent, no API); customer correspondence (**Flow J**) is a deferred stub. **A** Pre-Flight Case Resolution · **B** Wave 1 Intake & Confirmation · **C** Screening-Gate Wait & CDD Typing (server-side tier logic: Enhanced-first, then Simplified, else Standard) · **D** Wave 2 Document Chase (skipped entirely for Simplified) · **E** Exception & Gap Reporting · **F** Scheduled Case Registry Refresh · **G** Review Pack Generation · **H** Case Status Lookup · **I** KYC Cases Portfolio View · **J** Rectification Correspondence *(deferred)*.
+- **B — End-to-End Onboarding & Renewal Coordination.** The core pipeline: one blocking Requester gate (nodes `B1`–`B3` below), then automatic screening (`H1`, Flow H) + audit (`B4`–`B5`), committed to the platform's own record store *before* R&C review (`I1`–`I3`, Flow I).
 
-Both sets share the same design rules: **evidence, not verdicts** (Review Pack/Exception Report flows show field + confidence + citation, never a pass/fail); **no fabrication** (Low-confidence or uncited judgment fields — PEP, UBO, sanctions exposure — are left blank, never guessed); and **only the Orchestrator calls a task tool** — every other agent's output is provisional until confirmed.
+  ```mermaid
+  flowchart TD
+      B1["B1 · Entity Extractor"] --> B2["B2 · TPA DocReviewer<br/>schema + ownership + deltas"]
+      B2 --> B3{"B3 · Requester<br/>confirmation gate"}
+      B3 -->|confirmed| H1["H1 · Screener<br/>(Flow H)"]
+      H1 --> B4["B4 · Custodian<br/>audit report"]
+      B4 --> B5["B5 · Platform record commit<br/>rc_review_status=PENDING_RC_REVIEW"]
+      B5 --> I1{"I1 · R&C sign-off<br/>(Flow I)"}
+      I1 -->|Clear| I2["I2 · Manual-entry export"]
+      I1 -->|Escalate| I3["I3 · Off-system risk acceptance"]
+  ```
+
+- **C — Exception & Gap Reporting.**
+
+- **D — Scheduled Temporal Recompute.** Background, renewal countdowns.
+
+- **E — Review Pack Generation.** Evidence table, no verdict column.
+
+- **F — Record Status Lookup.**
+
+- **G — Due-for-Renewal Portfolio View.** BU-scoped.
+
+- **H — Screening Action Proposal.** Confirm/Clear/Escalate, never auto-applied — the `H1` step in the diagram above.
+
+- **I — R&C Review & Clearance.** The second, separate blocking gate — Clear produces the manual RCTP export, Escalate defers to off-system management risk acceptance. Nodes `I1`–`I3` in the diagram above.
+
+**Design rules across all nine flows:** **evidence, not verdicts** (Review Pack/Exception Report flows show field + confidence + citation, never a pass/fail); **no fabrication** (Low-confidence or uncited judgment fields — PEP, UBO, sanctions exposure — are left blank, never guessed); and **only the Orchestrator calls a task tool** — every other agent's output is provisional until confirmed.
 
 </details>
 
 <details>
 <summary><strong>🗄️ State management</strong></summary>
 
-- **Two independent record stores**, both owned by the platform itself (not synced live from Dow Jones RCTP): `app:portfolio_registry` (TPA) and `app:kyc_case_registry` (FM&I KYC). Each has exactly one component that mints/commits records into it — TPA's Flow B, KYC's Flow B — and the platform's own screening/custodian output is written directly to it, never round-tripped through RCTP.
-- **Resumable in-flight drafts**: `app:inflight_drafts` (TPA) / `app:inflight_kyc_drafts` (KYC) hold uploaded documents and partial edits, keyed to user identity (not device/session), with no automatic expiry — cleared only on commit or explicit discard. KYC's draft store is explicitly *not* readable by KYC Custodian, so a case abandoned before its first confirmation is invisible to the staleness sweep — an accepted gap.
+- **One record store** owned by the platform itself, not synced live from Dow Jones RCTP: `app:portfolio_registry`. Exactly one component mints/commits records into it — Flow B — and the platform's own screening/custodian output is written directly to it, never round-tripped through RCTP.
+- **Resumable in-flight drafts**: `app:inflight_drafts` holds uploaded documents and partial edits, keyed to user identity (not device/session), with no automatic expiry — cleared only on commit or explicit discard.
 - **Convergence gates** — each flow only advances once a named boolean condition is met, never on partial state:
-  - TPA **Pipeline Convergence** = confirmed payload ∧ resolved parties ∧ host confirmation = CONFIRMED ∧ internal record ID assigned.
-  - TPA **Review Convergence** = R&C status = CLEARED ∧ manual-entry export populated — a *separate* condition from Pipeline Convergence, since the record already committed before R&C ever sees it.
-  - KYC has three staged convergence formulas (**Wave 1**, **CDD Typing** — gated additionally on the human-set screening flag, **Wave 2** — only required outside the Simplified tier) that compose into **Case Complete**.
-- **Confidence model** (shared by both sets): fixed High/Medium/Low scale; judgment fields (UBOs, sanctions exposure, PEP questions) may only be pre-filled at High/Medium confidence — Low confidence or a missing source citation resolves to blank + "needs confirmation," never a guess.
-- **Screening state is deliberately narrow**: TPA's `screening_report` holds recommended classifications only (human confirms every one at R&C review, Flow I). KYC's `screening_status_gate` carries no content at all beyond CLEARED/PENDING — resolution happens entirely outside the agent system, and the only screening-derived content ever surfaced to a KYC user is a narrow "recommended answer" flag on two CDD-typing questions.
-- **Staleness/cache flags**: both sets set a `CACHE_STALE` flag when their scheduled background recompute job (TPA Flow D / KYC Flow F) fails, consumed by the respective Custodian to prepend a "data may be stale" warning rather than silently serving derived data as current.
+  - **Pipeline Convergence** = confirmed payload ∧ resolved parties ∧ host confirmation = CONFIRMED ∧ internal record ID assigned.
+  - **Review Convergence** = R&C status = CLEARED ∧ manual-entry export populated — a *separate* condition from Pipeline Convergence, since the record already committed before R&C ever sees it.
+- **Confidence model**: fixed High/Medium/Low scale; judgment fields (UBOs, sanctions exposure, PEP questions) may only be pre-filled at High/Medium confidence — Low confidence or a missing source citation resolves to blank + "needs confirmation," never a guess.
+- **Screening state is deliberately narrow**: `screening_report` holds recommended classifications only — a human confirms every one at R&C review (Flow I).
+- **Staleness/cache flags**: a `CACHE_STALE` flag is set when the scheduled background recompute job (Flow D) fails, consumed by Custodian to prepend a "data may be stale" warning rather than silently serving derived data as current.
 - **Audit trail**: every populated field carries a confidence score and a source-location citation, attached once at extraction and carried through (never re-derived) — the citation trail *is* the audit artifact for Review Pack / Exception Report flows, by design ("evidence, not verdicts").
 
 </details>
@@ -146,34 +142,36 @@ Five agents, each a merged consolidation of what was originally ~12 finer-graine
 
 ```mermaid
 flowchart TD
-    U[Upload] --> A1[Classify<br/>10 document classes]
-    A1 --> A2[Extract<br/>OCR/NLP/IDP + confidence]
-    A2 --> A3{Confidence<br/>threshold}
-    A3 -->|below threshold| A4[Human validation queue]
+    U[Upload] --> A1["DA-A · Classify<br/>10 document classes"]
+    A1 --> A2["DA-B · Extract<br/>OCR/NLP/IDP + confidence"]
+    A2 --> A3{"DA-C · Confidence<br/>threshold"}
+    A3 -->|below threshold| A4["DA-E · Human validation queue"]
     A3 -->|high materiality field| A4
-    A4 --> A5{Validation<br/>Convergence}
-    A5 -->|contract requirement| A6[Direct posting]
-    A5 -->|policy field| A7[Enrichment<br/>FX · geocode · carrier rating]
-    A7 --> A8[Posted to policy registry]
+    A4 --> A5{"DA-D/E gate ·<br/>Validation Convergence"}
+    A5 -->|contract requirement| A6["DA-G · Direct posting"]
+    A5 -->|policy field| A7["DA-H · Enrichment<br/>FX · geocode · carrier rating"]
+    A7 --> A8["DA-H · Posted to policy registry"]
     A6 --> C1
     A8 --> C1{Recalc trigger}
-    C1 --> C2[Coverage & Ratio Engine]
-    C1 --> C3[Risk Scoring Engine]
-    C1 --> C4[Contract Compliance Engine]
+    C1 --> C2["CA-B · Coverage & Ratio Engine"]
+    C1 --> C3["CA-C · Risk Scoring Engine"]
+    C1 --> C4["CA-D · Contract Compliance Engine"]
     C2 --> S[KPI snapshot store<br/>versioned by config_version_id]
     C3 --> S
     C4 --> R[Compliance registers]
-    S --> O[Atlas Orchestrator<br/>Q&A + alerts]
+    S --> O["Atlas Orchestrator<br/>Q&A (A-E) · Alerts (F-G)"]
     R --> O
-    N[RiskScanner<br/>news → confirmed signal] -.optional input.-> C3
+    N["RiskScanner pipeline<br/>news → confirmed signal"] -.optional input.-> C3
 ```
 
-- **Q&A flow (Orchestrator A–E):** question + page context → intent classification → access-scope gate (filters the *request* before any grounding call) → grounding fan-out to CoverageAnalyst/RiskScanner/DocAnalyst → citation assembly + answer composition, gated by **Answer Convergence** = scope ∧ grounding results ∧ citations → if unmet, an explicit fallback, never a guess.
-- **Alerts flow (Orchestrator F–G):** nine named triggers (renewal due, coverage gap, low-confidence extraction, carrier downgrade, aggregate erosion, new hotspot, appetite breach, contractual gap, exclusion conflict — four ship MVP, five are V2) evaluated against KPI/compliance/news state → risk-acceptance override check → access-scope filter → recipient/channel routing → dedup → alert raised + audited. Resolution is either automatic (the underlying condition clears) or a human risk-acceptance override with mandatory commentary.
-- **Document pipeline (DocAnalyst A–H):** shown above — intake/classify → extract → confidence-gated routing (plus a mandatory high-materiality cross-check regardless of confidence) → human validation or maker-checker questionnaire fallback → branch to contract-requirement direct posting or full enrichment → versioned post to the policy registry, gated by **Posting Convergence** = Validation Convergence ∧ enrichment succeeded ∧ audit entry written.
-- **CoverageAnalyst A–D:** Config Change-Control is the sole path that can change KPI thresholds/risk weights/appetite thresholds (Propose→Review→Approve→Version, never edits in place); every downstream KPI/risk-score/compliance write is stamped with the config version live at compute time, gated by **Snapshot Convergence**.
-- **RiskScanner:** filter by sector/geo → classify by peril/severity → link to an entity/site → (stretch) impact score + appetite comparison → held PENDING for a mandatory human Confirm/Dismiss, gated by **Signal Convergence** — only Confirmed signals become an optional Risk Scoring input; a correction supersedes a prior Confirmed signal rather than overwriting it.
-- **InsuranceCustodian:** Report Generation (V2, four report types, all read-only, sourced from the KPI/risk/compliance snapshots) and Audit & Access Log (every write from any component passes through it — MVP, live from day one).
+Node prefixes match the flow letters in the Agents table above: `DA-` = Insurance DocAnalyst, `CA-` = CoverageAnalyst. Orchestrator's Q&A/Alerts steps and InsuranceCustodian aren't broken out node-by-node — they sit downstream of this compute pipeline, at the `O` node.
+
+- **Q&A flow (Orchestrator A–E):** question + page context → intent classification → access-scope gate (filters the *request* before any grounding call) → grounding fan-out to CoverageAnalyst/RiskScanner/DocAnalyst → citation assembly + answer composition, gated by **Answer Convergence** = scope ∧ grounding results ∧ citations → if unmet, an explicit fallback, never a guess. *(Enters at the `O` node above.)*
+- **Alerts flow (Orchestrator F–G):** nine named triggers (renewal due, coverage gap, low-confidence extraction, carrier downgrade, aggregate erosion, new hotspot, appetite breach, contractual gap, exclusion conflict — four ship MVP, five are V2) evaluated against KPI/compliance/news state → risk-acceptance override check → access-scope filter → recipient/channel routing → dedup → alert raised + audited. Resolution is either automatic (the underlying condition clears) or a human risk-acceptance override with mandatory commentary. *(Also the `O` node above.)*
+- **Document pipeline (DocAnalyst A–H):** shown above as nodes `DA-A`–`DA-H` — intake/classify → extract → confidence-gated routing (plus a mandatory high-materiality cross-check regardless of confidence) → human validation or maker-checker questionnaire fallback → branch to contract-requirement direct posting or full enrichment → versioned post to the policy registry, gated by **Posting Convergence** = Validation Convergence ∧ enrichment succeeded ∧ audit entry written. *(Flow F Reprocessing loops back into `DA-B` and isn't drawn separately.)*
+- **CoverageAnalyst A–D:** nodes `CA-B`–`CA-D` above compute from the `Recalc trigger` gate; `CA-A` Config Change-Control is the sole path that can change KPI thresholds/risk weights/appetite thresholds (Propose→Review→Approve→Version, never edits in place) — a separate governance workflow, not part of this live compute diagram. Every downstream KPI/risk-score/compliance write is stamped with the config version live at compute time, gated by **Snapshot Convergence**.
+- **RiskScanner:** the `N` node above — filter by sector/geo → classify by peril/severity → link to an entity/site → (stretch) impact score + appetite comparison → held PENDING for a mandatory human Confirm/Dismiss, gated by **Signal Convergence** — only Confirmed signals become an optional Risk Scoring input; a correction supersedes a prior Confirmed signal rather than overwriting it.
+- **InsuranceCustodian:** not part of this diagram (it consumes the snapshots after the fact) — Report Generation (V2, four report types, all read-only, sourced from the KPI/risk/compliance snapshots) and Audit & Access Log (every write from any component passes through it — MVP, live from day one).
 
 </details>
 
