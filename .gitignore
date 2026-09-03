@@ -20,3 +20,6 @@ dist-singlefile/
 # Logs
 *.log
 npm-debug.log*
+
+# Claude agent worktrees (local tooling state)
+.claude/
