@@ -10,7 +10,7 @@ Agentic AI architecture for risk & compliance workflows — third-party onboardi
 
 | Project | Codename | What it does | Status |
 |---|---|---|---|
-| [`third-party-onboarding/`](third-party-onboarding) | **Sentinel** / KAI Sentinel | Chatbot host client + agent pipeline for third-party (TPA) onboarding and renewal — document extraction, sanctions/watchlist screening, and a manual-entry handoff to Dow Jones RCTP | Draft PRD (TPA v9), agents in build |
+| [`third-party-onboarding/`](third-party-onboarding) | **Sentinel** / KAI Sentinel | Chatbot host client + agent pipeline for third-party (TPA) onboarding and renewal — document extraction, real-arithmetic risk scoring, sanctions/watchlist screening, all committed to the platform's own record store | Draft PRD (TPA v10), agents in build |
 | [`insurance-dashboard/`](insurance-dashboard) | **Atlas** | Conversational assistant + document-extraction pipeline for the Keppel Global Insurance Monitoring System — policy/broker document ingestion, ratio & risk scoring, contract requirements and exclusions registers | PRD v0.8, architecture plan v1.5 |
 | [`credit-assessment/`](credit-assessment) | — | GUI + agentic backend for trade credit risk — extracts financials from customer statements, computes ratios and an internal credit rating, and routes a two-step analyst→approver limit/terms recommendation | PRD v0.10, working prototype |
 
@@ -18,88 +18,77 @@ Agentic AI architecture for risk & compliance workflows — third-party onboardi
 
 ```mermaid
 flowchart TD
-    O[Sentinel Orchestrator] --> Ex[Entity Extractor<br/>horizontal, on upload]
-    Ex --> D[TPA DocReviewer]
-    D --> S[Screener]
-    S --> C[Custodian]
-    C --> G{Field confirmation<br/>+ R&C sign-off}
-    G -->|both clear| E[RCTP manual-entry export]
+    O[Sentinel Orchestrator] --> Ex[Extractor<br/>24 fields + ownership + risk score]
+    Ex --> Sc[Screener]
+    Sc --> G{Confirmation gate<br/>step 1 fields → step 2 screening}
+    G -->|confirmed| Co[Committed record<br/>+ derived expiry, field 25]
 ```
 
-Single chatbot surface (three-pane: chat / canvas / roster) that Requesters and R&C reviewers use to run TPA onboarding/renewal cases, backed by five agents writing to the platform's own record store — **not** a live integration with Dow Jones RCTP: `Sentinel` (orchestrator — coordinates the pipeline and synthesizes output, doesn't parse or call APIs itself), `Entity Extractor` (horizontal — runs on upload, before any pipeline, to pre-fill company name/UEN), `TPA DocReviewer` (the "Maker" — sole parser of every document set, resolves ownership structure in full), `Screener` (sanctions screening against the platform's own CSL data), `Custodian` (the "Checker" — portfolio governance, audit, and scheduled remediation forecasting).
+Single chatbot surface (three-pane: chat / canvas / roster) that every signed-in user — one role, no reviewer tier — uses to find, onboard, renew, amend, and check TPA records, backed by three agents writing to the platform's own store. **No integration with Dow Jones RCTP of any kind**: Sentinel is the system of record: `Sentinel` (orchestrator — routes, holds state, sole caller of task tools), `Extractor` (the merged former DocAnalyst + DocReviewer — sole parser of every document set, resolves the 24-field schema, full ownership structure, and the risk score in one pass), `Screener` (sanctions/watchlist screening against the platform's own CSL data).
 
-- **Review, not create.** Agents pre-fill from source documents with per-field confidence and citations; a human confirms or amends every field. Judgment fields (PEP, beneficial ownership, sanctions exposure) are never guessed — left blank and flagged if the source doesn't state the answer.
-- **Two blocking gates.** (1) field confirmation, (2) R&C sign-off on the Custodian audit report (screening recommendations + risk tier). No field export is generated for RCTP until both clear.
-- **Screening is evidence, not verdicts.** The platform's own sanctions/watchlist screening (CSL) produces recommended classifications only; a human confirms every classification at sign-off.
+- **Review, not create.** The extractor pre-fills from source documents with per-field confidence and citations; a human confirms or amends every field. Judgment fields (PEP, beneficial ownership, sanctions exposure) are never guessed — left blank and flagged if the source doesn't state the answer.
+- **One confirmation gate, two steps.** Step 1 confirms the 24 extracted fields (plus the derived 25th — expiry); step 2, unlocked once step 1 is confirmed, resolves every screening recommendation. Both write one log entry — there is no second, R&C-only sign-off gate.
+- **Risk score is real arithmetic, not a label.** `interaction (highest of two selections) + services/industry + country score`, banded 0–7 Low / 8–12 Medium / 13+ High — shown with its working at the gate, and it sets screening scope (Low: entity+CEO · Medium: +directors+parent · High: +UBOs).
+- **A HIGH-tier record can't commit with an unresolved ownership chain.** The UBO table always shows every evidenced shareholding; if the beneficial-owner conclusion itself can't be resolved and UBOs are in scope, commit blocks until the user supplies a document or states the owner themselves (logged as human-supplied, then screened).
+- **Amend, for correcting a committed record** without running a full renewal — re-tiers and re-screens if a scoring or identity field changes, appends a new version to the same record, never overwrites history.
+- **Screening outages park the draft, never strand the user** — confirmed work is kept, screening retries in the background, and the user is notified rather than blocked with no path forward.
 
-Key docs: [Sentinel Host Client PRD](<third-party-onboarding/1. Planning & Prototyping/a. TPA/2. PRD v2/Sentinel Host Client - Product Requirements Document.md>) · [Agentic Workflows](<third-party-onboarding/3. Agentic Workflows>)
+Key docs: [Sentinel Host Client PRD (v10)](<third-party-onboarding/1. Planning & Prototyping/a. TPA/3. PRD v3/Sentinel Host Client - Product Requirements Document.md>) · [Agent prompts (v3)](<third-party-onboarding/3. Agentic Workflows/a. TPA/3. TPA Prompts v3>)
 
 <details>
 <summary><strong>🤖 Agents & subagents</strong></summary>
 
-Five agents share the host-client shell, each writing to the platform's own record store: an Orchestrator, a horizontal extractor, a "Maker" (DocReviewer), a Screener, and a "Checker" (Custodian). Only the Orchestrator is allowed to call platform task tools — every other agent is provisional-output-only.
+Three agents share the host-client shell, each writing to the platform's own record store. Only the Orchestrator is allowed to call platform task tools — every other agent is provisional-output-only.
 
 | Agent | Purpose | Flows it participates in |
 |---|---|---|
-| **Sentinel (Orchestrator)** | User-facing interface, intent routing, identity resolution, sole caller of TPA task tools; aggregates the other agents' output into an executive report | Flow A–I (all TPA flows) |
-| **Entity Extractor** (horizontal) | Fast, non-judgmental first-pass extractor that runs on every upload before any pipeline starts; extracts entity IDs, key persons, contract terms verbatim with value/confidence/locator — never infers risk | Flow B (feeds TPA DocReviewer) |
-| **TPA DocReviewer** (the "Maker") | Sole parser of TPA document sets — maps content to the 24-field schema, resolves full (multi-layer) ownership structure to natural persons, computes renewal deltas, runs gap analysis | Flow B (Ingestion & Renewal Delta Analysis) |
-| **Screener** | Screens the fully-resolved party list against sanctions/watchlist/PEP/adverse-media sources; produces recommended classifications only, never a confirmed determination | Flow B (post-confirmation screening step); Flow H (Screening Action Proposal) |
-| **Custodian** (the "Checker") | Produces the executive compliance audit report (risk tiering, exceptions, remediation plan) automatically after screening; also runs an independently-scheduled portfolio sweep for renewal/remediation forecasting | Flow B (governance audit step); scheduled Portfolio-Level Remediation Sweep; feeds Flow I |
+| **Sentinel (Orchestrator)** | Routing, state, sole caller of TPA task tools; owns the two-step confirmation gate and the confirmation log | Flow A–E (all TPA flows) |
+| **Extractor** | The merged former Entity Extractor + TPA DocReviewer — sole parser of every document set: 24-field schema, full (multi-layer) ownership resolution, renewal deltas, and the risk-score arithmetic (feeding derived expiry, field 25) in one pass, no intermediate handoff | Flow B (Onboard/Renew), Flow E (Amend) |
+| **Screener** | Screens the resolved party list against sanctions/watchlist/PEP/adverse-media sources at whatever scope the risk tier sets; produces recommended classifications only, resolved by the human at the gate; re-invoked on an identity edit or a tier rise | Flow B (post-extraction screening); re-screen branches in the gate (§5) and Flow E |
 
 </details>
 
 <details>
 <summary><strong>🔀 Workflow flows</strong></summary>
 
-Sentinel Orchestrator owns 9 named flows:
+Sentinel Orchestrator owns 5 named flows — down from 9, after cutting the R&C-only journeys (exception report, due-for-renewal list, screening-proposal routing, R&C review/clearance) and the scheduled Custodian sweep to Phase 2:
 
-- **A — Pre-Flight Identity Resolution.** Fuzzy match against the portfolio registry, confidence-scored.
+- **A — Identity Resolution.** Two-key match only (exact registration/tax ID, or name+country) against the portfolio registry — shared registered address/parent was deliberately dropped as a match key (too many false positives from corporate-secretarial registration addresses). A "none of these" option on a multiple-candidate result proceeds as a confirmed new onboarding.
 
-- **B — End-to-End Onboarding & Renewal Coordination.** The core pipeline: one blocking Requester gate (nodes `B1`–`B3` below), then automatic screening (`H1`, Flow H) + audit (`B4`–`B5`), committed to the platform's own record store *before* R&C review (`I1`–`I3`, Flow I).
+- **B — Onboard / Renew.** The core pipeline: extraction, screening, then one two-step gate, then commit.
 
   ```mermaid
   flowchart TD
-      B1["B1 · Entity Extractor"] --> B2["B2 · TPA DocReviewer<br/>schema + ownership + deltas"]
-      B2 --> B3{"B3 · Requester<br/>confirmation gate"}
-      B3 -->|confirmed| H1["H1 · Screener<br/>(Flow H)"]
-      H1 --> B4["B4 · Custodian<br/>audit report"]
-      B4 --> B5["B5 · Platform record commit<br/>rc_review_status=PENDING_RC_REVIEW"]
-      B5 --> I1{"I1 · R&C sign-off<br/>(Flow I)"}
-      I1 -->|Clear| I2["I2 · Manual-entry export"]
-      I1 -->|Escalate| I3["I3 · Off-system risk acceptance"]
+      B1["B1 · Extractor<br/>24 fields + ownership + risk score"] --> B2["B2 · Screener<br/>scope set by risk tier"]
+      B2 --> B3{"B3 · Gate step 1<br/>confirm fields"}
+      B3 --> B4{"B4 · Gate step 2<br/>confirm screening"}
+      B4 -->|identity edit| B2
+      B4 -->|scoring-field edit, tier rises| B2
+      B4 -->|confirmed| B5["B5 · Commit<br/>+ derived expiry (field 25)"]
   ```
 
-- **C — Exception & Gap Reporting.**
+- **C — Record Status.** Read-only card: risk score/tier, status, screening outcome, expiry + days remaining, and a `HAS OPEN ITEMS` flag naming any blank mandatory field, unconfirmed judgment field, or overridden screening recommendation.
 
-- **D — Scheduled Temporal Recompute.** Background, renewal countdowns.
+- **D — Review Pack.** Field · Value · Source · Confidence · **Source match** (`agrees`/`differs`/`no source`, set at extraction) · **Edited?** (from the confirmation log). Available to every user, not gated to a reviewer role.
 
-- **E — Review Pack Generation.** Evidence table, no verdict column.
+- **E — Amend.** Corrects a committed record's own values — not a renewal, no expiry reset. A scoring-field edit re-tiers and screens newly in-scope parties; an identity edit re-screens that party; commits a new version on the same record ID, never overwriting history.
 
-- **F — Record Status Lookup.**
-
-- **G — Due-for-Renewal Portfolio View.** BU-scoped.
-
-- **H — Screening Action Proposal.** Confirm/Clear/Escalate, never auto-applied — the `H1` step in the diagram above.
-
-- **I — R&C Review & Clearance.** The second, separate blocking gate — Clear produces the manual RCTP export, Escalate defers to off-system management risk acceptance. Nodes `I1`–`I3` in the diagram above.
-
-**Design rules across all nine flows:** **evidence, not verdicts** (Review Pack/Exception Report flows show field + confidence + citation, never a pass/fail); **no fabrication** (Low-confidence or uncited judgment fields — PEP, UBO, sanctions exposure — are left blank, never guessed); and **only the Orchestrator calls a task tool** — every other agent's output is provisional until confirmed.
+**Design rules across all five flows:** **no fabrication** (Low-confidence or uncited judgment fields — PEP, UBO conclusion, sanctions exposure — are left blank, never guessed, though the *evidenced* shareholding facts behind a UBO conclusion are always shown even when the conclusion itself is blocked); **one gate, fully logged** (field changes, screening decisions, actor, and timestamp all land in one `confirmation_log` entry per commit); and **only the Orchestrator calls a task tool** — every other agent's output is provisional until confirmed.
 
 </details>
 
 <details>
 <summary><strong>🗄️ State management</strong></summary>
 
-- **One record store** owned by the platform itself, not synced live from Dow Jones RCTP: `app:portfolio_registry`. Exactly one component mints/commits records into it — Flow B — and the platform's own screening/custodian output is written directly to it, never round-tripped through RCTP.
+- **One record store**, owned entirely by the platform: `app:portfolio_registry`. There is no external system to sync from or hand off to — commit is the terminal write, not a staging step toward RCTP.
 - **Resumable in-flight drafts**: `app:inflight_drafts` holds uploaded documents and partial edits, keyed to user identity (not device/session), with no automatic expiry — cleared only on commit or explicit discard.
-- **Convergence gates** — each flow only advances once a named boolean condition is met, never on partial state:
-  - **Pipeline Convergence** = confirmed payload ∧ resolved parties ∧ host confirmation = CONFIRMED ∧ internal record ID assigned.
-  - **Review Convergence** = R&C status = CLEARED ∧ manual-entry export populated — a *separate* condition from Pipeline Convergence, since the record already committed before R&C ever sees it.
-- **Confidence model**: fixed High/Medium/Low scale; judgment fields (UBOs, sanctions exposure, PEP questions) may only be pre-filled at High/Medium confidence — Low confidence or a missing source citation resolves to blank + "needs confirmation," never a guess.
-- **Screening state is deliberately narrow**: `screening_report` holds recommended classifications only — a human confirms every one at R&C review (Flow I).
-- **Staleness/cache flags**: a `CACHE_STALE` flag is set when the scheduled background recompute job (Flow D) fails, consumed by Custodian to prepend a "data may be stale" warning rather than silently serving derived data as current.
-- **Audit trail**: every populated field carries a confidence score and a source-location citation, attached once at extraction and carried through (never re-derived) — the citation trail *is* the audit artifact for Review Pack / Exception Report flows, by design ("evidence, not verdicts").
+- **`screening_state`** (`COMPLETE` / `RUNNING` / `PARKED — RETRYING` / `PARKED — UNAVAILABLE`) gates commit directly — anything but `COMPLETE` blocks it. A screening outage parks the draft and retries indefinitely rather than failing the session; a sustained failure escalates visibly in the roster rather than retrying silently forever.
+- **`extracted_parties` is the single store for party data** — the Directors/UBO/Other-Entities field tables are views onto it, not separate copies, so an identity edited from the screening panel and a field edited in the draft can never disagree.
+- **Confidence model**: two states, Confident / Needs checking (down from three) — a Needs-checking judgment field is always left blank + flagged, never guessed; a Needs-checking factual field is pre-filled but visibly flagged.
+- **The UBO field is split, not one Judgment field**: the evidenced ownership facts are Factual and always populated; only the beneficial-owner *conclusion* is Judgment and can be left open with the breaking layer named — which is what lets a HIGH-tier commit block on an unresolved conclusion without ever hiding the evidence that was found.
+- **The risk tier is derived state, recomputed on any edit to its three inputs** (country, services, interaction) at the gate or in Amend — a tier rise re-screens the newly in-scope parties before commit; a tier fall keeps the screening already done.
+- **Expiry (field 25) is computed, not extracted** — commit date plus the RC003 cadence for the confirmed tier (Low 5y / Medium 3y / High 1y), user-overridable with the override logged distinctly from the derived value.
+- **Audit trail**: every populated field carries a confidence score, a source-match assertion, and a source-location citation; the `confirmation_log` written at every gate/Amend commit is the audit artifact — field-level diffs, screening decisions with override rationale, actor, and timestamp — surfaced on the record as its own history tab.
 
 </details>
 
