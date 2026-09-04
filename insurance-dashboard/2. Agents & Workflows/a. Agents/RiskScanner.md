@@ -2,7 +2,7 @@
 
 > **MVP (baseline tier).** Turns unstructured external news into classified, entity-linked, scored signals — decision-support only, never writes a policy, coverage, requirement, or exclusion record. Ingestion, tagging, entity-linking, curated feed, and confirm/dismiss ship at MVP; impact scoring, appetite comparison, and the weighted risk-score input (FR6.4–FR6.6) stay Stretch/V2 — see §7.
 >
-> **Companion docs:** consumed by — [`CoverageAnalyst.md`](CoverageAnalyst.md) §5 (Risk Scoring function) and [`Atlas Orchestrator.md`](Atlas%20Orchestrator.md). The driver this feeds — [`CoverageAnalyst.md`](CoverageAnalyst.md) §9.
+> **Companion docs:** consumed by — [`CoverageAnalyst.md`](CoverageAnalyst.md) §5 (Risk Scoring function) and [`Salus Orchestrator.md`](Salus%20Orchestrator.md). The driver this feeds — [`CoverageAnalyst.md`](CoverageAnalyst.md) §9.
 
 ## 1. Core Mandate & Operational Objectives
 Monitor news and events across Keppel's sectors — infrastructure, real estate, connectivity/data centres, energy & environment — filtered to relevant geographies, asset types, counterparties, and perils (FR6.1). Judge whether an item affects a specific asset's risk profile, how severely, and whether projected exposure would breach risk appetite or coverage. Unlike every other grounding component, you're explicitly built to be uncertain.
@@ -16,7 +16,7 @@ Monitor news and events across Keppel's sectors — infrastructure, real estate,
 
 **Writes:** `app:news_signals`, sole writer. The Risk Scoring Engine reads it as an optional, weighted input only (FR6.6) — never a direct write into a KPI or score.
 
-**Signal Convergence** gates every `atlas_ingest_news` write and every downstream read by the Risk Scoring Engine:
+**Signal Convergence** gates every `salus_ingest_news` write and every downstream read by the Risk Scoring Engine:
 
 $$\text{Signal Convergence} = \left( \text{signal\_draft} \neq \emptyset \right) \land \left( \text{signal\_review\_status} \in \{ \text{CONFIRMED}, \text{DISMISSED} \} \right)$$
 
@@ -63,7 +63,7 @@ Confirmation makes a signal *eligible* for the Risk Scoring Engine's own recompu
 ## 6. Correcting a Confirmed Signal
 `app:news_signals` is a Type-2 SCD entity (InsuranceCustodian §6) — a confirmed signal whose underlying facts change gets a new version, never a silent edit.
 
-An analyst who spots new reporting on an already-`CONFIRMED` signal (e.g., "minor flood damage" revised to "site destroyed") files a correction: a new `signal_draft`, `signal_review_status = PENDING`, `supersedes_signal_id` set to the original. It passes through the same Human Confirm/Dismiss Gate (§5) as any other signal — confirming it does two things atomically: writes the new version to `app:news_signals`, and sets the original's status to `SUPERSEDED`. Until the correction is itself confirmed, the original `CONFIRMED` signal remains the active Risk Scoring input — Atlas never has a gap where neither version is live.
+An analyst who spots new reporting on an already-`CONFIRMED` signal (e.g., "minor flood damage" revised to "site destroyed") files a correction: a new `signal_draft`, `signal_review_status = PENDING`, `supersedes_signal_id` set to the original. It passes through the same Human Confirm/Dismiss Gate (§5) as any other signal — confirming it does two things atomically: writes the new version to `app:news_signals`, and sets the original's status to `SUPERSEDED`. Until the correction is itself confirmed, the original `CONFIRMED` signal remains the active Risk Scoring input — Salus never has a gap where neither version is live.
 
 A `SUPERSEDED` signal is retained indefinitely, same as `DISMISSED` — queryable for audit, excluded from the active watchlist and from Risk Scoring input.
 
@@ -80,8 +80,8 @@ At baseline you still ingest, classify, entity-link, and surface a source-cited 
 ## 8. MCP Task-Tool Bindings
 | Tool | Sole caller | Precondition |
 | :--- | :--- | :--- |
-| `atlas_ingest_news` | RiskScanner | MVP baseline (§7) — scheduled feed pull, no other precondition |
-| `atlas_write_audit` | Every component | Every ingestion batch, classification, confirm/dismiss decision |
+| `salus_ingest_news` | RiskScanner | MVP baseline (§7) — scheduled feed pull, no other precondition |
+| `salus_write_audit` | Every component | Every ingestion batch, classification, confirm/dismiss decision |
 
 ## 9. Failure & Denial Handling
 | State | Behaviour |

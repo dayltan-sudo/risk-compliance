@@ -2,7 +2,7 @@
 
 > **Workflow, MVP\*.** A rules engine — trigger-table lookup plus recipient/channel routing. No judgement calls, no LLM. The component ships at MVP; not every trigger row it evaluates does — see §3.
 >
-> **Companion docs:** trigger table — [`../d. Reference/Atlas Reference - Alert Triggers.md`](../d.%20Reference/Atlas%20Reference%20-%20Alert%20Triggers.md). State schema — [`../c. State/Atlas - Google ADK State Reference.md`](../c.%20State/Atlas%20-%20Google%20ADK%20State%20Reference.md). Feeds — Reporting & Export.
+> **Companion docs:** trigger table — [`../d. Reference/Salus Reference - Alert Triggers.md`](../d.%20Reference/Salus%20Reference%20-%20Alert%20Triggers.md). State schema — [`../c. State/Salus - Google ADK State Reference.md`](../c.%20State/Salus%20-%20Google%20ADK%20State%20Reference.md). Feeds — Reporting & Export.
 
 ## 1. Core Mandate & Operational Objectives
 You evaluate the §12.1 trigger table against current state and route each fired trigger to its default recipients over the recipient's configured channel (in-app, email, Microsoft Teams — configurable per alert and per user, §12.2). You do not decide *whether* something is wrong — the upstream engines already decided that; you decide *who hears about it and how*.
@@ -10,7 +10,7 @@ You evaluate the §12.1 trigger table against current state and route each fired
 **Capabilities:** evaluate each of the nine §12.1 trigger conditions against `app:kpi_snapshot_store`, `app:contract_requirements_register`, `app:exclusions_register`, `app:news_signals`, and `app:validation_queue`; resolve recipients per trigger's default list, adjusted by `user:notification_preferences`; dispatch on the recipient's configured channel(s).
 
 ## 2. State Management
-Full schema: [`../c. State/Atlas - Google ADK State Reference.md`](../c.%20State/Atlas%20-%20Google%20ADK%20State%20Reference.md). Reads `app:alert_trigger_table` (configured, §12.1) and `user:notification_preferences` (channel choice per alert/user). Writes an `atlas_write_audit` entry for every raised alert — no read of any register counts as a side effect worth logging beyond that.
+Full schema: [`../c. State/Salus - Google ADK State Reference.md`](../c.%20State/Salus%20-%20Google%20ADK%20State%20Reference.md). Reads `app:alert_trigger_table` (configured, §12.1) and `user:notification_preferences` (channel choice per alert/user). Writes an `salus_write_audit` entry for every raised alert — no read of any register counts as a side effect worth logging beyond that.
 
 ## 3. Trigger Table & Release Traceability
 §12.1's trigger table carries **no per-row MoSCoW/release tags** — the PRD's release columns exist only at the FR level (§6). Only three of the nine triggers trace directly to a numbered FR; the rest carry a release because the sponsor assigned one directly (21 Jul 2026), not because a PRD requirement was located for them:
@@ -23,7 +23,7 @@ Full schema: [`../c. State/Atlas - Google ADK State Reference.md`](../c.%20State
 | Renewal due, low-confidence extraction | *(no FR trace — sponsor decision)* | **MVP** |
 | Coverage gap, carrier downgrade, aggregate erosion, new high-risk hotspot | *(no FR trace — sponsor decision)* | **V2** |
 
-Full row-by-row detail (condition + default recipients for all nine, plus alert #3's confidence-confirm cross-reference): [`../d. Reference/Atlas Reference - Alert Triggers.md`](../d.%20Reference/Atlas%20Reference%20-%20Alert%20Triggers.md). Practical read: the component and its MVP triggers (FR-traced or sponsor-assigned) ship at MVP; the emerging-risk trigger cannot fire before FR6.8 exists in V2, since it depends on `app:news_signals` being populated by the News & Sector Intelligence Agent; the four sponsor-assigned V2 triggers wait on their own underlying engines regardless of this table.
+Full row-by-row detail (condition + default recipients for all nine, plus alert #3's confidence-confirm cross-reference): [`../d. Reference/Salus Reference - Alert Triggers.md`](../d.%20Reference/Salus%20Reference%20-%20Alert%20Triggers.md). Practical read: the component and its MVP triggers (FR-traced or sponsor-assigned) ship at MVP; the emerging-risk trigger cannot fire before FR6.8 exists in V2, since it depends on `app:news_signals` being populated by the News & Sector Intelligence Agent; the four sponsor-assigned V2 triggers wait on their own underlying engines regardless of this table.
 
 ## 4. Deterministic Execution Flow
 ```
@@ -41,7 +41,7 @@ Full row-by-row detail (condition + default recipients for all nine, plus alert 
 [Node 3: Channel Routing] ──► In-app / email / Teams per recipient config
                  │
                  ▼
-[Output: atlas_raise_alert] ──► Dispatches; writes audit entry
+[Output: salus_raise_alert] ──► Dispatches; writes audit entry
 ```
 
 ## 5. Channels & Configuration
@@ -50,8 +50,8 @@ Three channels: in-app, email, Microsoft Teams — configurable per alert type a
 ## 6. MCP Task-Tool Bindings
 | Tool | Sole caller | Precondition |
 | :--- | :--- | :--- |
-| `atlas_raise_alert` | Alerts & Notification | Trigger row in `app:alert_trigger_table` evaluated true |
-| `atlas_write_audit` | Every component | Every raised alert |
+| `salus_raise_alert` | Alerts & Notification | Trigger row in `app:alert_trigger_table` evaluated true |
+| `salus_write_audit` | Every component | Every raised alert |
 
 ## 7. Failure & Denial Handling
 | State | Behaviour |

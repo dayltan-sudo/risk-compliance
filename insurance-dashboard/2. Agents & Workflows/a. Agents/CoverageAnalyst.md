@@ -2,7 +2,7 @@
 
 > **Deterministic, MVP (Config Change-Control Should/V2). No LLM in the loop, no judgement calls (§02)** — each function is a pure function of its inputs and the current config version, or (Config Change-Control) a fixed approval state machine. Four functions: three computation engines sharing a config-version dependency and snapshot-writing discipline, plus the governance workflow that gates them.
 >
-> **Companion docs:** upstream — [`Insurance DocAnalyst.md`](Insurance%20DocAnalyst.md). Read by — [`Atlas Orchestrator.md`](Atlas%20Orchestrator.md), [`InsuranceCustodian.md`](InsuranceCustodian.md). Storage/retention rules — [`InsuranceCustodian.md`](InsuranceCustodian.md) §6. §8–§9 reproduce PRD §7 and PRD §10 verbatim.
+> **Companion docs:** upstream — [`Insurance DocAnalyst.md`](Insurance%20DocAnalyst.md). Read by — [`Salus Orchestrator.md`](Salus%20Orchestrator.md), [`InsuranceCustodian.md`](InsuranceCustodian.md). Storage/retention rules — [`InsuranceCustodian.md`](InsuranceCustodian.md) §6. §8–§9 reproduce PRD §7 and PRD §10 verbatim.
 
 ## 1. Core Mandate & Operational Objectives
 1. **Coverage & Ratio (§4)** — computes every KPI in PRD §7.1–7.8 (formulas: §8) from posted policy, asset, premium, and claims data (FR2.1). Judgement-free: same inputs + `config_version_id` → same `computed_snapshot`. Pure function of `app:policy_registry` + `app:fx_rates`.
@@ -28,7 +28,7 @@ Every run writes a row keyed to the current `config_version_id`, never a mutated
 
 ### Flow A: Propose → Review → Approve → Version
 ```
-[Entry: atlas_propose_config_change — threshold/weight/appetite edit]
+[Entry: salus_propose_config_change — threshold/weight/appetite edit]
                  │
                  ▼
 [Node 1: Propose] ──► Rationale logged against the proposed change
@@ -37,7 +37,7 @@ Every run writes a row keyed to the current `config_version_id`, never a mutated
 [Node 2: Review] ──► Named owner reviews (owner TBC, PRD §18 PRD)
                  │
                  ▼
-[Node 3: Approve] ──► Approval captured in app:audit_log via atlas_write_audit
+[Node 3: Approve] ──► Approval captured in app:audit_log via salus_write_audit
                  │
                  ▼
 [Node 4: Version] ──► New dated config version written to
@@ -49,7 +49,7 @@ Every run writes a row keyed to the current `config_version_id`, never a mutated
                                  and Contract Compliance on their next
                                  scheduled or triggered recompute
 ```
-Trigger: `atlas_propose_config_change`, sole caller this agent, precondition proposer holds `C` (Configure) per InsuranceCustodian §5.
+Trigger: `salus_propose_config_change`, sole caller this agent, precondition proposer holds `C` (Configure) per InsuranceCustodian §5.
 
 > **MVP scope note.** This precondition is stubbed to always-allow for now — see README "MVP Scope — RBAC Deferred." The permission check's data source, once enforced, is `app:user_scope_registry`; this key should be added to §2's reads for this function at that point (currently undeclared).
 
@@ -103,13 +103,13 @@ You compute values; you do not decide what a value *means* for risk or complianc
 [Node 5: Snapshot Write] ──► Writes computed_snapshot to app:kpi_snapshot_store,
                               tagged config_version_id + as_of_date
 ```
-Trigger: `atlas_compute_kpis`, sole caller this agent, precondition Posting Convergence (Insurance DocAnalyst §7) or scheduled recompute. Gated by Snapshot Convergence (§3).
+Trigger: `salus_compute_kpis`, sole caller this agent, precondition Posting Convergence (Insurance DocAnalyst §7) or scheduled recompute. Gated by Snapshot Convergence (§3).
 
 **Recalculation.** Automatic on underlying data change (FR2.3, Must/MVP) — Insurance DocAnalyst's `recalc_trigger_set` is the trigger; no manual-only path at MVP.
 
 **Configurable thresholds (FR2.5, Should/V2).** Post-MVP, configurable via §3. At MVP, the §8 defaults are fixed.
 
-**Lineage (FR2.1–FR2.4).** Every KPI value carries inputs, formula id, FX rate + rate date, and computation timestamp. `atlas_get_lineage` (callers: Atlas Orchestrator, InsuranceCustodian) reads this off `app:kpi_snapshot_store` — this function doesn't serve lineage queries itself.
+**Lineage (FR2.1–FR2.4).** Every KPI value carries inputs, formula id, FX rate + rate date, and computation timestamp. `salus_get_lineage` (callers: Salus Orchestrator, InsuranceCustodian) reads this off `app:kpi_snapshot_store` — this function doesn't serve lineage queries itself.
 
 **KPI / Risk Score Snapshot entity** — backed by `app:kpi_snapshot_store`, written by all three engines.
 
@@ -120,7 +120,7 @@ Trigger: `atlas_compute_kpis`, sole caller this agent, precondition Posting Conv
 | `metric_name` | Enum/Text | e.g. "ITV", "Composite Risk Score", "Contractual Requirement Coverage Ratio" |
 | `metric_value` | Number | The computed value |
 | `as_of_date` | Date | Valid-time — the date this value represents |
-| `computed_at` | Timestamp | Transaction-time — when Atlas computed it |
+| `computed_at` | Timestamp | Transaction-time — when Salus computed it |
 | `config_version_id` | Reference | FK to Configuration Version in effect at computation (not optional) |
 | `computed_by` | Enum | Coverage & Ratio / Risk Scoring / Contract Compliance |
 | `lineage_ref` | Reference | Pointer to the inputs/formula used (FR2.4) |
@@ -169,7 +169,7 @@ You compute the composite score only — the KPI drivers you consume are §4's.
 [Node 6: Snapshot Write] ──► Writes computed_snapshot to app:kpi_snapshot_store,
                               tagged config_version_id + as_of_date
 ```
-Trigger: `atlas_compute_risk_score`, sole caller this agent, precondition KPI drivers current and `config_version_id` resolved. Gated by Snapshot Convergence (§3).
+Trigger: `salus_compute_risk_score`, sole caller this agent, precondition KPI drivers current and `config_version_id` resolved. Gated by Snapshot Convergence (§3).
 
 **Recalculation.** Automatic on underlying data change (Must/MVP). Recompute on weight change (FR4.5) is Should/V2 — at MVP a weight change applies from the next data-driven recompute onward.
 
@@ -204,7 +204,7 @@ You compare required vs. placed limit, then apply the exclusion cross-check as a
 
 ### Flow D: Requirement Comparison, Exclusion Cross-Check, Override
 ```
-[Entry: atlas_evaluate_compliance — placed coverage or exclusion version
+[Entry: salus_evaluate_compliance — placed coverage or exclusion version
         changed, OR app:contract_requirement_inputs updated for a
         requirement in scope, any counterparty type]
                  │
@@ -241,7 +241,7 @@ You compare required vs. placed limit, then apply the exclusion cross-check as a
                               app:contract_requirements_register and
                               app:exclusions_register, tagged config_version_id
 ```
-Trigger: `atlas_evaluate_compliance`, sole caller this agent, precondition placed coverage or exclusion version changed, **or** Insurance DocAnalyst's Flow G writes `app:contract_requirement_inputs` for a requirement in scope. Either source runs the identical Node 1→4 pass. Gated by Snapshot Convergence (§3).
+Trigger: `salus_evaluate_compliance`, sole caller this agent, precondition placed coverage or exclusion version changed, **or** Insurance DocAnalyst's Flow G writes `app:contract_requirement_inputs` for a requirement in scope. Either source runs the identical Node 1→4 pass. Gated by Snapshot Convergence (§3).
 
 Requirements and exclusions merge to one status field, Node 2 always completing before Node 3 — no window where two views of the same requirement's status could disagree, no tie-break rule needed.
 
@@ -274,18 +274,18 @@ Requirements and exclusions merge to one status field, Node 2 always completing 
 | Exclusion and requirement reference mismatched asset/line | No cross-check match; requirement status stands on Node 2 alone |
 | Two exclusions conflict with one requirement | Both cited in the `Excluded` note; status still resolves to one value |
 | `config_version_id` unresolved (tolerance %) | Recompute deferred; cannot write a snapshot without a bound version |
-| `atlas_evaluate_compliance` fires mid-Node-3 | Re-entrant run queued, not interleaved — Node 2→3→4 always completes atomically per requirement |
+| `salus_evaluate_compliance` fires mid-Node-3 | Re-entrant run queued, not interleaved — Node 2→3→4 always completes atomically per requirement |
 
 ## 7. MCP Task-Tool Bindings
 | Tool                          | Function              | Sole caller     | Precondition                                                             |
 | :---------------------------- | :-------------------- | :-------------- | :----------------------------------------------------------------------- |
-| `atlas_propose_config_change` | Config Change-Control | This agent      | Proposer holds `C` (InsuranceCustodian §5)                               |
-| `atlas_compute_kpis`          | Coverage & Ratio      | This agent      | Posting Convergence or scheduled recompute                               |
-| `atlas_compute_risk_score`    | Risk Scoring          | This agent      | KPI drivers current, `config_version_id` resolved                        |
-| `atlas_evaluate_compliance`   | Contract Compliance   | This agent      | Placed coverage/exclusion change, or requirement input change            |
-| `atlas_write_audit`           | All four functions    | Every component | Every propose/review/approve/version transition and every snapshot write |
+| `salus_propose_config_change` | Config Change-Control | This agent      | Proposer holds `C` (InsuranceCustodian §5)                               |
+| `salus_compute_kpis`          | Coverage & Ratio      | This agent      | Posting Convergence or scheduled recompute                               |
+| `salus_compute_risk_score`    | Risk Scoring          | This agent      | KPI drivers current, `config_version_id` resolved                        |
+| `salus_evaluate_compliance`   | Contract Compliance   | This agent      | Placed coverage/exclusion change, or requirement input change            |
+| `salus_write_audit`           | All four functions    | Every component | Every propose/review/approve/version transition and every snapshot write |
 
-Every write logs to `app:audit_log` (`atlas_write_audit`, no exceptions).
+Every write logs to `app:audit_log` (`salus_write_audit`, no exceptions).
 
 ## 8. Appendix A — KPI Formulas (PRD §7, verbatim)
 Computed by §4 on FX-normalised values with full lineage (FR2.1–FR2.4). All thresholds are proposed defaults for sponsor confirmation, configurable per KPI per FR2.5 (Should/V2 — fixed at MVP).

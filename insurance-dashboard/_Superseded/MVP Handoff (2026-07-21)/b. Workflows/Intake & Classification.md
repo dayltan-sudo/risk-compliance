@@ -1,6 +1,6 @@
 # Workflow Specification: Intake & Classification
 
-> **Workflow, MVP.** Deterministic — virus-scan/store/ID is plumbing; document-type detection is one bounded classifier call, not multi-step reasoning or tool choice. Not an agent (§02). Absorbs §9 stages 1–2. **Companion docs:** downstream — [`Field Extraction & Validation Routing.md`](../a.%20Agents/Field%20Extraction%20%26%20Validation%20Routing.md). Field set — [`../d.%20Reference/Atlas%20Reference%20-%20Extraction%20Field%20Set.md`](../d.%20Reference/Atlas%20Reference%20-%20Extraction%20Field%20Set.md). State schema — [`../c.%20State/Atlas%20-%20Google%20ADK%20State%20Reference.md`](../c.%20State/Atlas%20-%20Google%20ADK%20State%20Reference.md).
+> **Workflow, MVP.** Deterministic — virus-scan/store/ID is plumbing; document-type detection is one bounded classifier call, not multi-step reasoning or tool choice. Not an agent (§02). Absorbs §9 stages 1–2. **Companion docs:** downstream — [`Field Extraction & Validation Routing.md`](../a.%20Agents/Field%20Extraction%20%26%20Validation%20Routing.md). Field set — [`../d.%20Reference/Salus%20Reference%20-%20Extraction%20Field%20Set.md`](../d.%20Reference/Salus%20Reference%20-%20Extraction%20Field%20Set.md). State schema — [`../c.%20State/Salus%20-%20Google%20ADK%20State%20Reference.md`](../c.%20State/Salus%20-%20Google%20ADK%20State%20Reference.md).
 
 ## 1. Core Mandate & Operational Objectives
 You are the entry point of the document ingestion pipeline. You accept single and bulk uploads of PDF (native and scanned), image, Word, and Excel documents (FR3.1); virus-scan and store each immutably; and assign an `ingestion_id` per document, including within a bulk batch. You then detect document type — slip, wording, schedule, endorsement, debit note, renewal (FR3.2) — so [Field Extraction & Validation Routing](../a.%20Agents/Field%20Extraction%20%26%20Validation%20Routing.md) can select the right extraction model. The classification step is one bounded classifier call with a fixed output set; it has no ambiguity to resolve and no tool to choose between, which is why this component is a workflow, not an agent (§02).
@@ -9,10 +9,10 @@ You never extract fields, never route to human review, and never post data. Your
 
 **Open item:** policy documents (D&O, GPA, workmen's comp) can carry named individuals' personal data, and `app:document_store` is one of the surfaces that exposes document content (§13). No component in the pipeline currently owns role-based redaction/masking or export restriction on the raw store — flagged, not resolved, here.
 
-**Scope decision (sponsor, 21 Jul 2026):** deferred, not resolved. In-scope Atlas source documents are not expected to carry named-individual personal data in practice; this guardrail stays flagged rather than assigned an owner. Revisit before onboarding any line (e.g. D&O, GPA, workmen's compensation) where that assumption doesn't hold.
+**Scope decision (sponsor, 21 Jul 2026):** deferred, not resolved. In-scope Salus source documents are not expected to carry named-individual personal data in practice; this guardrail stays flagged rather than assigned an owner. Revisit before onboarding any line (e.g. D&O, GPA, workmen's compensation) where that assumption doesn't hold.
 
 ## 2. State Management
-See [`Atlas - Google ADK State Reference.md`](../c.%20State/Atlas%20-%20Google%20ADK%20State%20Reference.md) for the full schema. You write `app:document_store`. Session keys: `ingestion_id`, `document_class`, `intake_status`.
+See [`Salus - Google ADK State Reference.md`](../c.%20State/Salus%20-%20Google%20ADK%20State%20Reference.md) for the full schema. You write `app:document_store`. Session keys: `ingestion_id`, `document_class`, `intake_status`.
 
 ## 3. Deterministic Execution Flow
 ```
@@ -42,7 +42,7 @@ See [`Atlas - Google ADK State Reference.md`](../c.%20State/Atlas%20-%20Google%2
                     Field Extraction & Validation Routing, which selects the
                     extraction model per document_class
 ```
-Trigger: `atlas_upload_document` (entry point, no precondition). `atlas_classify_document` (sole caller Intake & Classification; precondition: virus scan passed, `ingestion_id` assigned).
+Trigger: `salus_upload_document` (entry point, no precondition). `salus_classify_document` (sole caller Intake & Classification; precondition: virus scan passed, `ingestion_id` assigned).
 
 ## 4. Format & Bulk Handling (FR3.1)
 | Format | Handling |
@@ -67,4 +67,4 @@ Six output classes: **slip, wording, schedule, endorsement, debit note, renewal*
 | Bulk batch partial failure | Each document succeeds or fails independently; no batch-wide rollback |
 | Re-upload of a previously ingested document | New `ingestion_id` issued here; deduplication and version continuity are handled downstream at Field Extraction (FR3.8), not at intake |
 
-Every write logs to `app:audit_log` (`atlas_write_audit`, no exceptions).
+Every write logs to `app:audit_log` (`salus_write_audit`, no exceptions).

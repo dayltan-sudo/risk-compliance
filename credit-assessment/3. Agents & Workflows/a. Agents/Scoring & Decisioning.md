@@ -149,7 +149,7 @@ Trigger: `cra_compute_rating`, sole caller this agent, precondition Flow A compl
 
 Trigger: `cra_compute_recommendation`, sole caller this agent, precondition Flow B complete.
 
-**Analyst override.** `atlas`-equivalent: `cra_override_recommendation`, records the override value, flag, and mandatory justification, retaining the system-computed proposal alongside it (FR6.3) — never overwritten, never lost. Locked once Governance & Records's Approval Workflow reaches Approve (FR7.4); no write path from this agent past that point.
+**Analyst override.** `salus`-equivalent: `cra_override_recommendation`, records the override value, flag, and mandatory justification, retaining the system-computed proposal alongside it (FR6.3) — never overwritten, never lost. Locked once Governance & Records's Approval Workflow reaches Approve (FR7.4); no write path from this agent past that point.
 
 **`OPEN`:** whether limit sizing extends beyond the rating band to exposure/appetite-based inputs — pending the baseline template and a product decision. If the answer is "also exposure-based," this engine will need an input the scorecard never sees; this is why it is not merged with the Rating Engine now.
 

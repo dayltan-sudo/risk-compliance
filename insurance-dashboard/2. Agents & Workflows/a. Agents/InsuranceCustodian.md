@@ -2,16 +2,16 @@
 
 > **Deterministic, mixed release. No LLM in the loop, no judgement calls (§02).** Two functions: Reporting & Export (template-fill/render, **V2**) and Audit & Access Log (**MVP** — the log every other write goes through). Packaged together because the audit lineage report, one of Reporting's four outputs, is a direct read of Audit's own log.
 >
-> **§5–§6 are cross-cutting architecture references — MVP from go-live, independent of either function's release tag, and not owned behaviour of this agent.** Enforcement of §5 sits in [`Atlas Orchestrator.md`](Atlas%20Orchestrator.md) §8 (queries), §3 (exports), and §4 (audit reads).
+> **§5–§6 are cross-cutting architecture references — MVP from go-live, independent of either function's release tag, and not owned behaviour of this agent.** Enforcement of §5 sits in [`Salus Orchestrator.md`](Salus%20Orchestrator.md) §8 (queries), §3 (exports), and §4 (audit reads).
 
 ## 1. Core Mandate & Operational Objectives
 1. **Reporting & Export (§3, V2)** — four output types to PDF or Excel, on demand or schedule (PRD §12.2). Reads current state from the grounding engines; never computes a KPI, risk score, or compliance status.
-2. **Audit & Access Log (§4, MVP)** — immutable, time-stamped log of every data change, validation action, export, and access event (PRD §13). Every other component writes here via `atlas_write_audit`, unconditionally.
+2. **Audit & Access Log (§4, MVP)** — immutable, time-stamped log of every data change, validation action, export, and access event (PRD §13). Every other component writes here via `salus_write_audit`, unconditionally.
 
 ## 2. State Management
 **Reads (Reporting & Export):** `app:kpi_snapshot_store`, `app:contract_requirements_register`, `app:exclusions_register`, `app:policy_registry`, `app:document_store`, `app:user_scope_registry` (export access scoping), `app:audit_log` (lineage output only), `user:reporting_templates`.
 
-**Writes:** `temp:render_buffer`, discarded after turn. `app:audit_log` — **sole owner**; every other component writes via `atlas_write_audit`, none read each other's entries directly, only through this agent's read path (§4).
+**Writes:** `temp:render_buffer`, discarded after turn. `app:audit_log` — **sole owner**; every other component writes via `salus_write_audit`, none read each other's entries directly, only through this agent's read path (§4).
 
 No session-state keys beyond the temp buffer.
 
@@ -19,7 +19,7 @@ No session-state keys beyond the temp buffer.
 
 ### Flow A: Report Generation
 ```
-[Entry: atlas_generate_report — on demand or scheduled]
+[Entry: salus_generate_report — on demand or scheduled]
                  │
                  ▼
 [Node 1: Source Read] ──► Pulls current KPI/risk/compliance snapshots,
@@ -34,7 +34,7 @@ No session-state keys beyond the temp buffer.
 [Output: rendered file] ──► Delivered on demand or per schedule;
                              writes audit entry (§4 Flow B)
 ```
-Trigger: `atlas_generate_report`, sole caller this agent, on demand or scheduled. Rendered output unavailable until V2; the audit lineage output's underlying log (§4) is populated from MVP regardless.
+Trigger: `salus_generate_report`, sole caller this agent, on demand or scheduled. Rendered output unavailable until V2; the audit lineage output's underlying log (§4) is populated from MVP regardless.
 
 **Outputs (PRD §12.2).**
 
@@ -61,7 +61,7 @@ Every other component writes to you unconditionally; none read each other's audi
 
 ### Flow B: Append-Only Audit Write
 ```
-[Entry: atlas_write_audit — from any component]
+[Entry: salus_write_audit — from any component]
                  │
                  ▼
 [Node 1: Event Capture] ──► Actor, action, target record, timestamp
@@ -85,7 +85,7 @@ Every other component writes to you unconditionally; none read each other's audi
 
 | State | Behaviour |
 | :--- | :--- |
-| A component fails to call `atlas_write_audit` on a write | Treated as a defect in the calling component, not a tolerated gap |
+| A component fails to call `salus_write_audit` on a write | Treated as a defect in the calling component, not a tolerated gap |
 | Attempted `UPDATE`/`DELETE` against `app:audit_log` | Rejected at the database/permissions layer regardless of caller role, including Admin |
 | Read requested by Entity Risk Champion | Denied — §5 grants no audit-trail access to this role |
 | Read requested by an unrecognised or unscoped role | Denied by default — least-privilege; no implicit read |
@@ -107,7 +107,7 @@ Reference data binding all five agents — not this agent's own behaviour.
 
 **Role-capability matrix (PRD §4.2).** `R` Read · `W` Create/Edit · `V` Validate extractions · `C` Configure · `A` Admin · `—` no access. Always scoped by entity/BU per the user's assignment.
 
-> **MVP scope note.** Enforcement against this matrix is stubbed to always-allow through the closed testing group (README "MVP Scope — RBAC Deferred") — identity capture and `app:user_scope_registry` resolution stay live, but no query, write, or config action is currently denied on a role basis, including the "Acknowledge alert / risk-acceptance override" row above (`atlas_acknowledge_alert`, Orchestrator §11) — assigned to R&C Manager, enforced once RBAC is switched on.
+> **MVP scope note.** Enforcement against this matrix is stubbed to always-allow through the closed testing group (README "MVP Scope — RBAC Deferred") — identity capture and `app:user_scope_registry` resolution stay live, but no query, write, or config action is currently denied on a role basis, including the "Acknowledge alert / risk-acceptance override" row above (`salus_acknowledge_alert`, Orchestrator §11) — assigned to R&C Manager, enforced once RBAC is switched on.
 
 | Capability | Grp Ins | R&C Mgr | Entity Champ | Treasury | Auditor | Admin |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -124,16 +124,16 @@ Reference data binding all five agents — not this agent's own behaviour.
 
 **\*** Entity Risk Champion access is restricted to their assigned entity/site only — every `*`-marked cell is entity/site-scoped, not Group-wide, even where the letter grant matches other roles.
 
-**`app:user_scope_registry`** — integration-sourced (Entra ID/SSO), application-scoped, persistent; the authoritative record of each user's role and assigned entity/site, provisioned outside Atlas. Three readers only: the Orchestrator's access gate, and both functions of this agent. No component writes to it.
+**`app:user_scope_registry`** — integration-sourced (Entra ID/SSO), application-scoped, persistent; the authoritative record of each user's role and assigned entity/site, provisioned outside Salus. Three readers only: the Orchestrator's access gate, and both functions of this agent. No component writes to it.
 
 ## 6. Data Lifecycle, Versioning & Retention (PRD §8.1, PRD §13)
 Reference governing how every non-reference PRD §8.1 entity is stored, versioned, and retained — underlies `app:policy_registry`, `app:kpi_snapshot_store`, and every other persisted `app:` key.
 
 **Bitemporal, two axes per non-reference record:**
 - **Valid time** — the period a fact was true in the real world (a sum insured's effective dates).
-- **Transaction time** — when Atlas recorded or corrected that fact (validator confirmation, correction post).
+- **Transaction time** — when Salus recorded or corrected that fact (validator confirmation, correction post).
 
-These diverge: a broker's July correction can restate what was true in March. Atlas must answer both "what was true in March" and "what did we believe then, versus now" — the second is what an auditor traces. A mutable row plus change-log answers only the first; the second needs replaying every log entry, fragile around a config-version boundary. `valid_from`/`valid_to`/`recorded_at` as first-class columns make it a direct query.
+These diverge: a broker's July correction can restate what was true in March. Salus must answer both "what was true in March" and "what did we believe then, versus now" — the second is what an auditor traces. A mutable row plus change-log answers only the first; the second needs replaying every log entry, fragile around a config-version boundary. `valid_from`/`valid_to`/`recorded_at` as first-class columns make it a direct query.
 
 **Entity lifecycle classification (PRD §8.1).**
 
@@ -146,7 +146,7 @@ These diverge: a broker's July correction can restate what was true in March. At
 | Independent | Claim | Own lifecycle clock, independent of the policy filed against (PRD §7.4) |
 | Configuration | Configuration Version — KPI thresholds, risk-score weights, risk-appetite thresholds | Versioned on every change; every snapshot references the version that produced it (PRD §10.3). Field list: [`CoverageAnalyst.md`](CoverageAnalyst.md) §3 |
 
-> **Resolved (sponsor, 21 Jul 2026):** Atlas continues tracking an open claim after the policy it was filed against has lapsed and been superseded. Tracking ends at claim settlement, not at policy expiry — consistent with the claim's own independent lifecycle clock (PRD §7.4).
+> **Resolved (sponsor, 21 Jul 2026):** Salus continues tracking an open claim after the policy it was filed against has lapsed and been superseded. Tracking ends at claim settlement, not at policy expiry — consistent with the claim's own independent lifecycle clock (PRD §7.4).
 
 **Retention clocks.** Four, never conflated — doing so risks early archiving.
 
@@ -155,7 +155,7 @@ These diverge: a broker's July correction can restate what was true in March. At
 | Renewal-cycle | ~1 policy term (annual typical; multi-year for CAR/EAR) | The placed policy's own inception–expiry window |
 | Regulatory-retention | Indefinite (sponsor, 21 Jul 2026 — revisit if a shorter Group policy duration is confirmed) | PRD §13 Group records-retention policy |
 | Audit | Effectively permanent | PRD §13 immutable log of every change, validation, export, access |
-| Migration | 1 renewal cycle, one-time, per entity | PRD §9.2 Atlas and legacy tracker run concurrently before cutover |
+| Migration | 1 renewal cycle, one-time, per entity | PRD §9.2 Salus and legacy tracker run concurrently before cutover |
 
 Archiving/purging waits for the longer of renewal-cycle and regulatory-retention; audit never prunes.
 
@@ -170,6 +170,6 @@ Archiving/purging waits for the longer of renewal-cycle and regulatory-retention
 ## 7. MCP Task-Tool Bindings
 | Tool | Function | Release | Sole caller | Precondition |
 | :--- | :--- | :--- | :--- | :--- |
-| `atlas_generate_report` | Reporting & Export | V2 | This agent | On demand or scheduled |
-| `atlas_get_lineage` | Reporting & Export (reads) | V2 | Atlas Orchestrator, this agent | Record ID in scope (audit lineage output, or Orchestrator citations) |
-| `atlas_write_audit` | Audit & Access Log | **MVP** | Every component | Every write, validation, export, and access event — no exceptions |
+| `salus_generate_report` | Reporting & Export | V2 | This agent | On demand or scheduled |
+| `salus_get_lineage` | Reporting & Export (reads) | V2 | Salus Orchestrator, this agent | Record ID in scope (audit lineage output, or Orchestrator citations) |
+| `salus_write_audit` | Audit & Access Log | **MVP** | Every component | Every write, validation, export, and access event — no exceptions |

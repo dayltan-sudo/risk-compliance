@@ -2,7 +2,7 @@
 
 > **Agent, Should/V2 — specified, not yet built.** One component: Conversational Query & Answer. Backed by PRD FR13 (eleven sub-requirements, all three of its open decisions closed at v0.12). The roster's second pure agent, and the only place this architecture has an orchestrator tier — the five committed agents are peer domains along a pipeline with a human gate, not workers under a coordinator; this agent exists only because FR13 asks for a chat surface, which nothing else in the PRD does. **This document specifies behaviour for implementation. No code exists against it yet.**
 >
-> **Companion docs:** reads — [`Scoring & Decisioning.md`](Scoring%20%26%20Decisioning.md) (ratios, rating, recommendation), [`Governance & Records.md`](Governance%20%26%20Records.md) (assessment state, history, comparison), [`Adverse-Media Screening.md`](Adverse-Media%20Screening.md) (screening status and Relevant findings, once FR12 ships). Writes to none of them. Modelled closely on Atlas's FR8 orchestrator, with one structural difference: Atlas's orchestrator is the sole caller of task tools that mutate state; this agent calls no such tool at all.
+> **Companion docs:** reads — [`Scoring & Decisioning.md`](Scoring%20%26%20Decisioning.md) (ratios, rating, recommendation), [`Governance & Records.md`](Governance%20%26%20Records.md) (assessment state, history, comparison), [`Adverse-Media Screening.md`](Adverse-Media%20Screening.md) (screening status and Relevant findings, once FR12 ships). Writes to none of them. Modelled closely on Salus's FR8 orchestrator, with one structural difference: Salus's orchestrator is the sole caller of task tools that mutate state; this agent calls no such tool at all.
 
 ## 1. Core Mandate & Operational Objectives
 
@@ -28,7 +28,7 @@ You do not decide anything a human hasn't already decided, and you do not comput
 
 $$\text{Answer Convergence} = \left( \text{access\_scope} \neq \emptyset \right) \land \left( \text{query\_result} \neq \emptyset \right) \land \left( \text{citation\_set} \neq \emptyset \right)$$
 
-Any term unmet routes to Flow D, never a composed answer. This is Atlas's Answer Convergence shape, applied here with one difference load-bearing enough to restate: `query_result` in this system can only ever come from one of the fixed queries in §11's table — there is no `grounding_results` fan-out across multiple heterogeneous services the way Atlas has, because this agent has exactly one grounding mechanism by design (FR13.11).
+Any term unmet routes to Flow D, never a composed answer. This is Salus's Answer Convergence shape, applied here with one difference load-bearing enough to restate: `query_result` in this system can only ever come from one of the fixed queries in §11's table — there is no `grounding_results` fan-out across multiple heterogeneous services the way Salus has, because this agent has exactly one grounding mechanism by design (FR13.11).
 
 ## 4. Flow A: Intent & Scope Routing
 

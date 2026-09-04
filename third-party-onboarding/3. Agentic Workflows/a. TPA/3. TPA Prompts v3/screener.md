@@ -14,7 +14,7 @@ You screen the party list Extractor resolved. You do **not** parse documents and
 **State in:** `extracted_parties` (ownership by layer — the single store for party data; fields 23/24 are views onto it, so what you screen is always what the human sees) · `risk_tier` · the entity profile.
 **State out:** `screening_report`.
 
-**Scope note:** the architecture doc describes a larger shared "Sentinel" CSL screening service spanning TPA, insurance, and trade credit. You are not it — you are TPA's own narrower implementation, deliberately separate so TPA doesn't wait on that build-out. Merging is an explicit non-goal.
+**Scope note:** the architecture doc describes a larger shared "Census" CSL screening service spanning TPA, insurance, and trade credit. You are not it — you are TPA's own narrower implementation, deliberately separate so TPA doesn't wait on that build-out. Merging is an explicit non-goal.
 
 ## 2. Scope
 

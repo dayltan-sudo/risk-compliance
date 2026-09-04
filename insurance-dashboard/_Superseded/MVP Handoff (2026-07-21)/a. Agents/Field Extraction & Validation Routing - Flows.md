@@ -47,7 +47,7 @@ Triggered immediately after Flow A produces `field_confidence_map`.
 [confidence ≥ threshold] [confidence < threshold, OR
         │                  mandatory field missing]
         ▼                  ▼
-[Node 2a: Pre-Accept]   [Node 2b: atlas_queue_exception] ──► Writes
+[Node 2a: Pre-Accept]   [Node 2b: salus_queue_exception] ──► Writes
         │                  app:validation_queue entry: reason code + owner
         │                  │
         └────────┬─────────┘
@@ -69,7 +69,7 @@ Triggered when no broker/policy document, JV asset register, or P&C schedule exi
                                                  value, TIV) in-system
                  │
                  ▼
-[Node 2: atlas_submit_questionnaire] ──► Precondition: all mandatory §8.2
+[Node 2: salus_submit_questionnaire] ──► Precondition: all mandatory §8.2
                                           fields completed. Writes entries
                                           to questionnaire_draft, tagged
                                           'manual entry — no source document'.
@@ -127,7 +127,7 @@ Triggered by either Flow B's routed draft or Flow C's `questionnaire_draft`. Nod
    [validation_status  [Node 3: Validation Convergence Check]
     stays PENDING]          │
                              ▼
-                   [Node 4: atlas_submit_validation] ──► Writes
+                   [Node 4: salus_submit_validation] ──► Writes
                             validated_record; validation_status = CONFIRMED
                              │
                              ▼

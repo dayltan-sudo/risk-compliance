@@ -10,21 +10,21 @@ Agentic AI architecture for risk & compliance workflows — third-party onboardi
 
 | Project | Codename | What it does | Status |
 |---|---|---|---|
-| [`third-party-onboarding/`](third-party-onboarding) | **Sentinel** / KAI Sentinel | Chatbot host client + agent pipeline for third-party (TPA) onboarding and renewal — document extraction, real-arithmetic risk scoring, sanctions/watchlist screening, all committed to the platform's own record store | Draft PRD (TPA v10), agents in build |
-| [`insurance-dashboard/`](insurance-dashboard) | **Atlas** | Conversational assistant + document-extraction pipeline for the Keppel Global Insurance Monitoring System — policy/broker document ingestion, ratio & risk scoring, contract requirements and exclusions registers | PRD v0.8, architecture plan v1.5 |
-| [`credit-assessment/`](credit-assessment) | — | GUI + agentic backend for trade credit risk — extracts financials from customer statements, computes ratios and an internal credit rating, and routes a two-step analyst→approver limit/terms recommendation | PRD v0.10, working prototype |
+| [`third-party-onboarding/`](third-party-onboarding) | **Census** / KAI Census | Chatbot host client + agent pipeline for third-party (TPA) onboarding and renewal — document extraction, real-arithmetic risk scoring, sanctions/watchlist screening, all committed to the platform's own record store | Draft PRD (TPA v10), agents in build |
+| [`insurance-dashboard/`](insurance-dashboard) | **Salus** | Conversational assistant + document-extraction pipeline for the Keppel Global Insurance Monitoring System — policy/broker document ingestion, ratio & risk scoring, contract requirements and exclusions registers | PRD v0.8, architecture plan v1.5 |
+| [`credit-assessment/`](credit-assessment) | **Fiscus** | GUI + agentic backend for trade credit risk — extracts financials from customer statements, computes ratios and an internal credit rating, and routes a two-step analyst→approver limit/terms recommendation | PRD v0.10, working prototype |
 
-## 🛡️ Sentinel — Third-Party Onboarding
+## 🛡️ Census — Third-Party Onboarding
 
 ```mermaid
 flowchart TD
-    O[Sentinel Orchestrator] --> Ex[Extractor<br/>24 fields + ownership + risk score]
+    O[Census Orchestrator] --> Ex[Extractor<br/>24 fields + ownership + risk score]
     Ex --> Sc[Screener]
     Sc --> G{Confirmation gate<br/>step 1 fields → step 2 screening}
     G -->|confirmed| Co[Committed record<br/>+ derived expiry, field 25]
 ```
 
-Single chatbot surface (three-pane: chat / canvas / roster) that every signed-in user — one role, no reviewer tier — uses to find, onboard, renew, amend, and check TPA records, backed by three agents writing to the platform's own store. **No integration with Dow Jones RCTP of any kind**: Sentinel is the system of record: `Sentinel` (orchestrator — routes, holds state, sole caller of task tools), `Extractor` (the merged former DocAnalyst + DocReviewer — sole parser of every document set, resolves the 24-field schema, full ownership structure, and the risk score in one pass), `Screener` (sanctions/watchlist screening against the platform's own CSL data).
+Single chatbot surface (three-pane: chat / canvas / roster) that every signed-in user — one role, no reviewer tier — uses to find, onboard, renew, amend, and check TPA records, backed by three agents writing to the platform's own store. **No integration with Dow Jones RCTP of any kind**: Census is the system of record: `Census` (orchestrator — routes, holds state, sole caller of task tools), `Extractor` (the merged former DocAnalyst + DocReviewer — sole parser of every document set, resolves the 24-field schema, full ownership structure, and the risk score in one pass), `Screener` (sanctions/watchlist screening against the platform's own CSL data).
 
 - **Review, not create.** The extractor pre-fills from source documents with per-field confidence and citations; a human confirms or amends every field. Judgment fields (PEP, beneficial ownership, sanctions exposure) are never guessed — left blank and flagged if the source doesn't state the answer.
 - **One confirmation gate, two steps.** Step 1 confirms the 24 extracted fields (plus the derived 25th — expiry); step 2, unlocked once step 1 is confirmed, resolves every screening recommendation. Both write one log entry — there is no second, R&C-only sign-off gate.
@@ -33,7 +33,7 @@ Single chatbot surface (three-pane: chat / canvas / roster) that every signed-in
 - **Amend, for correcting a committed record** without running a full renewal — re-tiers and re-screens if a scoring or identity field changes, appends a new version to the same record, never overwrites history.
 - **Screening outages park the draft, never strand the user** — confirmed work is kept, screening retries in the background, and the user is notified rather than blocked with no path forward.
 
-Key docs: [Sentinel Host Client PRD (v10)](<third-party-onboarding/1. Planning & Prototyping/a. TPA/3. PRD v3/Sentinel Host Client - Product Requirements Document.md>) · [Agent prompts (v3)](<third-party-onboarding/3. Agentic Workflows/a. TPA/3. TPA Prompts v3>)
+Key docs: [Census Host Client PRD (v10)](<third-party-onboarding/1. Planning & Prototyping/a. TPA/3. PRD v3/Census Host Client - Product Requirements Document.md>) · [Agent prompts (v3)](<third-party-onboarding/3. Agentic Workflows/a. TPA/3. TPA Prompts v3>)
 
 <details>
 <summary><strong>🤖 Agents & subagents</strong></summary>
@@ -42,7 +42,7 @@ Three agents share the host-client shell, each writing to the platform's own rec
 
 | Agent | Purpose | Flows it participates in |
 |---|---|---|
-| **Sentinel (Orchestrator)** | Routing, state, sole caller of TPA task tools; owns the two-step confirmation gate and the confirmation log | Flow A–E (all TPA flows) |
+| **Census (Orchestrator)** | Routing, state, sole caller of TPA task tools; owns the two-step confirmation gate and the confirmation log | Flow A–E (all TPA flows) |
 | **Extractor** | The merged former Entity Extractor + TPA DocReviewer — sole parser of every document set: 24-field schema, full (multi-layer) ownership resolution, renewal deltas, and the risk-score arithmetic (feeding derived expiry, field 25) in one pass, no intermediate handoff | Flow B (Onboard/Renew), Flow E (Amend) |
 | **Screener** | Screens the resolved party list against sanctions/watchlist/PEP/adverse-media sources at whatever scope the risk tier sets; produces recommended classifications only, resolved by the human at the gate; re-invoked on an identity edit or a tier rise | Flow B (post-extraction screening); re-screen branches in the gate (§5) and Flow E |
 
@@ -51,7 +51,7 @@ Three agents share the host-client shell, each writing to the platform's own rec
 <details>
 <summary><strong>🔀 Workflow flows</strong></summary>
 
-Sentinel Orchestrator owns 5 named flows — down from 9, after cutting the R&C-only journeys (exception report, due-for-renewal list, screening-proposal routing, R&C review/clearance) and the scheduled Custodian sweep to Phase 2:
+Census Orchestrator owns 5 named flows — down from 9, after cutting the R&C-only journeys (exception report, due-for-renewal list, screening-proposal routing, R&C review/clearance) and the scheduled Custodian sweep to Phase 2:
 
 - **A — Identity Resolution.** Two-key match only (exact registration/tax ID, or name+country) against the portfolio registry — shared registered address/parent was deliberately dropped as a match key (too many false positives from corporate-secretarial registration addresses). A "none of these" option on a multiple-candidate result proceeds as a confirmed new onboarding.
 
@@ -92,24 +92,24 @@ Sentinel Orchestrator owns 5 named flows — down from 9, after cutting the R&C-
 
 </details>
 
-## 📊 Atlas — Insurance Portfolio Monitoring
+## 📊 Salus — Insurance Portfolio Monitoring
 
 ```mermaid
 flowchart LR
     D[Insurance DocAnalyst<br/>doc ingestion] --> C[CoverageAnalyst<br/>ratios · risk score · contract compliance]
     N[RiskScanner<br/>news signals] --> C
-    C --> O[Atlas Orchestrator<br/>NL Q&A · alerts]
+    C --> O[Salus Orchestrator<br/>NL Q&A · alerts]
     D -. status .-> O
     N -. signals .-> O
     O --> Au[InsuranceCustodian<br/>audit log · reporting]
 ```
 
-Five agents for the Keppel Global Insurance Monitoring System. `Atlas Orchestrator` handles intent routing, access-scope gating, cited answer composition, and the Action Items rail/alert dispatch — grounding every answer against `CoverageAnalyst`, a deterministic engine (no LLM, no judgment calls) that computes coverage/ratio KPIs, the composite risk score, and one merged Contract Requirements/Exclusions compliance status, gated by its own Config Change-Control workflow. `Insurance DocAnalyst` runs the document ingestion pipeline (intake → extract → validate → post) that feeds CoverageAnalyst; `RiskScanner` turns external news into confirmed, entity-linked risk signals (MVP baseline; impact scoring and appetite comparison are V2). `InsuranceCustodian` owns the audit log every write passes through, plus reporting/export (V2).
+Five agents for the Keppel Global Insurance Monitoring System. `Salus Orchestrator` handles intent routing, access-scope gating, cited answer composition, and the Action Items rail/alert dispatch — grounding every answer against `CoverageAnalyst`, a deterministic engine (no LLM, no judgment calls) that computes coverage/ratio KPIs, the composite risk score, and one merged Contract Requirements/Exclusions compliance status, gated by its own Config Change-Control workflow. `Insurance DocAnalyst` runs the document ingestion pipeline (intake → extract → validate → post) that feeds CoverageAnalyst; `RiskScanner` turns external news into confirmed, entity-linked risk signals (MVP baseline; impact scoring and appetite comparison are V2). `InsuranceCustodian` owns the audit log every write passes through, plus reporting/export (V2).
 
 - **Answers only from live data, fully traceable** — every answer cites the record it came from; no answer ships without a citation.
-- **Agents vs. deterministic workflows.** Only `Atlas Orchestrator`, `Insurance DocAnalyst`'s extraction step, and `RiskScanner` involve judgment calls; `CoverageAnalyst` and `InsuranceCustodian` are pure functions of their inputs — same inputs + config version always produce the same output.
+- **Agents vs. deterministic workflows.** Only `Salus Orchestrator`, `Insurance DocAnalyst`'s extraction step, and `RiskScanner` involve judgment calls; `CoverageAnalyst` and `InsuranceCustodian` are pure functions of their inputs — same inputs + config version always produce the same output.
 
-Key docs: [Keppel_Atlas_PRD_v0_8.docx](<insurance-dashboard/1. Planning & Prototyping/Keppel_Atlas_PRD_v0_8.docx>) · [Atlas_Agent_Architecture_Plan.html](<insurance-dashboard/1. Planning & Prototyping/Atlas_Agent_Architecture_Plan.html>) · [Agents & Workflows](<insurance-dashboard/2. Agents & Workflows>)
+Key docs: [Keppel_Salus_PRD_v0_8.docx](<insurance-dashboard/1. Planning & Prototyping/Keppel_Salus_PRD_v0_8.docx>) · [Salus_Agent_Architecture_Plan.html](<insurance-dashboard/1. Planning & Prototyping/Salus_Agent_Architecture_Plan.html>) · [Agents & Workflows](<insurance-dashboard/2. Agents & Workflows>)
 
 <details>
 <summary><strong>🤖 Agents & subagents</strong></summary>
@@ -118,7 +118,7 @@ Five agents, each a merged consolidation of what was originally ~12 finer-graine
 
 | Agent | Description | Flows it participates in |
 |---|---|---|
-| **Atlas Orchestrator** | Always-on assistant panel answering NL questions on coverage, sites, renewals, risk, and contractual requirements from live data — always with a citation, with an explicit no-answer fallback rather than a guess. Also owns Alerts & Action Items (absorbed function): evaluates the trigger table and feeds both the pull-based rail and push-based dispatch. Never writes policy/coverage/requirement/exclusion data | A Intent & Page-Context Routing · B Access-Scope Gate · C Grounding Fan-Out · D Answer Composition & Citation · E No-Answer Fallback · F Trigger Evaluation & Action Items · G Alert Dispatch; plus Alert Resolution |
+| **Salus Orchestrator** | Always-on assistant panel answering NL questions on coverage, sites, renewals, risk, and contractual requirements from live data — always with a citation, with an explicit no-answer fallback rather than a guess. Also owns Alerts & Action Items (absorbed function): evaluates the trigger table and feeds both the pull-based rail and push-based dispatch. Never writes policy/coverage/requirement/exclusion data | A Intent & Page-Context Routing · B Access-Scope Gate · C Grounding Fan-Out · D Answer Composition & Citation · E No-Answer Fallback · F Trigger Evaluation & Action Items · G Alert Dispatch; plus Alert Resolution |
 | **Insurance DocAnalyst** | The entire document ingestion pipeline: intake/classify (10 document classes), OCR/NLP/IDP extraction (the one truly agentic sub-step), confidence-routed human review, manual-questionnaire maker-checker fallback, enrichment (FX/geocode/carrier-rating/entity-site mapping) and posting. Sole writer of the policy registry and contract-requirement inputs | A Intake & Classification · B Extraction · C Confidence-Threshold Routing · D Manual Questionnaire · E Human Validation · F Reprocessing · G Contract-Requirement Direct Posting · H Enrichment & Posting |
 | **CoverageAnalyst** | Deterministic (no LLM). Four merged functions, each a pure function of inputs + current config version: Coverage & Ratio Engine (all KPIs), Risk Scoring Engine (composite 0–100 score + drivers), Contract Compliance Engine (requirement-vs-placed + exclusion override, one merged status), and Config Change-Control (the sole governance path for thresholds/weights) | A Config Change-Control (Propose→Review→Approve→Version) · B KPI Computation · C Risk Score Computation · D Requirement Comparison / Exclusion Cross-Check |
 | **InsuranceCustodian** | Two deterministic/infra functions: Reporting & Export (Board pack, renewal forecast, coverage-gap register, audit lineage report) and Audit & Access Log (immutable append-only log every other component writes through — structurally no UPDATE/DELETE path). Also hosts the RBAC matrix and data-lifecycle/retention rules | A Report Generation · B Append-Only Audit Write |
@@ -148,7 +148,7 @@ flowchart TD
     C2 --> S[KPI snapshot store<br/>versioned by config_version_id]
     C3 --> S
     C4 --> R[Compliance registers]
-    S --> O["Atlas Orchestrator<br/>Q&A (A-E) · Alerts (F-G)"]
+    S --> O["Salus Orchestrator<br/>Q&A (A-E) · Alerts (F-G)"]
     R --> O
     N["RiskScanner pipeline<br/>news → confirmed signal"] -.optional input.-> C3
 ```
@@ -167,7 +167,7 @@ Node prefixes match the flow letters in the Agents table above: `DA-` = Insuranc
 <details>
 <summary><strong>🗄️ State management</strong></summary>
 
-- **Bitemporal model** — every non-reference record carries both *valid-time* (when the fact was true in the real world) and *transaction-time* (when Atlas recorded/corrected it), so Atlas can answer both "what was true on date X" and "what did we believe on date X vs. now." Applies to versioned entities (Asset, Policy, Coverage/Line, Premium, ExtractionField, Third-Party Requirement, Policy Exclusion, News Signal — Type-2 SCD, a correction closes the old row and inserts a new one, never mutates in place).
+- **Bitemporal model** — every non-reference record carries both *valid-time* (when the fact was true in the real world) and *transaction-time* (when Salus recorded/corrected it), so Salus can answer both "what was true on date X" and "what did we believe on date X vs. now." Applies to versioned entities (Asset, Policy, Coverage/Line, Premium, ExtractionField, Third-Party Requirement, Policy Exclusion, News Signal — Type-2 SCD, a correction closes the old row and inserts a new one, never mutates in place).
 - **Point-in-time snapshots**: KPI/Risk Score results are an additive fact table keyed by `(entity, metric, as_of_date, config_version_id)` — recompute always inserts, never updates, so a later reweighting can never rewrite history.
 - **Config-version gating**: Configuration Version records (`version_id`, `effective_from`, `superseded_by`, `rationale`, `approved_by`, `threshold_set`) are the sole product of CoverageAnalyst's Config Change-Control state machine. Every KPI/risk-score write requires a bound `config_version_id` before it can be written at all — the structural enforcement of "historical values retain the weights/thresholds in effect when calculated."
 - **Convergence gates**, one per writing flow, all boolean-and of populated state + explicit status: **Validation Convergence** (DocAnalyst), **Posting Convergence** (the sole gate on writing the policy registry), **Answer Convergence** (Orchestrator), **Snapshot Convergence** (CoverageAnalyst), **Signal Convergence** (RiskScanner).
@@ -178,7 +178,7 @@ Node prefixes match the flow letters in the Agents table above: `DA-` = Insuranc
 
 </details>
 
-## 💳 Credit Assessment — Trade Credit Risk
+## 💳 Fiscus — Trade Credit Risk
 
 ```mermaid
 flowchart LR
@@ -200,7 +200,7 @@ Key docs: [Credit_Assessment_PRD_v0.10.md](<credit-assessment/1. Planning & Prot
 <details>
 <summary><strong>🤖 Agents & subagents</strong></summary>
 
-Five agents own the 13-component roster — grouped in the architecture plan (v2.3) to match the five-agent shape Sentinel and Atlas already use; the regrouping moved no boundary. A **sixth agent is specified but not yet built** (read-only Q&A assistant, backed by FR13 in the PRD, v0.12 — eleven sub-requirements, structured-query-only grounding). Despite the "GUI + agentic backend" framing, only **one owned component is a pure agent** (Agent 4's open-web screening) and **one is a hybrid** (Agent 1's extraction step) — the other eleven are deterministic workflows/infrastructure, kept away from the ratio/rating math by design so every rating stays reconstructable. Listed with what each owns; the deterministic majority is included because the flows below depend on them.
+Five agents own the 13-component roster — grouped in the architecture plan (v2.3) to match the five-agent shape Census and Salus already use; the regrouping moved no boundary. A **sixth agent is specified but not yet built** (read-only Q&A assistant, backed by FR13 in the PRD, v0.12 — eleven sub-requirements, structured-query-only grounding). Despite the "GUI + agentic backend" framing, only **one owned component is a pure agent** (Agent 4's open-web screening) and **one is a hybrid** (Agent 1's extraction step) — the other eleven are deterministic workflows/infrastructure, kept away from the ratio/rating math by design so every rating stays reconstructable. Listed with what each owns; the deterministic majority is included because the flows below depend on them.
 
 | Agent | Owns (component · type) | Description | Flows it participates in |
 |---|---|---|---|
