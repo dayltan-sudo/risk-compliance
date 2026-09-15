@@ -1,323 +1,308 @@
 # System Instruction: Governance & Records
 
-> **Deterministic / Infra, mixed release.** Five merged components — Approval Workflow, Customer & Assessment Registry, Audit & Access Log, Methodology Config & Change-Control, Reporting & Export. No LLM in the loop anywhere; two are pure infrastructure (Registry, Audit Log) that every other agent writes *through* rather than calls. None advances a document toward a number — each gates, records, configures, or exports a decision another agent already computed.
+> **Deterministic, MVP.** One PRD §5 module: Record — the audit log and Registry every other module writes and reads through, and owner of the one real judgement-adjacent logic in MVP: the Draft→Submitted→Approved|Rejected|Returned state machine and its guards. No roles, no segregation of duties at MVP (PRD §1; guard behaviour in §3) — an accepted business decision, not a placeholder gap: the guard abstraction (FR7.3) is what makes V2's SoD an additive change, never a rewrite.
 >
-> **Companion docs:** upstream — every other agent writes through this one's Audit & Access Log function, and reads its Registry function for assessment scope. [`Scoring & Decisioning.md`](Scoring%20%26%20Decisioning.md) supplies the outputs the Registry compares and the Recommendation this agent's Approval function locks. §5 is the role-capability matrix every agent's access gate reads; §6 is the data lifecycle reference every agent's entity table cross-references.
+> **Companion docs:** upstream — every other module writes through this one's Audit Log (§5) and reads its Registry (§4) for assessment scope; [`Statement Extraction.md`](Statement%20Extraction.md) never begins an upload until this module has minted a Draft assessment (FR8.3). [`Field Review.md`](Field%20Review.md) hands this module the FR3.12 recency determination for persistence. [`Scoring & Decisioning.md`](Scoring%20%26%20Decisioning.md) supplies the `Rating` this module's Approval Workflow locks (implicitly, via FR7.8) and its Registry compares at drill-down.
 
 ## 1. Core Mandate & Operational Objectives
 
-Decide an assessment (Approval Workflow, FR7), own the customer/assessment master record and every cross-assessment read (Registry, FR8), log every write in the system (Audit Log, FR9), version the methodology every engine computes against (Config, FR10), and export a closed assessment (Reporting, FR11). Five components under one owner because none of them writes a value into a ratio-eligible state on its own; each exists to make a decision defensible rather than to advance it.
+Own the customer/assessment master record and every cross-assessment read (Registry, FR8), decide an assessment through a named, guarded state machine (Approval Workflow, FR7), log every write in the system (Audit Trail, FR9), and export a completed assessment (Export, FR10). Four functions under one owner because none of them writes a value into a ratio-eligible state — each exists to make a decision defensible or discoverable, never to advance it.
 
-**Capabilities:** (1) Own the Draft→Submitted→Approved|Rejected|Returned state machine, enforcing approver ≠ preparer (FR7.1–FR7.5). (2) Evaluate the New-vs-Refresh entry point from a read of the customer's assessment count (FR8.3). (3) Serve read-only drill-down, per-customer history, and cross-assessment delta comparison (FR8.5–FR8.9). (4) Serve the Customer Directory browse mode, a third top-level entry point (FR8.10–FR8.11). (5) Route Refresh-this-customer from the browse surface into the Prepare entry point (FR8.11→FR8.3). (6) Log every write in the system, append-only (FR9.1–FR9.2). (7) Hold ratio formulas, scorecard weights, and rating bands as a versioned config record (FR10.1–FR10.5). (8) Export a completed assessment to PDF/Excel (FR11.1–FR11.3).
+**Capabilities:** (1) Own the Draft→Submitted→Approved|Rejected|Returned state machine, every transition passing through a named guard (FR7.1–FR7.3, FR7.7). (2) Resolve the entry point — customer, division, and relationship-type derivation — from a read of the (Customer, Division) pair's assessment history (FR8.1, FR8.3, FR5.13). (3) Enforce at most one non-terminal assessment per (Customer, Division) (FR8.3). (4) Serve the Customer Directory, one row per (Customer, Division) pair, and read-only drill-down into any past assessment (FR8.4–FR8.6). (5) Persist the recency flag Field Review computes (FR3.12). (6) Log every write in the system, append-only, no per-role restriction at MVP (FR9.1–FR9.3). (7) Export a completed assessment to PDF or Excel, stamped with every version that produced it (FR10.1–FR10.2).
 
-You are the record, not the decision — except where the decision *is* a record, which is exactly what Approval Workflow and Methodology Config are: state machines over configuration and authorization, never over what a number means.
+You are the record and the guard, not the arithmetic or the judgement of whether a value is correct — those belong to Scoring & Decisioning and Field Review respectively.
 
 ## 2. State Management
 
-**Reads (shared):** `cra:assessment_registry`, `cra:user_scope_registry`. **Per function:** Approval Workflow — `cra:recommendation_store` (what it locks). Registry cross-assessment reads — `cra:ratio_store`, `cra:rating_store`, `cra:recommendation_store`, `cra:document_store` (FR1.9). Reporting & Export — all of the above, read-only.
+**Reads:** `cra:document_store`, `cra:extracted_field_store`, `cra:criterion_input_store`, `cra:integrity_check_store`, `cra:ratio_store`, `cra:rating_store` — all read-only, for drill-down, the Approver's pre-decision view (FR7.6), and export. `cra:identity` — acting user ID only; this module's guards are the only place any future role or scope attribute is read (no roles exist at MVP).
 
-**Writes (shared):** `cra:audit_log` (Audit & Access Log function, sole writer; every other function and every other agent writes *through* this, never around it). **Per function:** Approval Workflow — `cra:approval_decision_log` (sole writer), and the state field on `cra:assessment_registry`. Registry — `cra:customer_registry` (sole writer) and the record/version-mint half of `cra:assessment_registry` (state transitions belong to Approval Workflow, not this function). Methodology Config — `cra:scorecard_config` (sole writer). Reporting & Export writes nothing — read-only by function definition (FR11.1's export never becomes an alternative path to a value the pipeline wouldn't have produced).
+**Writes:** `cra:customer_registry` (sole writer). `cra:assessment_registry` (sole writer — mints versions, applies every state transition through a guard, derives and stores `relationship_type`, `division`, `recency_flag`). `cra:approval_decision_log` (sole writer). `cra:audit_log` (this module owns the store; every module, including this one, writes to it via `cra_write_audit` — never around it).
 
-**Session keys** (per function): `approval_context`, `entry_point_decision`, `comparison_result`, `directory_scope`, `export_payload`, `config_proposal`.
+**Session keys:** `approval_context`, `entry_point_decision`, `directory_scope`, `export_payload`, `relationship_type_derivation`.
 
-**Temp keys:** `temp:render_buffer` (Reporting & Export — PDF/Excel render buffer, discarded after delivery).
+**Temp keys:** `temp:render_buffer` — export render buffer, discarded after delivery.
 
-## 3. Approval Workflow
+## 3. Approval Workflow (FR7)
+
+**Decision Convergence** — gates every transition:
+
+$$\text{Decision Valid} = \big(\text{state} = \text{Submitted}\big) \land \big(\text{guard}(\text{transition}, \text{actor}) = \text{allow}\big) \land \big(\big[\text{Reject} \Rightarrow \text{reason supplied}\big]\big)$$
+
+At MVP, `guard(...)` allows any authenticated user for every transition (FR7.7) — no actor ≠ preparer check. **One person may prepare, submit, and approve an assessment alone.** Every action is still attributed and logged (FR9), and `ApprovalDecision.policy_version` records that MVP's allow-all policy, not some later enforced one, was live at decision time (FR7.5) — the fact this was permitted is itself part of the audit trail.
+
+**Transition guards.**
+
+| Transition | Guard | Actor recorded as | MVP behaviour | Intended V2 |
+|---|---|---|---|---|
+| Draft → Submitted | `can_submit` | `Assessment.submitted_by` | Allow any | Analyst role; own or team |
+| Submitted → Approved | `can_approve` | `ApprovalDecision.actor` | Allow any | Approver role **and** actor ≠ submitted_by |
+| Submitted → Rejected | `can_approve` | `ApprovalDecision.actor` | Allow any | Same as Approve |
+| Submitted → Returned | `can_return` | `ApprovalDecision.actor` | Allow any | Approver role; no SoD |
+| Returned → Draft | *(automatic)* | — | No guard | Unchanged |
+
+Split guards for Approve and Return despite identical MVP behaviour, because they diverge in V2 — re-deriving which past decisions were Returns after the fact would need a backfill this split avoids.
 
 ```
-[Entry: cra_submit_assessment — assessment_id, preparing analyst identity]
+[Entry: cra_submit_assessment — assessment_id, submitting user]
                  │
                  ▼
-[Node 1: Visibility Rule] ──► Only a Submitted assessment reaches an
-                               Approver (FR7.2) — Draft is invisible to
-                               the Approver queue
+[Node 1: can_submit Guard] ──► Allow-any at MVP. Precondition: a
+                                computed class exists (FR6, FR7.2) —
+                                Scoring & Decisioning must have completed
                  │
                  ▼
-[Node 2: Segregation Check — Submit Time] ──► Approver pool excludes the
-                                                preparing analyst (FR7.5)
+[Node 2: Record submitted_by, submitted_at]
                  │
                  ▼
-[Node 3: Grant Lineage Access] ──► Full extraction, ratio, and rating
-                                    lineage plus the audit trail, to the
-                                    Approver (FR7.3)
+[Node 3: State Transition] ──► Draft → Submitted
                  │
                  ▼
-[Node 4: cra_decide_approval — Approve | Reject | Return]
+[Output: cra:assessment_registry] ──► Visible for a decision
+```
+
+```
+[Entry: cra_decide_approval — assessment_id, actor, action (Approve |
+        Reject | Return), comments/reason]
                  │
                  ▼
-          ◇ Decision? ◇
+[Node 1: Grant Lineage Access] ──► Full extraction, integrity-check
+                                    results, ratio lineage, criterion
+                                    inputs, driver breakdown, audit trail
+                                    (FR7.6) — no restricted view; no role
+                                    to restrict by at MVP
+                 │
+                 ▼
+[Node 2: Guard by Transition] ──► can_approve (Approve | Reject) or
+                                   can_return (Return) — both allow-any
+                                   today
+                 │
+                 ▼
+          ◇ action? ◇
     Approve │              Reject │              Return │
         ▼                     ▼                      ▼
-[Node 5a: Lock          [Node 5b: Close,       [Node 5c: Re-open at
- Recommendation]         Required Reason]       Draft with Comments]
- No further write        Terminal                Re-enters Field
- path past this point                            Review's Flow C
-        │                     │                      │
-        └─────────────────────┴──────────────────────┘
-                               ▼
-              [Node 6: Segregation Check — Decision Time] ──► Re-verified,
-                                                                not assumed
-                                                                from Node 2
-                               │
-                               ▼
-              [Output: cra:assessment_registry.state] ──► ApprovalDecision
-                                                            appended
-                                                            (FR7.7 —
-                                                            collection, not
-                                                            overwrite)
+[Node 3a: Lock         [Node 3b: Close,       [Node 3c: Draft with
+ (FR7.8)]               Reason Required]       Comments]
+ No write path              │                  Re-enters Field
+ past this point            │                  Review (Flow A/E, G)
+        │                   │                      │
+        └───────────────────┴──────────────────────┘
+                             ▼
+              [Node 4: ApprovalDecision Appended] ──► actor,
+                                                        policy_version
+                                                        (FR7.5),
+                                                        accumulates
+                                                        across resubmit
+                                                        cycles (FR7.4)
+                             │
+                             ▼
+              [Output: cra:assessment_registry.state,
+                        cra:approval_decision_log]
 ```
 
-Trigger: `cra_submit_assessment` / `cra_decide_approval`, sole caller this agent, precondition Node 1's visibility rule for the latter. FR7.5's segregation check runs at **both** submit and decision time (Node 2 and Node 6) — checking only at submission would let an assessment be routed to a queue the preparer could later claim from.
+**Approved or Rejected is immutable (FR7.8).** Correcting one means creating a new assessment for that (Customer, Division) pair (§4) — never editing a closed one.
 
-**Decision Convergence:**
+## 4. Customer & Assessment Registry (FR8)
 
-$$\text{Decision Valid} = \left( \text{state} = \text{Submitted} \right) \land \left( \text{decider} \neq \text{preparer} \right) \land \left( \left[ \text{Reject} \Rightarrow \text{reason supplied} \right] \right)$$
-
-**No eligible second approver.** Blocks by default (FR7.6). Any delegation or break-glass path is an audited exception, never a silent bypass — the delegation model itself is `OPEN` (PRD §5).
-
-## 4. Customer & Assessment Registry
-
-**The entry point is a Registry read, not an analyst preference (FR8.3).**
+**The entry point is a Registry read, not an analyst preference.** (Customer, Division) — not Customer alone — is the unit of continuity: versioning, non-terminal concurrency, and relationship-type derivation all scope to this pair (FR8.1). Different divisions may hold independent, even conflicting, assessments and ratings for the same customer at the same time — expected, not an inconsistency to reconcile.
 
 ```
-[Entry: cra_start_assessment — customer_id or new-customer details]
+[Entry: cra_start_assessment — customer_id or new-customer details,
+        division]
                  │
                  ▼
-[Node 1: Count Prior Assessments] ──► Reads cra:customer_registry +
-                                       cra:assessment_registry
+[Node 1: Resolve (Customer, Division)] ──► Create Customer if new.
+                                            Division is the assessing
+                                            org's own business unit
+                                            (FR8.1) — always supplied by
+                                            the caller, never inferred
                  │
                  ▼
-          ◇ Prior assessments = 0? ◇
-           │yes                      │no
-           ▼                          ▼
-[Node 2a: New Assessment]     [Node 2b: Refresh Assessment]
-Mints version 1, empty         Captures a source assessment
-field scope                    (default: most recent), mints
-                                version n+1, links via
-                                source_assessment_id (set
-                                once, never re-pointed)
-           │                          │
-           │                          ▼
-           │              [Node 3: Hand Prior-Period Refs to
-           │               Statement Extraction] ──► Raises FR1.7's
-           │               reuse event exactly as an upload-attach
-           │               does — this agent never becomes a second
-           │               writer of ExtractedField
-           └──────────────┬───────────┘
-                           ▼
-       [Output: cra:assessment_registry] ──► New record in Draft; every
-                                              transition out of Draft
-                                              belongs to Approval Workflow
-                                              (§3)
+[Node 2: Concurrency Check] ──► At most one non-terminal (Draft |
+                                 Submitted) assessment per (Customer,
+                                 Division) (FR8.3). One already open for
+                                 this pair? Resume it. A different
+                                 division for the same customer may have
+                                 its own open concurrently — no conflict
+                 │
+                 ▼
+[Node 3: Relationship-Type Derivation] ──► Renewal if this (Customer,
+                                            Division) pair has ≥1
+                                            Approved Assessment, New
+                                            otherwise (FR5.13). Scoped to
+                                            the division — a customer
+                                            with Approved history in one
+                                            division is still New to a
+                                            division that has never
+                                            assessed them
+                 │
+                 ▼
+          ◇ Analyst overrides? ◇
+           │yes                  │no
+           ▼                      ▼
+[Node 4a: Record Override,  [Node 4b: Accept Derived
+ Mandatory Reason] ──►       Value]
+ relationship_type_
+ overridden,
+ _override_reason
+           │                      │
+           └──────────┬───────────┘
+                       ▼
+       [Node 5: Mint Version] ──► New Assessment, next version within
+                                  this (Customer, Division)'s own chain
+                                  (FR8.2), Draft state, assessment_year
+                                  set from wall-clock, never a literal
+                                  (FR4.4)
+                       │
+                       ▼
+       [Output: cra:assessment_registry] ──► New Draft record ──►
+                                              Statement Extraction (FR8.3
+                                              entry point complete)
 ```
 
-**Three cross-assessment reads, none of which writes anything (FR8.5, FR8.6, FR8.8–FR8.9).** FR8.5 opens any prior assessment read-only at its last-recorded state, never reopens it for editing. FR8.6 serves the per-customer trend of ratings and limits over time. FR8.8–FR8.9 compute the delta between this assessment's fresh outputs and the refresh source's stored ones — read at view time, no engine invoked:
+**Overriding relationship_type after criterion 11 has already been touched signals [`Field Review.md`](Field%20Review.md)'s Flow F** — switching to New zeroes and hides criterion 11; switching to Renewal reopens it as Unconfirmed, blocking the gate until supplied (FR5.14). Overriding at all is legitimate — a customer returning after years dormant, or a long-standing account whose history predates the tool — which is why it is permitted, always with a recorded reason, rather than blocked.
+
+**Customer Directory and drill-down.**
 
 ```
-[Entry: cra_compare_assessments — this assessment_id, source assessment_id]
+[Entry: cra_browse_directory]
                  │
                  ▼
-[Node 1: Load Both Assessments' Stored Rows] ──► cra:ratio_store,
-                                                   cra:rating_store,
-                                                   cra:recommendation_store
-                                                   — read only, neither
-                                                   re-derived
+[Node 1: List (Customer, Division) Pairs] ──► Every pair with ≥1
+                                                Assessment, one row per
+                                                pair (FR8.4) — the same
+                                                customer name may appear
+                                                more than once, once per
+                                                division that has
+                                                assessed them
                  │
                  ▼
-          ◇ Either side Provisional or Not Calculable? ◇
-           │yes                                          │no
-           ▼                                              ▼
-[Suppress that line, state reason        [Node 2: Compute Delta] ──►
- and side (FR8.8 rule 1)]                 Direction, magnitude, grade
-                                           movement, limit/terms change
-           │                                              │
-           └──────────────────────┬───────────────────────┘
-                                   ▼
-              ◇ config_version_id differs between the two? ◇
-               │yes                                  │no
-               ▼                                      ▼
-    [State the methodology change      [Present delta as-is]
-     alongside the delta — never
-     as like-for-like (FR8.8 rule 2,
-     FR10.3)]
-                                   │
-                                   ▼
-                    [Output: comparison_result] ──► Never re-derives the
-                                                      source assessment's
-                                                      ratios under current
-                                                      config — that would
-                                                      rescore a closed
-                                                      assessment
+[Node 2: Per-Row Summary] ──► Customer name, division, most recent
+                               assessment date, that division's most
+                               recent Approved assessment's class
+                 │
+                 ▼
+[Node 3: Select a Row] ──► cra_get_customer_detail (FR8.5) — that pair's
+                            Assessments: date, state, class, composite,
+                            each clickable through to read-only drill-
+                            down (FR8.6). A customer assessed by more
+                            than one division exposes a division
+                            selector; each division's list is
+                            independent. A New assessment for this
+                            customer action routes to §4's entry point
+                            with customer and division pre-selected
+                 │
+                 ▼
+[Output: FR8.6 drill-down] ──► Extraction, integrity checks, ratios with
+                                lineage, criterion inputs, composite,
+                                class, and driver breakdown as they stood
+                                at approval — never reopens for editing
+                                (FR7.8)
 ```
 
-**Browse mode — a third top-level entry point, not a screen inside Prepare (FR8.10–FR8.11).**
+**Recency Flag Persistence.**
 
 ```
-[Entry: cra_browse_directory — caller identity]
+[Entry: cra_set_recency_flag — assessment_id, flag (Recent |
+        Non-Recent) — invoked by Field Review's own determination
+        (FR3.12)]
                  │
                  ▼
-[Node 1: Role-Scoped Aggregate] ──► Filter runs on the aggregate before
-                                     the per-customer rollup, not on the
-                                     list afterward (§5) — a customer
-                                     whose assessments are all invisible
-                                     to the caller is absent, not present
-                                     and blank
+[Node 1: Write to Assessment] ──► recency_flag — this module is
+                                   Assessment's sole writer; Field Review
+                                   computes the value, never writes it
                  │
                  ▼
-[Node 2: Condense Per Customer] ──► Name, most recent assessment date/
-                                     state, that assessment's grade where
-                                     FR5 has run, most recent Approved
-                                     limit/terms — blank grade means "FR5
-                                     hasn't run," blank limit means "no
-                                     Approved assessment," never rendered
-                                     alike
-                 │
-                 ▼
-[Node 3: Select a Row] ──► cra_get_customer_detail — assembles FR8.6's
-                            trend, FR8.5's drill-down, and FR1.9's
-                            document list. Nothing here edits a field,
-                            ratio, rating, or document in place
-                 │
-                 ▼
-          ◇ Caller selects "Refresh this customer"? ◇
-           │yes                                      │no
-           ▼                                          ▼
-[Node 4: Gate on FR8.3 Rights] ──►          [Stay in Browse — no write]
-Auditor sees no such action
-           │
-           ▼
-[Node 5: Route to Node 1, §4 above] ──► Customer pre-selected always;
-                                          assessment pre-selected as
-                                          refresh source only when reached
-                                          via FR8.5 drill-down
+[Output: cra:assessment_registry.recency_flag] ──► Advisory only — no
+                                                     read path from
+                                                     Scoring &
+                                                     Decisioning;
+                                                     surfaced on the
+                                                     review screen and in
+                                                     exports only
 ```
 
-**FR1.9's document list is served here, not by Statement Extraction** — half the requirement is a customer-scoped, cross-assessment lookup only this component can perform; the other half reads `Document`'s version chain, which Statement Extraction still solely writes. This agent gains no write path to `Document`.
-
-## 5. Personas & Role-Capability Scope (PRD §1, NFR RBAC)
-
-| Persona | Reads | Writes | Notes |
-| :--- | :--- | :--- | :--- |
-| Credit Analyst | Own + team assessments | Uploads, field confirmations, assessment prep/refresh, submission | May query the Assistant within this same scope once built (FR13.7) |
-| Credit Approver | Submitted assessments, full lineage of same | Approval decisions | Must differ from preparing analyst (FR7.5) — enforced at submit and decision time |
-| Auditor | Audit log, completed assessments (FR9.3) | None | Read-only everywhere, including the browse surface; no FR8.3 or FR7 rights by any path — never sees Refresh-this-customer |
-| Config Admin (V2) | `cra:scorecard_config` proposal history | Config proposals (subject to review/approve, §8) | Scope pending the V2 admin editing surface (FR10.2) |
-
-**Every query scoped by role before it reaches data, not filtered at the UI layer (NFR RBAC).** This is the rule Node 1 of the browse flow above enforces on an aggregate; every other read in this agent enforces the same rule on a single record.
-
-## 6. Data Lifecycle, Versioning & Retention
-
-| Entity | Mutable until | Versioning rule | Owning function |
-| :--- | :--- | :--- | :--- |
-| Customer | Ongoing — master data | Slowly-changing, audit-logged | Registry |
-| Assessment | State transitions until Approved/Rejected | New version per Refresh, linked via `source_assessment_id`, set once, never re-pointed | Registry (record); Approval (state) |
-| ApprovalDecision | Never — append-only per action | One record per action, accumulates across return-and-resubmit | Approval Workflow |
-| AuditLogEntry | Never — immutable | N/A, append-only by definition | Audit & Access Log |
-| ScorecardConfig | Never once effective | New version per change, supersedes, never edits in place | Methodology Config |
-
-**Four clocks:** (1) the assessment cycle — the only meaningfully mutable window; (2) the credit-limit clock — an approved limit stays live until the next re-assessment supersedes it, cadence `OPEN`; (3) the regulatory retention clock — duration and jurisdiction `OPEN`, but documents outlive the assessments citing them and configs outlive every assessment computed under them regardless of the eventual duration; (4) the audit clock — never prunes during normal operation.
-
-## 7. Audit & Access Log
+## 5. Audit Trail (FR9)
 
 ```
 [Entry: cra_write_audit — actor, entity_type, entity_id, action,
-        before_value, after_value, timestamp — called by every agent,
-        every write, no exceptions]
+        before_value, after_value, timestamp — every module, every
+        write, no exceptions]
                  │
                  ▼
 [Node 1: Append] ──► cra:audit_log — no UPDATE or DELETE path exists,
-                      enforced structurally
+                      enforced structurally (FR9.2)
                  │
                  ▼
-[Output: AuditLogEntry] ──► Readable by Approver, Admin, Auditor (FR9.3).
-                             Analyst read access to their own entries is
-                             OPEN (PRD §5)
+[Output: AuditLogEntry] ──► Readable in-app by any authenticated user —
+                             no per-role restriction at MVP (FR9.3);
+                             deferred with roles (PRD §7)
 ```
 
-Must exist before Statement Extraction ships (build sequence, README) — FR9.1 requires extraction confidence scores logged, so the log has to exist before the component that produces them.
+Must exist before Statement Extraction ships (README build sequence) — FR9.1 requires extraction confidence scores logged, so the log has to exist before the module that produces them.
 
-## 8. Methodology Config & Change-Control
-
-```
-[Entry: cra_propose_config_change — threshold/weight/band/sizing edit]
-                 │
-                 ▼
-[Node 1: Propose] ──► Rationale logged against the proposed change
-                 │
-                 ▼
-[Node 2: Review] ──► Named reviewer (V2 admin surface, FR10.2)
-                 │
-                 ▼
-[Node 3: Approve] ──► Captured to cra:audit_log
-                 │
-                 ▼
-[Node 4: Version] ──► New dated version written to cra:scorecard_config;
-                       prior version retained, never overwritten (FR10.5)
-                 │
-                 ▼
-[Output: config_version_id] ──► Available to Scoring & Decisioning's
-                                 three engines and Statement Extraction's
-                                 confidence bands (FR10.4) on their next
-                                 compute
-```
-
-**The critical rule (FR10.3):** historical assessments retain the config version live at the time they were computed — never retroactively rescored. Enforced structurally by Scoring & Decisioning's Compute Convergence, not by this agent alone — this agent supplies the versioned record; the engines are what refuse to read-current-config.
-
-**Schema is MVP, the editing screen is not.** FR10.1 and FR10.3–FR10.5 (versioned record, loaded at compute time, changed by deployment) are Must/MVP; only FR10.2's admin screen is Should/V2, blocked until the baseline template arrives. Build the seam first.
-
-## 9. Reporting & Export
+## 6. Export (FR10)
 
 ```
 [Entry: cra_export_assessment — assessment_id, format (PDF | Excel)]
                  │
                  ▼
-[Node 1: Assemble Payload] ──► Confirmed fields, ratios, rating,
-                                recommendation, approval trail — read
-                                only, never a second path to a value
+[Node 1: Assemble Payload] ──► Fields with confirmation status and
+                                source scale, integrity-check results,
+                                ratios with lineage, all eleven criterion
+                                inputs and tiers, composite, class,
+                                handling route, and the approval record
+                                (FR10.1) — read-only, never a second path
+                                to a value
                  │
                  ▼
-[Node 2: Config Version Stamp] ──► Carries the config_version_id that
-                                    produced the rating (FR11.2) — or the
-                                    export stops being reconstructable the
-                                    moment methodology changes
+[Node 2: Version Stamp] ──► Every extraction_model_version present in
+                             this assessment, the scorecard_version that
+                             produced the rating, and the export date
+                             (FR10.2) — without these an export is not
+                             reconstructable the moment either changes
                  │
                  ▼
-[Node 3: Role Scope & Masking] ──► Applies the caller's role scope and
-                                    any masking treatment (FR11.3) — a
-                                    generated file leaves the system's
-                                    access controls behind entirely
-                 │
-                 ▼
-[Output: rendered file] ──► temp:render_buffer, discarded after delivery
+[Output: rendered file] ──► temp:render_buffer, discarded after
+                             delivery
 ```
 
-**`OPEN`:** the masking treatment itself is undecided (PRD §5) — this function enforces whichever is chosen, but assumes none until told.
+## 7. Data Lifecycle & Versioning
 
-## 10. Failure & Denial Handling
+| Entity | Mutable until | Versioning rule | Owning function |
+|---|---|---|---|
+| Customer | Ongoing — master data | Slowly-changing, audit-logged | Registry |
+| Assessment | State transitions until Approved/Rejected | New version per (Customer, Division) pair; never overwritten (FR8.2) | Registry (record); Approval (state) |
+| ApprovalDecision | Never — append-only per action | One record per action, accumulates across return-and-resubmit | Approval Workflow |
+| AuditLogEntry | Never — immutable | N/A, append-only by definition | Audit Trail |
+
+No `ScorecardConfig` entity — `scorecard_version` is a constant compiled into Scoring & Decisioning, not a stored, editable record (FR6.14; versioned methodology configuration is V2, PRD §7). No credit-limit clock — MVP derives no limit amount to expire (PRD §7). Retention duration and jurisdiction are `OPEN` (PRD §3); one ordering holds regardless — a document outlives every assessment citing it.
+
+## 8. Failure & Denial Handling
 
 | State | Behaviour |
-| :--- | :--- |
-| Submit attempted by a user with no eligible approver | Blocked by default (FR7.6); break-glass path, if any, is an audited exception |
-| Decision attempted where decider = preparer | Rejected at Node 6 even if Node 2 somehow passed — segregation is re-verified, not assumed |
-| Refresh attempted with a source assessment still in Draft/Submitted | `OPEN` whether this is permitted at all (PRD §5); if permitted, the comparison's reproducibility claim weakens until the source reaches a terminal state |
-| Browse-directory query from a customer with zero visible assessments to the caller | Customer absent from the list — never present with blank fields |
-| Refresh-this-customer selected by a caller without FR8.3 rights | Action not offered — not merely disabled, absent from the surface entirely |
-| Config proposal with no rationale | Blocked at Node 1 — rationale is mandatory input, not optional metadata |
-| Export requested for a still-open (Draft/Submitted) assessment | Permitted, but the config-version stamp and role scope still apply — export is not gated on assessment state, only on role scope |
-| `cra_write_audit` call fails | The originating write is not considered committed — no agent may treat an unlogged action as done |
+|---|---|
+| Submit attempted with no computed class | Blocked (FR7.2) |
+| Decide attempted on an assessment not in Submitted state | Rejected at Node 1 (Decision Convergence) |
+| New assessment started for a (Customer, Division) pair with one already Draft or Submitted | Resumes the existing one; no second is created (FR8.3) |
+| Assessment start with no division supplied | Rejected — division is never inferred (FR8.1) |
+| Reject without a reason | Blocked (FR7.4) |
+| Relationship-type override with no reason | Blocked (FR5.13) |
+| Correction attempted on an Approved or Rejected assessment | Rejected — must create a new assessment for the same (Customer, Division) pair instead (FR7.8, FR8.2) |
+| Browse-directory query with zero assessments for any (Customer, Division) pair | That pair absent from the list entirely — never present with blank fields |
+| Export requested for a still-open (Draft/Submitted) assessment | Permitted — stamps whatever state exists at that point; composite and class may be absent if Scoring & Decisioning has not yet completed |
+| `cra_write_audit` call fails | The originating write is not considered committed — no module may treat an unlogged action as done |
 
-## 11. MCP Task-Tool Bindings
+## 9. MCP Task-Tool Bindings
 
 | Tool | Function | Sole caller | Precondition |
-| :--- | :--- | :--- | :--- |
-| `cra_submit_assessment` | Approval Workflow | This agent | Assessment in Draft, no Provisional ratio outstanding (FR3.10) |
-| `cra_decide_approval` | Approval Workflow | This agent | Assessment Submitted; decider ≠ preparer |
-| `cra_start_assessment` | Registry | This agent | Customer identified or new-customer details supplied |
-| `cra_compare_assessments` | Registry | This agent; Assistant / Q&A Orchestrator, read-only invocation once built (Assistant §11) | Both assessments have engine output for at least the non-suppressed lines |
+|---|---|---|---|
+| `cra_submit_assessment` | Approval Workflow | This agent | Assessment in Draft; computed class exists |
+| `cra_decide_approval` | Approval Workflow | This agent | Assessment Submitted |
+| `cra_start_assessment` | Registry | This agent | Customer identified or new-customer details supplied; division supplied |
 | `cra_browse_directory` | Registry | This agent | Caller identity resolved |
-| `cra_get_customer_detail` | Registry | This agent | Customer row visible under caller's role scope |
-| `cra_propose_config_change` | Methodology Config | This agent | Rationale supplied |
-| `cra_export_assessment` | Reporting & Export | This agent | Assessment exists, caller holds read access to it |
-| `cra_write_audit` | Audit & Access Log | Every agent | Every write, no exceptions |
+| `cra_get_customer_detail` | Registry | This agent | (Customer, Division) pair has ≥1 Assessment |
+| `cra_set_recency_flag` | Registry | Field Review invokes; this agent writes | Field Review's Flow D complete |
+| `cra_export_assessment` | Export | This agent | Assessment exists, caller authenticated |
+| `cra_write_audit` | Audit Trail | Every module | Every write, no exceptions |
 
-Every write logs to `cra:audit_log` (`cra_write_audit`, no exceptions) — this agent's own Audit & Access Log function is where that write lands.
+Every write logs to `cra:audit_log` (`cra_write_audit`, no exceptions) — this module's own Audit Trail function is where that write lands.

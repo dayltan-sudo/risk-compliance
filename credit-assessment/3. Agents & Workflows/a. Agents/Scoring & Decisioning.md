@@ -1,190 +1,219 @@
 # System Instruction: Scoring & Decisioning
 
-> **Deterministic, MVP (qualitative override Should/V2).** Three merged components — Ratio Engine, Rating / Scorecard Engine, Recommendation Engine — strictly sequential, no LLM in the loop anywhere. Being deterministic is a requirement here, not a shortfall: FR4.2's lineage claim and NFR Traceability's reconstructability bar both argue against a non-deterministic model anywhere near the math. Methodology configuration itself is not this agent's function — it reads a versioned config `Governance & Records` owns and supersedes; see that file's §8.
+> **Deterministic, MVP.** One PRD §5 module: Calculation. No LLM in the loop anywhere — being deterministic is a requirement here, not a shortfall: FR4.5's lineage claim and NFR Traceability's reconstructability bar both argue against a non-deterministic model anywhere near the math. MVP outputs a rating class, not a credit limit — limit sizing and a qualitative override are both V2 (PRD §7); nothing in this file proposes an amount.
 >
-> **Companion docs:** upstream — [`Field Review.md`](Field%20Review.md). Downstream — [`Governance & Records.md`](Governance%20%26%20Records.md) (Approval Workflow locks the recommendation, Registry reads all three outputs for comparison), [`Adverse-Media Screening.md`](Adverse-Media%20Screening.md) (this agent triggers screening, never consumes its output directly). §7 reproduces PRD FR4–FR6 formulas as `PLACEHOLDER`.
+> **Companion docs:** upstream — [`Field Review.md`](Field%20Review.md), sole trigger of every compute in this file. Downstream — [`Governance & Records.md`](Governance%20%26%20Records.md) reads `Ratio` and `Rating` read-only for approval, drill-down, and export; this agent has no write path back into either module. §7 reproduces the closed scorecard from [`Baseline_Scorecard_Extract_v1.2.md`](../../1.%20Planning%20%26%20Prototyping/Baseline_Scorecard_Extract_v1.2.md).
 
 ## 1. Core Mandate & Operational Objectives
 
-Turn confirmed fields into a decision proposal: compute the ratio set (FR4), map it to an internal rating (FR5), and size a proposed credit limit and terms from that rating (FR6). Three components, kept separate rather than merged, because they recompute on different triggers, ratios are a first-class UI output on their own (FR4.4's trend view), and the recommendation may one day need inputs the scorecard never sees (limit sizing basis is `OPEN`, §7).
+Turn confirmed fields and confirmed criterion inputs into a rating class: compute the four ratios and four derived scorecard inputs (FR4), then band-map all eleven criteria into a composite score and a class (FR6). Two engines, not one file-per-function split, because the same trigger (Field Review's completion gate) starts both and every ratio-engine output feeds directly into the rating engine with no independent entry point of its own.
 
-**Capabilities:** (1) Compute ratios as soon as required fields carry a value, including Unconfirmed ones flagged Provisional (FR4.1, FR3.8). (2) Store full lineage to exact source field IDs per ratio (FR4.2). (3) Recompute automatically on any field amendment, scoped to the amending assessment only (FR4.3). (4) Expose period-over-period trend (FR4.4). (5) Map ratios to a rating grade via bands, weights, and a composite score, with a per-ratio driver breakdown (FR5.1–FR5.2). (6) Trigger Adverse-Media Screening the moment ratios finish computing (FR12.1). (7) Derive a proposed limit and terms from the rating band (FR6.1). (8) Record an analyst override with mandatory justification, retaining the system proposal alongside it (FR6.3).
+**Capabilities:** (1) Compute ratios and derived inputs only once Field Review's gate holds — never on partial data (FR4.1, FR3.8). (2) Store full lineage to exact source field or criterion IDs per ratio (FR4.5). (3) Recompute automatically on any post-computation amendment, scoped to the amending assessment only (FR4.8). (4) Expose period-over-period change for every FR2.2 line item (FR4.6). (5) Treat an absent input and a zero divisor as distinct cases, each with its own tier rule (FR4.7, FR4.11–FR4.12). (6) Band-map all eleven criteria — six interval, five categorical — with no default fallthrough (FR6.2). (7) Select the weight set from `Assessment.relationship_type` (FR6.3). (8) Compute the composite and map it to class A/B/C with a handling route (FR6.8). (9) Produce a full driver breakdown, including which of criterion 4's three tier-1 conditions fired (FR6.9–FR6.10). (10) Stamp every stored `Rating` with the constant `scorecard_version` (FR6.14).
 
 You compute values; you never decide what a value *means* for approval — that is Governance & Records's Approval Workflow, downstream of everything this agent produces.
 
 ## 2. State Management
 
-**Reads (shared):** `cra:scorecard_config` (formulas, weights, bands, sizing rules — all `PLACEHOLDER` pending the baseline template, §7). **Per function:** Ratio Engine — `cra:extracted_field_store` (Confirmed/Amended/Not Present/Unconfirmed values, scoped to the computing assessment). Rating Engine — `cra:ratio_store` (this agent's own prior-stage output). Recommendation Engine — `cra:rating_store`.
+**Reads:** `cra:extracted_field_store` (Confirmed/Amended only — never Unconfirmed, FR3.8), `cra:criterion_input_store` (Confirmed/Amended only), `cra:assessment_registry` (`relationship_type` for weight-set selection, FR6.3; `assessment_year` for criterion 7, FR4.4 — division-scoping is already resolved upstream by Field Review and Record; this module computes within one assessment's scope regardless of division).
 
-**Writes (shared):** none shared. **Per function:** Ratio Engine writes `cra:ratio_store` (sole writer); Rating Engine writes `cra:rating_store` (sole writer); Recommendation Engine writes `cra:recommendation_store` — locked read-only past Approve by Governance & Records's Approval Workflow, but written only by this agent up to that point.
+**Writes:** `cra:ratio_store` (sole writer), `cra:rating_store` (sole writer).
 
-**Session keys** (per function): `computation_inputs`, `computed_result`, `config_version_id`.
+**Session keys:** `computation_inputs`, `computed_result`.
 
-**Temp keys:** `temp:driver_breakdown` (Rating Engine — per-ratio contribution to the composite score, discarded after the rating is written; the persisted `driver_breakdown` field on `Rating` is a separate, permanent copy).
+**Temp keys:** `temp:driver_breakdown` — per-criterion contribution to the composite, discarded after `Rating` is written; the persisted `driver_breakdown` field on `Rating` is a separate, permanent copy.
 
 ## 3. Compute Convergence
 
-Gates every write to `cra:ratio_store`, `cra:rating_store`, and `cra:recommendation_store` — the structural enforcement of FR10.3's never-retroactively-rescore guarantee:
+Gates every write to `cra:ratio_store` and `cra:rating_store`:
 
-$$\text{Compute Convergence} = \left( \text{computed\_result} \neq \emptyset \right) \land \left( \text{config\_version\_id} \neq \emptyset \right) \land \left( \text{computed\_at bound} \right)$$
+$$\text{Compute Convergence} = \big(\text{computed\_result} \neq \emptyset\big) \land \big(\text{scorecard\_version bound}\big) \land \big(\text{computed\_at bound}\big)$$
 
-Every run writes a new dated row keyed to the current `config_version_id`, never a mutated "latest" value. A later methodology change must never rewrite what a value *was* (architecture plan §10).
+Every run writes a new dated row, never a mutated one (FR4.10, FR6.12). `scorecard_version` is a constant compiled into this agent, not a runtime lookup — a later change to a band, weight, or threshold requires incrementing it, which is what keeps a stored `Rating` attributable to the methodology that produced it (FR6.14).
 
-## 4. Flow A: Ratio Engine
-
-```
-[Entry: Field Review's recompute trigger (Flow A Node 7, Field Review.md),
-        OR a new field carrying its first value]
-                 │
-                 ▼
-[Node 1: Required-Field Assembly] ──► Reads cra:extracted_field_store for
-                                       this assessment's fields
-                 │
-                 ▼
-          ◇ Any required input Not Present? ◇
-           │yes                              │no
-           ▼                                  ▼
-[Node 2a: not_calculable_flag]        [Node 2b: provisional_flag check]
-Stores no value (Ratio.value null),          │
-regardless of other inputs' status    ◇ Any required input still
-(precedence: Not Present wins,          Unconfirmed? ◇
-never both flags set) — FR3.8          │yes         │no
-           │                            ▼             ▼
-           │                  [Provisional = true] [Provisional = false]
-           │                            │             │
-           └────────────────┬───────────┴─────────────┘
-                             ▼
-                  [Node 3: Formula Application] ──► §7 formulas — skipped
-                                                     entirely for a Not
-                                                     Calculable ratio
-                             │
-                             ▼
-                  [Node 4: Lineage Assembly] ──► Binds exact source field
-                                                  IDs, formula reference,
-                                                  period, category (FR4.2)
-                             │
-                             ▼
-                  [Node 5: Snapshot Write] ──► cra:ratio_store, tagged
-                                                config_version_id — gated
-                                                by Compute Convergence
-                             │
-                             ▼
-       [Output: computed_result] ──► Flow B (if all required ratios
-                                      present, whether Provisional/Not
-                                      Calculable or clean)
-```
-
-Trigger: `cra_compute_ratios`, sole caller this agent, precondition at least one required field carries a value. Gated by Compute Convergence (§3). Recompute is scoped to the amending assessment's own field copies and never reaches another assessment sharing the same source document (FR4.3, FR1.7) — this agent has no cross-assessment write path at all.
-
-**Trend view (FR4.4).** Reads `ExtractedField.period` directly — no separate period-linking step. Distinct from Governance & Records's cross-assessment comparison (FR8.8–FR8.9): this is one assessment's own periods; that is two assessments' already-computed rows.
-
-## 5. Flow B: Rating / Scorecard Engine
+## 4. Flow A: Ratio Engine (FR4)
 
 ```
-[Entry: cra:ratio_store updated for this assessment, all required ratios
-        present (Not Calculable or Provisional count as present)]
+[Entry: Field Review's Review-Complete trigger (Flow A/E Node 6/7, Field
+        Review.md)]
                  │
                  ▼
-[Node 1: Band Mapping] ──► Each ratio mapped to points via its configured
-                            band (§7)
+[Node 1: Load Confirmed Inputs] ──► cra:extracted_field_store and
+                                     cra:criterion_input_store, Confirmed/
+                                     Amended rows only, this assessment
                  │
                  ▼
-[Node 2: Weighted Sum] ──► Composite score = Σ(ratio points × weight),
-                            weights from the resolved config_version_id
-                 │
-                 ▼
-[Node 3: Grade Mapping] ──► Composite score → internal rating grade (FR5.1)
-                 │
-                 ▼
-[Node 4: Driver Breakdown] ──► Writes temp:driver_breakdown — each ratio's
-                                points, weight, and contribution (FR5.2)
-                 │
-                 ▼
-[Node 5: Snapshot Write] ──► cra:rating_store, tagged config_version_id —
-                              gated by Compute Convergence
-                 │
-                 ▼
-[Node 6: Screening Trigger] ──► Fires cra_run_screening (Adverse-Media
-                                 Screening) the moment this write
-                                 completes — the earliest point at which a
-                                 screening run is meaningful (FR12.1, moved
-                                 here from submission at PRD v0.6)
-                 │
-                 ▼
-[Output: computed_result] ──► Flow C
+          ◇ Required input confirmed with no value (FR3.5)? ◇
+           │yes                                                │no
+           ▼                                                    ▼
+[Node 2a: Not Calculable]                          ◇ Divisor = 0? ◇
+Renders "—", names the missing              │yes                  │no
+input. Absent is never evidence              ▼                     ▼
+of a clean record — the criterion    [Node 2b: Zero-Divisor    [Node 2c:
+scores tier 1 downstream (FR4.7,      Treatment] ──► Per-ratio    Formula
+FR6.5). Distinct from the zero-       rule, FR4.12:               Application]
+divisor branch — a zero divisor       • Current ratio, CL = 0 → tier 3
+is a known figure with an             • Debt to equity, TE = 0 → tier 1
+unbounded quotient, which is a        • Net profit margin, sales = 0 →
+fact about the customer, not an         tier 1
+absence of evidence                   • WC over revenue, sales = 0 →
+           │                            tier 1
+           │                          Paid-up capital cover never
+           │                          reaches this case — exposure ≤ 0
+           │                          is rejected at entry (FR5.15).
+           │                          Renders "—" with the divisor
+           │                          named; states the tier taken
+           │                                    │                  │
+           └──────────────┬─────────────────────┴──────────────────┘
+                           ▼
+                [Node 3: Lineage Assembly] ──► Formula, exact source
+                                                field/input IDs, period
+                                                (FR4.5)
+                           │
+                           ▼
+                [Node 4: Period-Over-Period Change] ──► Every FR2.2 line
+                                                          item: (current
+                                                          − prior) /
+                                                          prior; "—"
+                                                          where prior = 0,
+                                                          never an error
+                                                          (FR4.6).
+                                                          Computed at
+                                                          read time, not
+                                                          stored — no
+                                                          compute-on-
+                                                          write claim
+                                                          applies to a
+                                                          trend view
+                                                          derivable from
+                                                          two already-
+                                                          stored fields
+                           │
+                           ▼
+                [Node 5: Dated Write] ──► cra:ratio_store — gated by
+                                           Compute Convergence
+                           │
+                           ▼
+       [Output: computed_result] ──► Flow B, once every required ratio
+                                      and derived input has been
+                                      evaluated (Not Calculable and zero-
+                                      divisor outcomes count as evaluated)
 ```
 
-Trigger: `cra_compute_rating`, sole caller this agent, precondition Flow A complete for every required ratio. Gated by Compute Convergence (§3).
+Trigger: `cra_compute_ratios`, sole caller this agent, precondition Field Review's Review-Complete gate holds. Recompute (FR4.8) re-enters here on an amendment after first computation, scoped to the amending assessment's own copies — this agent has no cross-assessment write path at all.
 
-**Qualitative override (FR5.3, Should/V2).** A bounded adjustment with mandatory justification, recorded as an adjustment layer on top of the quantitative score — never folded into it, so the quantitative result stays independently reproducible. This is the *only* route by which an Adverse-Media Screening finding can affect a rating, and only one an analyst has marked Relevant (FR12.6): this agent reads the analyst's adjustment, never the finding itself.
+**What this computes.** Four ratios — Working Capital = CA − CL · Current Ratio = CA / CL · Net Profit Margin = NPAT / Sales · Debt to Equity = TL / TE. Four derived scorecard inputs, consumed only by Flow B — WC over revenue = Working Capital / Sales (criterion 1) · Paid-up capital cover = paid-up capital / total exposure (criterion 5) · the NPAT sign pair across both periods (criterion 6 — Flow B tiers it per FR6.13; this node stores the raw fact, not the tier) · years established = `assessment_year − year_registered_sg` (criterion 7, `assessment_year` read from the assessment record, never a literal, FR4.4).
 
-**`OPEN`:** how a Not Calculable ratio is treated as scorecard input (exclude and reweight, substitute a neutral score, or another treatment) — pending the baseline template. Until answered, this agent propagates the state rather than coercing it to a number; silently treating Not Calculable as zero or a band boundary would convert a stated non-computation into a scored one.
+**No currency conversion, no scale normalization, anywhere in this engine.** Every stored value is already raw absolute (FR2.3); every ratio is a quotient of two figures from the same entity, so the result is dimensionless (FR4.9).
 
-## 6. Flow C: Recommendation Engine
+## 5. Flow B: Rating Engine (FR6)
 
 ```
-[Entry: cra:rating_store updated for this assessment]
+[Entry: cra:ratio_store updated for this assessment, every required
+        ratio and derived input evaluated, every categorical criterion
+        (8, 9, 10, 11) Confirmed/Amended]
                  │
                  ▼
-[Node 1: Band-to-Limit Lookup] ──► Rating grade → proposed limit amount and
-                                    payment terms (days), per §7's sizing
-                                    rule
+[Node 1: Band Mapping] ──► Eleven criteria into tier 3, 2, or 1. No
+                            fallthrough — every band partitions its
+                            criterion's full range of outcomes:
+                            • Interval (1, 2, 3, 4, 5, 7) — numeric bands
+                            • Categorical (6, 8, 9, 10, 11) — every
+                              outcome enumerated; criterion 6 across all
+                              four NPAT sign combinations (FR6.13): both
+                              periods profitable = tier 3, latest
+                              profitable prior not = tier 2, a loss in
+                              the latest period = tier 1 whatever the
+                              prior did
+                            • Absent input or Not Calculable ratio →
+                              tier 1 regardless of criterion type (FR6.5)
+                            • Zero-divisor outcomes were already resolved
+                              in Flow A Node 2b — this node reads the
+                              pre-resolved tier, does not re-derive it
+                            • Criterion 4 — record which of three
+                              conditions fired: high leverage (x ≥ 2),
+                              negative equity (x < 0), or zero equity
+                              (TE = 0, via FR4.12) — all three are tier 1
+                              by different routes (FR6.10)
                  │
                  ▼
-[Node 2: Proposal Marking] ──► Output is a proposal only — never
-                                auto-applied to a live customer account
-                                (FR6.2)
+[Node 2: Weight Set Selection] ──► Reads Assessment.relationship_type
+                                    (New/Renewal) — New uses the new
+                                    weight set, Renewal the renewal set
+                                    (FR6.3). Criterion 11: weight 0 for
+                                    New, scored as an explicit 0
+                                    contribution, never left unevaluated
+                                    (FR6.6)
                  │
                  ▼
-[Node 3: Snapshot Write] ──► cra:recommendation_store, tagged
-                              config_version_id — gated by Compute
-                              Convergence
+[Node 3: Weighted Sum] ──► Composite = Σ(tier × weight). Weights sum to
+                            100 in both sets, so the composite ranges
+                            100–300 (FR6.1)
                  │
                  ▼
-[Output: proposed_limit, proposed_terms] ──► Available for analyst
-                                              override (below) and for
-                                              Approval Workflow (Governance
-                                              & Records)
+[Node 4: Class Mapping] ──► A: 240–300, auto-recommend with GIRO,
+                             escalate per MOA. B: 180–239, manual review
+                             with credit enhancement. C: 100–179, not
+                             recommended by Risk and Compliance (FR6.8)
+                 │
+                 ▼
+[Node 5: Driver Breakdown] ──► temp:driver_breakdown — each criterion's
+                                tier, weight, contribution, and the input
+                                that produced it (FR6.9)
+                 │
+                 ▼
+[Node 6: scorecard_version Stamp] ──► Constant in code (FR6.14)
+                 │
+                 ▼
+[Node 7: Dated Write] ──► cra:rating_store — gated by Compute
+                           Convergence (FR6.12)
+                 │
+                 ▼
+[Output: composite, class, driver_breakdown] ──► Governance & Records
+                                                   (read-only)
 ```
 
-Trigger: `cra_compute_recommendation`, sole caller this agent, precondition Flow B complete.
+Trigger: `cra_compute_rating`, sole caller this agent, precondition Flow A complete for every required ratio and derived input.
 
-**Analyst override.** `salus`-equivalent: `cra_override_recommendation`, records the override value, flag, and mandatory justification, retaining the system-computed proposal alongside it (FR6.3) — never overwritten, never lost. Locked once Governance & Records's Approval Workflow reaches Approve (FR7.4); no write path from this agent past that point.
+**The class is an outcome, not an instruction.** No downstream system may act on it, and this agent writes to no external system (FR6.11).
 
-**`OPEN`:** whether limit sizing extends beyond the rating band to exposure/appetite-based inputs — pending the baseline template and a product decision. If the answer is "also exposure-based," this engine will need an input the scorecard never sees; this is why it is not merged with the Rating Engine now.
-
-## 7. Appendix A — Ratio, Scorecard & Recommendation Formulas (`PLACEHOLDER`)
-
-The client's baseline Excel template — which defines the exact ratio set, scorecard weights, rating bands, and limit sizing rule — has not been supplied. Every formula reference below is a placeholder structure, not a final value.
-
-| Function | What is fixed regardless of the template | What is `PLACEHOLDER` |
-| :--- | :--- | :--- |
-| Ratio Engine | Five indicative categories: liquidity, leverage, profitability, coverage, efficiency | Exact ratio set and formulas per category |
-| Rating Engine | Band → points → weighted sum → grade mapping shape | Band boundaries, weights, score-to-grade mapping |
-| Recommendation Engine | Rating band drives a limit and terms lookup | Sizing rule; whether inputs extend beyond the rating band (§6) |
-
-Build against the config seam with a provisional config so each engine is testable before the template arrives — hard-coding formulas instead would leave FR10.3's guarantee with nothing to point at (architecture plan §7).
-
-## 8. Failure & Denial Handling
+## 6. Failure & Denial Handling
 
 | State | Behaviour |
-| :--- | :--- |
-| Required field has no value at all (not even Unconfirmed) | Ratio computation deferred for that ratio — nothing to compute from yet, not an error state |
-| `config_version_id` unresolved | Compute deferred for all three functions — Compute Convergence cannot be met without a bound version |
-| Not Calculable ratio reaches Rating Engine with the scorecard treatment still `OPEN` | Propagated as-is, never coerced to a number — blocks nothing structurally, but the rating's driver breakdown must state which ratios were excluded |
-| Recompute fires while a prior compute for the same assessment is still in flight | Re-entrant run queued, not interleaved — one complete Node 1→5 pass per trigger, never partial overwrite |
-| Weight set in `cra:scorecard_config` doesn't sum to 100% | Rating computation blocked; flagged as a configuration fault, no partial snapshot written |
-| Recommendation override attempted after Approval | Rejected — `cra:recommendation_store` is locked past Approve; no write path exists |
-| Screening trigger fires but Adverse-Media Screening is unbuilt (pre-V2) | No-op — the event is emitted regardless (fire-and-forget), costing nothing structurally when there is no consumer yet |
+|---|---|
+| Required field or criterion input confirmed with no value | Not Calculable / absent-input path (Flow A Node 2a) — deferred to tier 1 at the Rating Engine, never an error |
+| Divisor is exactly zero | Flow A Node 2b's per-ratio rule applies — never defaults to tier 1 automatically (FR4.11) |
+| Field Review's gate not yet satisfied | Compute not triggered — this agent has no independent entry point and never polls for partial readiness |
+| Recompute fires while a prior compute for the same assessment is still in flight | Re-entrant run queued, not interleaved — one complete pass per trigger, never a partial overwrite |
+| `relationship_type` unresolved on the assessment | Weight-set selection (Flow B Node 2) deferred — cannot band-map criterion 11's weight without it |
+| Composite fails to reproduce the baseline workbook on a known test input | Build-time gate, not a runtime condition — blocks release (NFR Reproducibility; README, "MVP 6 parity test") |
+| Weight set fails to sum to 100 | Should not occur — both FR6.7 weight sets are fixed constants that already sum to 100; a discrepancy is a code defect, caught by the parity test above, not a runtime branch |
 
-## 9. MCP Task-Tool Bindings
+## 7. Appendix A — Ratio, Scorecard & Rating (closed methodology)
+
+Closed by [`Baseline_Scorecard_Extract_v1.2.md`](../../1.%20Planning%20%26%20Prototyping/Baseline_Scorecard_Extract_v1.2.md) — no `PLACEHOLDER` remains. Where the extract and the PRD disagree on methodology, the extract governs (PRD header).
+
+| # | Criterion | Tier 3 | Tier 2 | Tier 1 | Wt renewal | Wt new |
+|---|---|---|---|---|---:|---:|
+| 1 | WC over revenue | ≥ 20% | 0% ≤ x < 20% | < 0% | 5 | 5 |
+| 2 | Current ratio | ≥ 3 | 2 ≤ x < 3 | < 2 | 10 | 10 |
+| 3 | Net profit margin | ≥ 30% | 0% ≤ x < 30% | < 0% | 10 | 10 |
+| 4 | Debt to equity | 0 < x ≤ 1 | 1 < x < 2 | ≥ 2, or ≤ 0 | 10 | 10 |
+| 5 | Paid-up capital cover | ≥ 2× exposure | 1× ≤ x < 2× | < 1× | 5 | 5 |
+| 6 | Profitability history | both FY profitable | latest profitable, prior not | latest FY loss, whatever the prior | 15 | 25 |
+| 7 | Years registered in SG | ≥ 10 | 5 ≤ x < 10 | < 5 | 5 | 10 |
+| 8 | Litigation record | clean, or motor suits only | — | any other record | 10 | 10 |
+| 9 | Change in directors, last 3 yrs | no | — | yes | 5 | 5 |
+| 10 | Positive net operating cash flow, latest FY | yes | — | no | 10 | 10 |
+| 11 | Prompt payment record, past 1 yr | good | — | late, or none held | 15 | 0 |
+
+Rating classes: A 240–300 · B 180–239 · C 100–179 (FR6.8). Dropping any criterion is not a free simplification — weights are normalised to 100 and the 240/180 thresholds are calibrated against that base.
+
+## 8. MCP Task-Tool Bindings
 
 | Tool | Function | Sole caller | Precondition |
-| :--- | :--- | :--- | :--- |
-| `cra_compute_ratios` | Ratio Engine | This agent | At least one required field carries a value |
-| `cra_compute_rating` | Rating Engine | This agent | All required ratios present for this assessment |
-| `cra_compute_recommendation` | Recommendation Engine | This agent | Rating computed for this assessment |
-| `cra_override_recommendation` | Recommendation Engine | This agent | Assessment not yet Approved; justification supplied |
-| `cra_write_audit` | All three functions | Every agent | Every computation and override |
+|---|---|---|---|
+| `cra_compute_ratios` | Ratio Engine | This agent | Field Review's Review-Complete gate holds for this assessment |
+| `cra_compute_rating` | Rating Engine | This agent | Flow A complete for every required ratio and derived input |
+| `cra_write_audit` | Both engines | Every module | Every computation |
 
 Every write logs to `cra:audit_log` (`cra_write_audit`, no exceptions).
