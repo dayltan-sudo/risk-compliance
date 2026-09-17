@@ -16,7 +16,7 @@ A deliberate reduction of v0.12, not an increment on it. v0.12 accreted precisio
 
 ## 0. Product Summary
 
-Extracts a fixed set of financial figures from uploaded customer statements with confidence scoring, has a human confirm or amend every figure against the source, computes four ratios with full lineage, scores an eleven-criterion scorecard, and outputs a rating class with its handling route.
+Extracts a fixed set of financial figures from uploaded customer statements with confidence scoring, has a human confirm or amend every figure against the source, computes four ratios with full lineage, scores an eleven-criterion scorecard, outputs a rating class with its handling route, and attaches a model-written risk commentary that the score itself cannot express.
 
 MVP produces **a rating class, not a credit limit**. The baseline workbook derives no limit amount; limit sizing and payment terms are V2 (§7).
 
@@ -27,7 +27,7 @@ MVP produces **a rating class, not a credit limit**. The baseline workbook deriv
 | Statement upload, extraction, human field confirmation | Credit limit amount and payment terms (V2 — §7) |
 | Balance-sheet integrity checks and statement recency flag | Qualitative override of the computed class (V2) |
 | Four ratios with lineage and period-over-period change | Roles, permissions, segregation of duties (V2) |
-| Eleven-criterion scorecard, composite score, A/B/C class | ACRA and AR-system lookups — criteria 5, 7, 9, 11 are analyst-entered at MVP (V2) |
+| Eleven-criterion scorecard, composite score, A/B/C class; advisory risk commentary over the result (FR11) | ACRA and AR-system lookups — criteria 5, 7, 9, 11 are analyst-entered at MVP (V2) |
 | Analyst entry of five non-financial criteria | Adverse-media screening (FR12) and conversational Q&A (FR13) — both V2 |
 | Customer directory, assessment history, read-only drill-down | Bank lending, credit bureau feeds, sanctions/PEP/KYC, collections, ERP write-back |
 | Immutable audit trail; export of a completed assessment | Cross-customer portfolio analytics |
@@ -122,6 +122,7 @@ Core GUI requirement. **Review completes before anything computes** (FR3.8) — 
 | FR3.10 | Amending requires the new value and an optional reason; the original extracted value and confidence are retained for audit. |
 | FR3.11 | Show a completion indicator counting review items — one per field-period combination, plus one per FR5 criterion input. Reviewed at Confirmed or Amended. |
 | FR3.12 | **Statement recency flag.** Computed from the latest period's `financials_date`: where it is earlier than today − 540 days, flag the assessment `Non-Recent`, else `Recent`. Held on the assessment, not the document — one verdict describes the whole assessment. Advisory only — no effect on any tier, ratio, or score. |
+| FR3.13 | **Discrepancy attribution on a failed check.** Show the signed difference between expected and actual, and rank the check's operands by their period-over-period movement (FR4.6), so the operand that moved most surfaces first. Arithmetic, not judgement — no model. It orders the operands; it never names one as wrong, and every operand remains an independent review item the analyst must Confirm or Amend regardless (FR3.11). Ranking is unavailable where the prior period has no value; show the difference alone in that case. |
 
 **FR3.7 integrity checks.**
 
@@ -265,6 +266,23 @@ Two properties this buys: the SoD rule is one condition inside `can_approve`, si
 | FR10.1 | Export a completed assessment to PDF or Excel: fields with confirmation status and source scale, integrity-check results, ratios with lineage, all eleven criterion inputs and tiers, composite, class, handling route, and the approval record. |
 | FR10.2 | Stamp each export with the extraction model version (FR2.8), the scorecard version, and the export date. |
 
+### FR11 — Risk Commentary
+
+Runs after FR6 scoring completes and before FR7 submission. Numbered FR11 to leave FR7–FR10 undisturbed; it is not the last step in the flow. The scorecard is eleven independent criteria with hard bands, so it cannot see a combination of criteria, a trajectory, or anything outside its own inputs — by construction, not by oversight. FR11 reads the finished score and says what the score cannot.
+
+| ID | Requirement |
+|---|---|
+| FR11.1 | After a Rating is computed (FR6), generate a risk commentary over that assessment: a set of observations about credit risk visible in the confirmed data but not expressible in the composite. Read-only over Confirmed and Amended `ExtractedField` and `CriterionInput` values, the computed `Ratio` set, the period-over-period changes (FR4.6), and the `Rating` with its driver breakdown. |
+| FR11.2 | **It never changes the score.** No write path to `Ratio`, `Rating`, any tier, the composite, or the class. It cannot amend a field, change an input, or advance a state. Its only output is the `RiskCommentary` record (§4). The class the approver sees is always the deterministic one the workbook would produce. |
+| FR11.3 | **Cite every figure.** Each observation names the specific values it derives from — entity, field and value — so a reader can check the claim against the assessment without re-deriving it. An observation that cannot cite the figures behind it is not written. |
+| FR11.4 | **Observe, never recommend.** It states what it sees in the data. It does not propose approving, rejecting, returning, or a limit, does not say whether the class is right, and does not suggest a different class. The distinction FR6.11 draws between an outcome and an instruction applies here with more force: the class is computed, the commentary is not, and only one of them is reproducible. |
+| FR11.5 | **No severity, ranking, or score of any kind.** Observations carry a category and a statement, nothing ordinal. A severity scale sitting beside a deterministic class becomes a second, unreproducible score that readers will weigh against the first. |
+| FR11.6 | **Distinguish "nothing found" from "not run."** Write a `RiskCommentary` record on every generation, including when there is nothing to report, with `no_observations` set. An absent record means the commentary has not run — never that the assessment is clean. |
+| FR11.7 | **Regenerate when the score changes.** Amending a field or criterion input re-runs the ratios and the composite (FR4.8); the commentary regenerates against the new Rating and the prior record is superseded, never edited. A commentary must never describe a score that no longer stands. |
+| FR11.8 | Stamp the model and prompt version on every record (§4), to the traceability standard FR2.8 sets for extraction. |
+| FR11.9 | Surface observations on the decision screen, in the approver's view (FR7.6), and in the export (FR10.1), each labelled as model-generated and visibly separate from the computed class. Advisory — no observation blocks submission or approval. |
+| FR11.10 | **Candidate observation categories**, as a starting set, not a closed one: earnings quality, where profit is positive (criterion 6) but operating cash flow is not (criterion 10); capital erosion, where total equity sits far below paid-up capital; liquidity composition, where a healthy current ratio rests on little cash; concentration, where total exposure is large against the customer's sales; trajectory, where a ratio scores well but has moved sharply the wrong way; and boundary proximity, where the composite sits within a few points of a different class. Each is invisible to the scorecard and derivable from data already held. |
+
 ## 3. Non-Functional Requirements
 
 | Area | Requirement |
@@ -272,7 +290,7 @@ Two properties this buys: the SoD rule is one condition inside `can_approve`, si
 | Access | Authenticated users only; documents encrypted at rest. No roles, team scoping, or segregation of duties at MVP (§1). All authorization routes through FR7.3's guards, which are allow-all at MVP — the only place role logic may be introduced in V2. |
 | Reproducibility | The composite must reproduce the baseline workbook's output for the same inputs, subject to the corrections in `Baseline_Scorecard_Extract_v1.2.md` §7. Test against the workbook, do not assume. |
 | Traceability | Every ratio, tier and class must be reconstructable from source documents at any later date. Requires the source document, the field-level source pointer, the extraction model version, and the scorecard version to survive together for the full retention period. |
-| Determinism | No model participates in ratio computation, band mapping, or scoring. A value a model produced cannot be reproduced on demand, which voids the reproducibility and traceability rows above. |
+| Determinism | **No model participates in ratio computation, band mapping, or scoring** — a value a model produced cannot be reproduced on demand, which voids the reproducibility and traceability rows above. MVP holds exactly two model surfaces, and neither touches a computed figure. Extraction (FR2) sits upstream and produces candidate values a human confirms before any reaches a ratio (FR3.8). Risk Commentary (FR11) sits downstream of a finished score, reads it, and writes only prose. Everything between them is arithmetic. |
 | Personal data | Statements contain director names, signatures and guarantor details, exposed in the FR3.3 viewer and FR10 exports. **No masking or redaction at any point — decided, not open.** This is an enterprise-level control (DLP, export monitoring, access review), not a workflow-application concern; building masking into this tool would duplicate controls that should apply uniformly across every system handling the same data, not just this one. |
 | Multi-currency / FX | MVP holds no FX rate and performs no conversion. Values are stored as raw absolute numbers (FR2.3), ratios are dimensionless (FR4.9), and criterion 5's two operands share a currency by requirement (FR5.6). |
 | Multi-entity / consolidated group | **Accepted as uploaded — decided, not open.** MVP does not distinguish standalone from consolidated statements computationally; statement basis is captured as provenance only (FR1.4), and the analyst judges suitability. Entity resolution (which subsidiary's numbers these are, whether a group's exposure should aggregate) is not attempted at MVP. |
@@ -287,18 +305,19 @@ Two properties this buys: the SoD rule is one condition inside `can_approve`, si
 | Assessment | id, customer_id, **division**, version, state, relationship_type (New/Renewal, derived per FR5.13, scoped to the customer_id+division pair), relationship_type_overridden, relationship_type_override_reason, assessment_year (set at creation, never re-derived on approval), recency_flag, contract metadata (FR5.7), created_by, created_at, submitted_by, submitted_at | Belongs to Customer; has many Documents, ExtractedFields, CriterionInputs, Ratios, ApprovalDecisions; has one Rating. Versioning and Draft/Submitted concurrency (FR8.2, FR8.3) key on (customer_id, division), not customer_id alone. `submitted_by` is recorded with no rule reading it at MVP — it exists so V2's SoD guard needs no backfill |
 | Document | id, assessment_id, type (audited/unaudited/registry), period, financials_date, presentation_currency, presentation_scale, statement_basis (standalone/consolidated), version, uploader, upload_date | Belongs to Assessment — one owner, no join table. Registry documents (FR1.6) carry no period, financials date, currency, scale, or statement basis |
 | ExtractedField | id, assessment_id, document_id, field_name, period, value (raw absolute, nullable per FR3.5), scale_applied, currency, confidence_score, source_pointer, extraction_model_version, status, amendment_history | Belongs to Assessment. `scale_applied` and `currency` are provenance for FR3.2 only — no computation reads them |
-| IntegrityCheckResult | id, assessment_id, check_name, operand_field_ids, expected, actual, passed, tolerance_applied, evaluated_at | Belongs to Assessment; surfaced by FR3.6, never blocking |
+| IntegrityCheckResult | id, assessment_id, check_name, operand_field_ids, expected, actual, passed, tolerance_applied, evaluated_at, difference, operand_movement_ranking (FR3.13) | Belongs to Assessment; surfaced by FR3.6, never blocking |
 | CriterionInput | id, assessment_id, criterion_number, value_numeric, value_categorical, currency (criterion 5 only), source (registry/statement-note/manual — criterion 5 only, FR5.8), source_document_id (nullable), evidence_source (criteria 8 and 11, FR5.10/FR5.12), evidence_period_or_date (criteria 8 and 11), status, entered_by, confirmed_by, confirmed_at | Belongs to Assessment. The five FR5.2 inputs; follows ExtractedField's confirmation lifecycle |
 | Ratio | id, assessment_id, formula_ref, lineage (source field IDs), value_numeric (nullable), value_boolean (nullable), period (null where the result spans both periods or none — criterion 6's sign pair, criterion 7's years registered), not_calculable_reason, zero_divisor_field (nullable, FR4.12), computed_at | Belongs to Assessment; derived from ExtractedFields and CriterionInputs. Holds the FR4.3 derived scorecard inputs as well as the four FR4.2 ratios, so not every row is a period-scoped number |
 | Rating | id, assessment_id, composite_score, rating_class (A/B/C), handling_route, weight_set (new/renewal), driver_breakdown (per-criterion tier, weight, contribution, source input), scorecard_version, computed_at | Belongs to Assessment, one per assessment. Replaces v0.12's separate Rating and Recommendation entities; carries no limit amount or terms at MVP (§7) |
 | ApprovalDecision | id, assessment_id, actor, action (Approve/Reject/Return), comments, timestamp, policy_version | Belongs to Assessment — a collection, one row per action. `actor` and `Assessment.submitted_by` are the two operands V2's SoD rule evaluates |
+| RiskCommentary | id, assessment_id, rating_id, observations (each: category, statement, cited_figures — entity, field and value per figure), no_observations (boolean, FR11.6), model_version, prompt_version, generated_at, superseded_at (nullable) | Belongs to Assessment, one live record per Rating. Written only by Risk Commentary (§5); read by the decision screen, FR7.6's approver view and FR10.1's export. Carries no severity, score or ranking — anything ordinal would function as a shadow score beside the class (FR11.5) |
 | AuditLogEntry | id, entity_type, entity_id, actor, action, before_value, after_value, timestamp | References any of the above; append-only |
 
-Ten entities, against v0.12's thirteen. Removed: ScorecardConfig (methodology is code at MVP), ScreeningSubject / ScreeningRun / AdverseFinding (FR12 deferred), the separate Recommendation entity, and the Document↔Assessment join. Added since v1.0: IntegrityCheckResult and CriterionInput.
+Eleven entities, against v0.12's thirteen. Removed: ScorecardConfig (methodology is code at MVP), ScreeningSubject / ScreeningRun / AdverseFinding (FR12 deferred), the separate Recommendation entity, and the Document↔Assessment join. Added since v1.0: IntegrityCheckResult, CriterionInput and RiskCommentary.
 
 ## 5. Module Ownership & Handoffs
 
-Five modules. **One is agentic — Extraction. The other four contain no model**, per the Determinism NFR.
+Six modules. **Two hold a model, and they sit at opposite ends of the pipeline:** Extraction, upstream, producing candidate values a human confirms; and Risk Commentary, downstream of a finished score, producing prose about it. Intake, Field Review, Calculation and Record contain no model. Calculation's purity is what the Reproducibility NFR's parity test depends on, which is why the commentary is a separate module reading its output rather than a step inside it.
 
 Ownership is enforced structurally — each store grants write access only to its owning module's service identity — not by convention.
 
@@ -308,11 +327,12 @@ Ownership is enforced structurally — each store grants write access only to it
 | Extraction | **Agent** | ExtractedField value, scale_applied, currency, confidence_score, source_pointer, extraction_model_version; the criterion 5 paid-up capital prefill value, source and source_document_id on CriterionInput (FR5.8) | Document | Write a field or input `status` — it produces candidates, never confirmations |
 | Field Review | Deterministic | ExtractedField status and amendment_history; CriterionInput for every input except Extraction's criterion 5 prefill, plus status and amendments on that one; IntegrityCheckResult | ExtractedField, Document | Write a value without recording the original (FR3.10); compute a ratio or tier |
 | Calculation | Deterministic | Ratio, Rating | ExtractedField and CriterionInput (Confirmed/Amended only); Assessment's relationship_type and assessment_year (weight set FR6.3, criterion 7 FR4.4) | Read an Unconfirmed input (FR3.8); write back to any field or input |
+| Risk Commentary | **Model** | RiskCommentary | Ratio, Rating, and Confirmed/Amended ExtractedField and CriterionInput | Write any entity but its own; change a tier, composite or class (FR11.2); emit an observation without its figures (FR11.3); recommend an action (FR11.4) |
 | Record | Deterministic | Customer, Assessment (including the derived relationship type and any override, FR5.13 — derived from the ApprovalDecision history Record already owns), ApprovalDecision, AuditLogEntry | All of the above | Apply a transition without passing FR7.3's guard; recompute a stored ratio or rating; edit an approved assessment (FR7.8); update or delete an audit entry (FR9.2) |
 
-**Handoffs are one-directional.** Extraction hands values to Field Review and cannot take them back. Field Review hands confirmed inputs to Calculation and cannot influence the arithmetic. Calculation hands ratios and the rating to Record and cannot reach back into inputs. No module writes upstream of itself, which is what makes every stored value attributable to exactly one producer.
+**Handoffs are one-directional.** Extraction hands values to Field Review and cannot take them back. Field Review hands confirmed inputs to Calculation and cannot influence the arithmetic. Calculation hands ratios and the rating to Record, and to Risk Commentary as a read; neither can reach back into inputs, and Risk Commentary cannot reach back into the score it is describing. No module writes upstream of itself, which is what makes every stored value attributable to exactly one producer.
 
-**On context:** only Extraction has a context window, scoped to one document — never the assessment, the customer's history, or the scorecard. No module's working set grows with the number of customers in the system.
+**On context:** Extraction is scoped to one document. Risk Commentary is scoped to one assessment's confirmed values, ratios and rating — never another customer, another assessment, or the portfolio. No module's working set grows with the number of customers in the system.
 
 ## 6. Open Questions
 
@@ -326,6 +346,10 @@ Closed by `Baseline_Scorecard_Extract_v1.2.md`: the extracted field set, ratio f
 | 11 | Analyst-entered, with the system declared (FR5.12) | Which AR ageing or billing system to integrate for V2, and whether it is queryable |
 
 **Other**
+
+`OPEN:` Whether an analyst must acknowledge each FR11 observation before submitting. Advisory as specified, so an observation can be ignored without trace — an acknowledgement click would make it auditable that the risk was seen, at the cost of friction on every assessment. Affects no other requirement either way.
+
+`OPEN:` How FR11 commentary quality is evaluated. Extraction has a measurable ground truth; a risk observation does not. Candidate approach is a held-out set of past assessments with known outcomes, scored on whether an observation was materially true and citable — needs real assessment history the tool does not yet hold.
 
 `OPEN:` Credit limit sizing — the baseline derives no amount anywhere. Determines what V2's limit engine takes as input beyond the class.
 
@@ -384,4 +408,5 @@ Requirement text for deferred items is retained in `Credit_Assessment_PRD_v0.10.
 | Not calculable | A ratio with an absent input or zero divisor (FR4.7). Scores its criterion tier 1. |
 | ACRA | Accounting and Corporate Regulatory Authority — Singapore's company registry. |
 | Confidence score | Extraction-model certainty (0–100%) that an extracted value is correct. |
+| Risk commentary | Model-written observations about credit risk the scorecard cannot express (FR11). Advisory, cited, carries no severity, and never changes the class. |
 | Lineage | The chain from a computed value back to the exact source field(s), document(s), and location(s) that produced it. |
