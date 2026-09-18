@@ -2,7 +2,7 @@
 
 > **Deterministic, MVP.** One PRD §5 module: Calculation. No LLM in the loop anywhere — being deterministic is a requirement here, not a shortfall: FR4.5's lineage claim and NFR Traceability's reconstructability bar both argue against a non-deterministic model anywhere near the math. MVP outputs a rating class, not a credit limit — limit sizing and a qualitative override are both V2 (PRD §7); nothing in this file proposes an amount.
 >
-> **Companion docs:** upstream — [`Field Review.md`](Field%20Review.md), sole trigger of every compute in this file. Downstream — [`Governance & Records.md`](Governance%20%26%20Records.md) reads `Ratio` and `Rating` read-only for approval, drill-down, and export; this agent has no write path back into either module. §7 reproduces the closed scorecard from [`Baseline_Scorecard_Extract_v1.2.md`](../../1.%20Planning%20%26%20Prototyping/Baseline_Scorecard_Extract_v1.2.md).
+> **Companion docs:** upstream — [`Field Review.md`](Field%20Review.md), sole trigger of every compute in this file. Downstream — [`Governance & Records.md`](Governance%20%26%20Records.md) reads `Ratio` and `Rating` read-only for approval, drill-down, and export; [`Risk Commentary.md`](Risk%20Commentary.md) reads the same two stores read-only, triggered by this file's Rating Engine completing and its recompute; neither has a write path back into `Ratio` or `Rating`. §7 reproduces the closed scorecard from [`Baseline_Scorecard_Extract_v1.2.md`](../../1.%20Planning%20%26%20Prototyping/Baseline_Scorecard_Extract_v1.2.md).
 
 ## 1. Core Mandate & Operational Objectives
 
@@ -169,7 +169,9 @@ Trigger: `cra_compute_ratios`, sole caller this agent, precondition Field Review
                  │
                  ▼
 [Output: composite, class, driver_breakdown] ──► Governance & Records
-                                                   (read-only)
+                                                   (read-only); triggers
+                                                   Risk Commentary's
+                                                   generation (read-only)
 ```
 
 Trigger: `cra_compute_rating`, sole caller this agent, precondition Flow A complete for every required ratio and derived input.

@@ -2,13 +2,13 @@
 
 > **Deterministic, MVP.** One PRD §5 module: Field Review. No LLM in the loop — the only legitimate path from an extracted value or an analyst-entered criterion into a ratio (FR3.8), and the largest single block of Must/MVP requirements in the roster.
 >
-> **Companion docs:** upstream — [`Statement Extraction.md`](Statement%20Extraction.md) (fields and the criterion 5 prefill). Downstream — [`Scoring & Decisioning.md`](Scoring%20%26%20Decisioning.md) (compute trigger), [`Governance & Records.md`](Governance%20%26%20Records.md) (re-entry point on Return for Revision; owns `Assessment.recency_flag`, which this agent computes but does not write).
+> **Companion docs:** upstream — [`Statement Extraction.md`](Statement%20Extraction.md) (fields and the criterion 5 prefill). Downstream — [`Scoring & Decisioning.md`](Scoring%20%26%20Decisioning.md) (compute trigger), [`Governance & Records.md`](Governance%20%26%20Records.md) (re-entry point on Return for Revision; owns `Assessment.recency_flag`, which this agent computes but does not write), [`Risk Commentary.md`](Risk%20Commentary.md) (reads this agent's Confirmed/Amended fields and criterion inputs read-only, alongside Calculation's output — this agent has no relationship to it beyond being a data source).
 
 ## 1. Core Mandate & Operational Objectives
 
 Back the core GUI: present every extracted field grouped by statement, one row per field with both periods as columns (FR3.1), and a separate entry screen for the five non-financial criteria (FR5.1). Accept a human's Confirm or Amend per field-period cell and per criterion input, turn each into a versioned, auditable record, run the integrity checks and recency determination that ride alongside review, and gate everything downstream until every review item is terminal.
 
-**Capabilities:** (1) Serve the field × period grid with confidence indicator, source scale/currency, and source-location jump per cell (FR3.1–FR3.3). (2) Accept Confirm (with or without a value, asserting genuine absence) and Amend, per cell, retaining the original on Amend (FR3.4–FR3.5, FR3.10). (3) Bulk-confirm all High-confidence cells at once (FR3.9). (4) Run the nine FR3.7 integrity checks after extraction and surface every failure, anchored to its fields, never blocking (FR3.6). (5) Compute the FR3.12 statement recency flag and hand it to Governance & Records for persistence. (6) Serve the FR5 criterion-input screen — five criteria, each with its own validation, evidence requirements, and visibility rule — through the same Confirm/Amend lifecycle. (7) Count review-item progress across both field-period cells and criterion inputs (FR3.11). (8) Enforce the FR3.8 gate in both directions: nothing computes while anything is Unconfirmed, and any amendment after computation reopens it (FR4.8). (9) Serve as the re-entry point when an assessment is Returned for Revision (FR7.4).
+**Capabilities:** (1) Serve the field × period grid with confidence indicator, source scale/currency, and source-location jump per cell (FR3.1–FR3.3). (2) Accept Confirm (with or without a value, asserting genuine absence) and Amend, per cell, retaining the original on Amend (FR3.4–FR3.5, FR3.10). (3) Bulk-confirm all High-confidence cells at once (FR3.9). (4) Run the nine FR3.7 integrity checks after extraction and surface every failure, anchored to its fields, with a signed difference and an operand movement ranking on every failure, never blocking (FR3.6, FR3.13). (5) Compute the FR3.12 statement recency flag and hand it to Governance & Records for persistence. (6) Serve the FR5 criterion-input screen — five criteria, each with its own validation, evidence requirements, and visibility rule — through the same Confirm/Amend lifecycle. (7) Count review-item progress across both field-period cells and criterion inputs (FR3.11). (8) Enforce the FR3.8 gate in both directions: nothing computes while anything is Unconfirmed, and any amendment after computation reopens it (FR4.8). (9) Serve as the re-entry point when an assessment is Returned for Revision (FR7.4).
 
 You never decide whether a value is right. You make it possible for someone else's decision to be recorded, reversed-with-history, and impossible to lose.
 
@@ -136,15 +136,57 @@ Runs automatically once Extraction's Flow B completes — not tied to any confir
                         statement reported in thousands
                  │
                  ▼
-[Node 3: Write] ──► cra:integrity_check_store, each result anchored to
-                     the exact operand field IDs it tested
+          ◇ passed? ◇
+    Pass      │                                    │Fail
+      │       │                                    ▼
+      │       │                    [Node 2a: Signed Difference] ──►
+      │       │                    expected − actual on the check's own
+      │       │                    equation, kept signed, not absolute
+      │       │                    (FR3.13)
+      │       │                                    │
+      │       │                                    ▼
+      │       │                    [Node 2b: Rank Operands by Movement]
+      │       │                    ──► Each operand field's own period-
+      │       │                    over-period change, same formula as
+      │       │                    FR4.6 — computed locally here, not
+      │       │                    read from Calculation, since this
+      │       │                    flow fires on Extraction's Flow B
+      │       │                    completion, before any review item
+      │       │                    is terminal and before Calculation
+      │       │                    has run at all. Arithmetic, not
+      │       │                    judgement — no model (FR3.13).
+      │       │                    Ranked highest-movement first, so
+      │       │                    the operand that moved most surfaces
+      │       │                    first. An operand whose prior-period
+      │       │                    value is absent is excluded from the
+      │       │                    ranking, not defaulted to zero or
+      │       │                    last place — its movement is not
+      │       │                    calculable, the same non-
+      │       │                    substitution rule FR4.6 applies.
+      │       │                    Where every operand in the check has
+      │       │                    no prior value, the ranking is empty
+      │       │                    and Node 3 writes the difference
+      │       │                    alone
+      │       └────────────────────┬───────────────────┘
+      │                            ▼
+      └───────────────► [Node 3: Write] ──► cra:integrity_check_store,
+                          each result anchored to the exact operand
+                          field IDs it tested, plus — on failure —
+                          the signed difference and the movement
+                          ranking (or its absence)
                  │
                  ▼
-[Output: IntegrityCheckResult rows] ──► Surfaced on the review screen.
-                                          A failure never blocks
-                                          computation (FR3.8's gate is
-                                          untouched by this flow) — it
-                                          directs attention
+[Output: IntegrityCheckResult rows] ──► Surfaced on the review screen,
+                                          ranked operand first on a
+                                          failure. A failure never
+                                          blocks computation (FR3.8's
+                                          gate is untouched by this
+                                          flow) and never names an
+                                          operand as wrong — it directs
+                                          attention only. Every operand
+                                          remains an independent review
+                                          item the analyst must Confirm
+                                          or Amend regardless (FR3.11)
 ```
 
 **The nine checks.** NPAT ≤ Sales · Cash ≤ Current Assets · Current Assets ≤ Total Assets · Non-Current Assets ≤ Total Assets · Current Liabilities ≤ Total Liabilities · Non-Current Liabilities ≤ Total Liabilities · Total Assets = Current Assets + Non-Current Assets (0.1% tolerance) · Total Liabilities = Current Liabilities + Non-Current Liabilities (0.1% tolerance) · Total Equity + Total Liabilities = Total Assets (0.1% tolerance).
@@ -316,6 +358,7 @@ Submission is blocked while any review item is Unconfirmed (FR3.8) — nothing c
 | Confirm attempted on an already-terminal cell (Confirmed/Amended) | Treated as an Amend if the value differs — original retained per FR3.10 regardless of which terminal state preceded it |
 | Return-for-Revision re-entry on an assessment not in Returned state | Rejected — Flow G's Node 1 precondition unmet |
 | `cra_set_recency_flag` call fails | The originating extraction-completion event is not considered fully processed; retried, never silently dropped |
+| A failed integrity check's operands all lack a prior-period value | Ranking is empty by design, not an error — the signed difference is still written and shown alone (FR3.13) |
 
 ## 13. MCP Task-Tool Bindings
 

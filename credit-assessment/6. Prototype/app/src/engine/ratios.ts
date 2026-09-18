@@ -1,180 +1,121 @@
-import type { ExtractedField, Ratio, RatioCategory, ScorecardConfig } from "../types";
+import type { CriterionInput, ExtractedField, Ratio, RatioKey, StandardFieldName, ZeroDivisorField } from "../types";
+import { SCORECARD_VERSION } from "../data/config";
 
-// FR4 — Ratio Engine. Deterministic (architecture plan §02/§05): given the
-// same confirmed/unconfirmed field set and config version, always the same
-// output. PLACEHOLDER formulas — see data/config.ts header.
+// FR4 — Ratio Engine (Calculation module, Scoring & Decisioning.md Flow A).
+// Deterministic: same confirmed inputs + scorecard version -> same output,
+// always. Formulas and zero-divisor treatment are closed by
+// Baseline_Scorecard_Extract_v1.2.md / PRD FR4.2/FR4.11/FR4.12 — nothing here
+// is a placeholder.
+//
+// Callers must only pass Confirmed/Amended fields and criterion inputs
+// (FR3.8) — this engine trusts its input and does not re-check status.
 
-interface RatioDef {
-  key: string;
-  label: string;
-  category: RatioCategory;
-  requires: string[]; // standardized field names
-  formulaDisplay: string;
-  compute: (v: Record<string, number>) => number | null; // null = mathematically undefined (e.g. div by 0)
+function fieldValue(fields: ExtractedField[], period: string, name: StandardFieldName): number | boolean | null {
+  const f = fields.find((x) => x.period === period && x.fieldName === name);
+  return f ? f.value : null;
 }
 
-const RATIO_DEFS: RatioDef[] = [
+function fieldId(fields: ExtractedField[], period: string, name: StandardFieldName): string | undefined {
+  return fields.find((x) => x.period === period && x.fieldName === name)?.id;
+}
+
+/** FR4.6 — period-over-period change. Computed at read time, never stored on
+ * Ratio (Scoring & Decisioning.md Flow A Node 4). Null (render "—") when the
+ * prior value is absent, zero, or non-numeric — never a fabricated 0. */
+export function fieldPeriodChange(fields: ExtractedField[], fieldName: StandardFieldName, currentPeriod: string, priorPeriod: string): number | null {
+  const current = fieldValue(fields, currentPeriod, fieldName);
+  const prior = fieldValue(fields, priorPeriod, fieldName);
+  if (typeof current !== "number" || typeof prior !== "number" || prior === 0) return null;
+  return (current - prior) / prior;
+}
+
+interface PeriodRatioDef {
+  key: Extract<RatioKey, "working_capital" | "current_ratio" | "net_profit_margin" | "debt_to_equity" | "wc_over_revenue">;
+  label: string;
+  formulaDisplay: string;
+  requires: StandardFieldName[];
+  divisorField: StandardFieldName | null; // null = never a zero-divisor case (subtraction)
+  zeroDivisorField: ZeroDivisorField | null;
+  zeroDivisorTier: 1 | 2 | 3 | null;
+  compute: (v: Record<string, number>) => number;
+}
+
+const PERIOD_RATIO_DEFS: PeriodRatioDef[] = [
+  {
+    key: "working_capital",
+    label: "Working Capital",
+    formulaDisplay: "Current Assets − Current Liabilities",
+    requires: ["Current Assets", "Current Liabilities"],
+    divisorField: null,
+    zeroDivisorField: null,
+    zeroDivisorTier: null,
+    compute: (v) => v["Current Assets"] - v["Current Liabilities"],
+  },
   {
     key: "current_ratio",
     label: "Current Ratio",
-    category: "Liquidity",
-    requires: ["Total Current Assets", "Total Current Liabilities"],
-    formulaDisplay: "Total Current Assets ÷ Total Current Liabilities",
-    compute: (v) => (v["Total Current Liabilities"] === 0 ? null : v["Total Current Assets"] / v["Total Current Liabilities"]),
+    formulaDisplay: "Current Assets ÷ Current Liabilities",
+    requires: ["Current Assets", "Current Liabilities"],
+    divisorField: "Current Liabilities",
+    // FR4.12: no current liabilities is the strongest possible liquidity — tier 3, never a Not Calculable case.
+    zeroDivisorField: "Current Liabilities",
+    zeroDivisorTier: 3,
+    compute: (v) => v["Current Assets"] / v["Current Liabilities"],
   },
   {
-    key: "quick_ratio",
-    label: "Quick Ratio",
-    category: "Liquidity",
-    requires: ["Total Current Assets", "Inventory", "Total Current Liabilities"],
-    formulaDisplay: "(Total Current Assets − Inventory) ÷ Total Current Liabilities",
-    compute: (v) =>
-      v["Total Current Liabilities"] === 0 ? null : (v["Total Current Assets"] - v["Inventory"]) / v["Total Current Liabilities"],
+    key: "net_profit_margin",
+    label: "Net Profit Margin",
+    formulaDisplay: "NPAT ÷ Sales",
+    requires: ["NPAT", "Sales"],
+    divisorField: "Sales",
+    zeroDivisorField: "Sales",
+    zeroDivisorTier: 1,
+    compute: (v) => v["NPAT"] / v["Sales"],
   },
   {
     key: "debt_to_equity",
-    label: "Debt-to-Equity",
-    category: "Leverage",
-    requires: ["Total Debt", "Total Equity"],
-    formulaDisplay: "Total Debt ÷ Total Equity",
-    compute: (v) => (v["Total Equity"] === 0 ? null : v["Total Debt"] / v["Total Equity"]),
+    label: "Debt to Equity",
+    formulaDisplay: "Total Liabilities ÷ Total Equity",
+    requires: ["Total Liabilities", "Total Equity"],
+    divisorField: "Total Equity",
+    // FR4.12: no equity buffer — tier 1, alongside the negative-equity band case rating.ts handles separately.
+    zeroDivisorField: "Total Equity",
+    zeroDivisorTier: 1,
+    compute: (v) => v["Total Liabilities"] / v["Total Equity"],
   },
   {
-    key: "debt_to_ebitda",
-    label: "Debt-to-EBITDA",
-    category: "Leverage",
-    requires: ["Total Debt", "EBITDA"],
-    formulaDisplay: "Total Debt ÷ EBITDA",
-    compute: (v) => (v["EBITDA"] === 0 ? null : v["Total Debt"] / v["EBITDA"]),
-  },
-  {
-    key: "gearing",
-    label: "Gearing",
-    category: "Leverage",
-    requires: ["Total Debt", "Total Equity"],
-    formulaDisplay: "Total Debt ÷ (Total Debt + Total Equity)",
-    compute: (v) => (v["Total Debt"] + v["Total Equity"] === 0 ? null : v["Total Debt"] / (v["Total Debt"] + v["Total Equity"])),
-  },
-  {
-    key: "gross_margin",
-    label: "Gross Margin",
-    category: "Profitability",
-    requires: ["Gross Profit", "Revenue"],
-    formulaDisplay: "Gross Profit ÷ Revenue",
-    compute: (v) => (v["Revenue"] === 0 ? null : v["Gross Profit"] / v["Revenue"]),
-  },
-  {
-    key: "net_margin",
-    label: "Net Margin",
-    category: "Profitability",
-    requires: ["Net Income", "Revenue"],
-    formulaDisplay: "Net Income ÷ Revenue",
-    compute: (v) => (v["Revenue"] === 0 ? null : v["Net Income"] / v["Revenue"]),
-  },
-  {
-    key: "roe",
-    label: "Return on Equity",
-    category: "Profitability",
-    requires: ["Net Income", "Total Equity"],
-    formulaDisplay: "Net Income ÷ Total Equity",
-    compute: (v) => (v["Total Equity"] === 0 ? null : v["Net Income"] / v["Total Equity"]),
-  },
-  {
-    key: "roa",
-    label: "Return on Assets",
-    category: "Profitability",
-    requires: ["Net Income", "Total Assets"],
-    formulaDisplay: "Net Income ÷ Total Assets",
-    compute: (v) => (v["Total Assets"] === 0 ? null : v["Net Income"] / v["Total Assets"]),
-  },
-  {
-    key: "interest_coverage",
-    label: "Interest Coverage",
-    category: "Coverage",
-    requires: ["EBIT", "Interest Expense"],
-    formulaDisplay: "EBIT ÷ Interest Expense",
-    compute: (v) => (v["Interest Expense"] === 0 ? null : v["EBIT"] / v["Interest Expense"]),
-  },
-  {
-    key: "dscr",
-    label: "Debt Service Coverage Ratio",
-    category: "Coverage",
-    requires: ["Operating Cash Flow", "Interest Expense"],
-    formulaDisplay: "Operating Cash Flow ÷ Interest Expense",
-    compute: (v) => (v["Interest Expense"] === 0 ? null : v["Operating Cash Flow"] / v["Interest Expense"]),
-  },
-  {
-    key: "asset_turnover",
-    label: "Asset Turnover",
-    category: "Efficiency",
-    requires: ["Revenue", "Total Assets"],
-    formulaDisplay: "Revenue ÷ Total Assets",
-    compute: (v) => (v["Total Assets"] === 0 ? null : v["Revenue"] / v["Total Assets"]),
-  },
-  {
-    key: "dso",
-    label: "Days Sales Outstanding",
-    category: "Efficiency",
-    requires: ["Accounts Receivable", "Revenue"],
-    formulaDisplay: "(Accounts Receivable ÷ Revenue) × 365",
-    compute: (v) => (v["Revenue"] === 0 ? null : (v["Accounts Receivable"] / v["Revenue"]) * 365),
-  },
-  {
-    key: "dpo",
-    label: "Days Payable Outstanding",
-    category: "Efficiency",
-    requires: ["Accounts Payable", "Cost of Goods Sold"],
-    formulaDisplay: "(Accounts Payable ÷ COGS) × 365",
-    compute: (v) => (v["Cost of Goods Sold"] === 0 ? null : (v["Accounts Payable"] / v["Cost of Goods Sold"]) * 365),
-  },
-  {
-    key: "dio",
-    label: "Days Inventory Outstanding",
-    category: "Efficiency",
-    requires: ["Inventory", "Cost of Goods Sold"],
-    formulaDisplay: "(Inventory ÷ COGS) × 365",
-    compute: (v) => (v["Cost of Goods Sold"] === 0 ? null : (v["Inventory"] / v["Cost of Goods Sold"]) * 365),
+    key: "wc_over_revenue",
+    label: "WC over Revenue",
+    formulaDisplay: "(Current Assets − Current Liabilities) ÷ Sales",
+    requires: ["Current Assets", "Current Liabilities", "Sales"],
+    divisorField: "Sales",
+    zeroDivisorField: "Sales",
+    zeroDivisorTier: 1,
+    compute: (v) => (v["Current Assets"] - v["Current Liabilities"]) / v["Sales"],
   },
 ];
 
-export const RATIO_KEYS = RATIO_DEFS.map((d) => d.key);
+function computePeriodRatio(assessmentId: string, period: string, fields: ExtractedField[], now: string): Ratio[] {
+  return PERIOD_RATIO_DEFS.map((def) => {
+    const raw = def.requires.map((name) => ({ name, value: fieldValue(fields, period, name) }));
+    const lineageFieldIds = def.requires.map((name) => fieldId(fields, period, name)).filter((id): id is string => !!id);
+    const absentField = raw.find((r) => r.value === null || typeof r.value !== "number");
 
-/** FR4.1/FR3.8 — compute the full ratio set for one assessment x period.
- * Unconfirmed-but-present inputs compute and flag Provisional (never excluded).
- * Any required input Not Present -> Not Calculable, value null, no substitution.
- */
-export function computeRatiosForPeriod(
-  assessmentId: string,
-  period: string,
-  fields: ExtractedField[],
-  config: ScorecardConfig,
-  now: string,
-): Ratio[] {
-  const byName = new Map<string, ExtractedField>();
-  for (const f of fields) {
-    if (f.assessmentId === assessmentId && f.period === period) byName.set(f.fieldName, f);
-  }
+    let valueNumeric: number | null = null;
+    let notCalculableReason: string | null = null;
+    let zeroDivisorField: ZeroDivisorField | null = null;
+    let zeroDivisorTierApplied: 1 | 2 | 3 | null = null;
 
-  return RATIO_DEFS.map((def) => {
-    const inputs = def.requires.map((name) => byName.get(name));
-    const anyNotPresent = inputs.some((f) => !f || f.status === "Not Present");
-    const anyUnconfirmed = inputs.some((f) => f && f.status === "Unconfirmed");
-
-    let value: number | null = null;
-    let notCalculableFlag = false;
-    let provisionalFlag = false;
-
-    if (anyNotPresent) {
-      notCalculableFlag = true;
+    if (absentField) {
+      // FR4.7/FR4.11 — absent input checked first, never a substituted zero.
+      notCalculableReason = `${absentField.name} is confirmed absent (${period})`;
     } else {
-      const v: Record<string, number> = {};
-      for (const f of inputs) v[f!.fieldName] = f!.value ?? 0;
-      const result = def.compute(v);
-      if (result === null) {
-        notCalculableFlag = true; // mathematically undefined (e.g. divide by zero)
+      const v = Object.fromEntries(raw.map((r) => [r.name, r.value as number]));
+      if (def.divisorField && v[def.divisorField] === 0) {
+        zeroDivisorField = def.zeroDivisorField;
+        zeroDivisorTierApplied = def.zeroDivisorTier;
       } else {
-        value = result;
-        provisionalFlag = anyUnconfirmed;
+        valueNumeric = def.compute(v);
       }
     }
 
@@ -183,25 +124,120 @@ export function computeRatiosForPeriod(
       assessmentId,
       ratioKey: def.key,
       label: def.label,
-      category: def.category,
       formulaDisplay: def.formulaDisplay,
-      lineageFieldIds: inputs.filter((f): f is ExtractedField => !!f).map((f) => f.id),
-      value,
+      lineageFieldIds,
       period,
-      configVersionId: config.id,
-      provisionalFlag,
-      notCalculableFlag,
+      valueNumeric,
+      signPair: null,
+      notCalculableReason,
+      zeroDivisorField,
+      zeroDivisorTierApplied,
+      scorecardVersion: SCORECARD_VERSION,
       computedAt: now,
     } satisfies Ratio;
   });
 }
 
-export function computeAllRatios(
+/** Criterion 6 — stores the raw NPAT sign fact only; rating.ts applies
+ * FR6.13's four-way tiering. Not period-scoped (spans both periods). */
+function computeProfitabilityHistory(assessmentId: string, currentPeriod: string, priorPeriod: string, fields: ExtractedField[], now: string): Ratio {
+  const current = fieldValue(fields, currentPeriod, "NPAT");
+  const prior = fieldValue(fields, priorPeriod, "NPAT");
+  const lineageFieldIds = [fieldId(fields, currentPeriod, "NPAT"), fieldId(fields, priorPeriod, "NPAT")].filter((id): id is string => !!id);
+
+  // FR6.5 — the latest period's NPAT being absent is an absent input, not a
+  // loss; it scores tier 1 via notCalculableReason, never via FR6.13's sign logic.
+  const notCalculableReason = typeof current !== "number" ? `NPAT is confirmed absent (${currentPeriod})` : null;
+
+  return {
+    id: `ratio-${assessmentId}-profitability_history`,
+    assessmentId,
+    ratioKey: "profitability_history",
+    label: "Profitability History",
+    formulaDisplay: "NPAT sign, current period vs. prior",
+    lineageFieldIds,
+    period: null,
+    valueNumeric: null,
+    signPair: {
+      currentPositive: typeof current === "number" ? current > 0 : null,
+      // Absent prior is treated as "not profitable" for FR6.13's tiering — it
+      // cannot prove a prior profit, so a current-profitable/prior-absent
+      // pair lands tier 2, never tier 3.
+      priorPositive: typeof prior === "number" ? prior > 0 : null,
+    },
+    notCalculableReason,
+    zeroDivisorField: null,
+    zeroDivisorTierApplied: null,
+    scorecardVersion: SCORECARD_VERSION,
+    computedAt: now,
+  };
+}
+
+/** Criterion 5 — paid-up capital cover. Reads CriterionInput, not
+ * ExtractedField. Never reaches a zero-divisor: total exposure <= 0 is
+ * rejected at entry (FR5.15). Not period-scoped. */
+function computePaidUpCapitalCover(assessmentId: string, criterionInputs: CriterionInput[], now: string): Ratio {
+  const c5 = criterionInputs.find((c) => c.criterionNumber === 5);
+  const missing = !c5 || c5.paidUpCapital === null || c5.totalExposure === null;
+  return {
+    id: `ratio-${assessmentId}-paid_up_capital_cover`,
+    assessmentId,
+    ratioKey: "paid_up_capital_cover",
+    label: "Paid-up Capital Cover",
+    formulaDisplay: "Paid-up Capital ÷ Total Exposure",
+    lineageFieldIds: c5 ? [c5.id] : [],
+    period: null,
+    valueNumeric: missing ? null : (c5!.paidUpCapital as number) / (c5!.totalExposure as number),
+    signPair: null,
+    notCalculableReason: missing ? "Paid-up capital or total exposure is confirmed absent" : null,
+    zeroDivisorField: null,
+    zeroDivisorTierApplied: null,
+    scorecardVersion: SCORECARD_VERSION,
+    computedAt: now,
+  };
+}
+
+/** Criterion 7 — years established. Reads CriterionInput. Never a
+ * zero-divisor case (subtraction). Not period-scoped. */
+function computeYearsEstablished(assessmentId: string, criterionInputs: CriterionInput[], assessmentYear: number, now: string): Ratio {
+  const c7 = criterionInputs.find((c) => c.criterionNumber === 7);
+  const missing = !c7 || c7.yearRegisteredSg === null;
+  return {
+    id: `ratio-${assessmentId}-years_established`,
+    assessmentId,
+    ratioKey: "years_established",
+    label: "Years Established",
+    formulaDisplay: "Assessment Year − Year Registered in SG",
+    lineageFieldIds: c7 ? [c7.id] : [],
+    period: null,
+    valueNumeric: missing ? null : assessmentYear - (c7!.yearRegisteredSg as number),
+    signPair: null,
+    notCalculableReason: missing ? "Year registered in Singapore is confirmed absent" : null,
+    zeroDivisorField: null,
+    zeroDivisorTierApplied: null,
+    scorecardVersion: SCORECARD_VERSION,
+    computedAt: now,
+  };
+}
+
+/** FR4.1/FR3.8 — the full ratio set for one assessment: the 4 FR4.2 ratios
+ * for each period, plus the 4 FR4.3 derived scorecard inputs. Only called
+ * once every review item is Confirmed/Amended (the store's gate) — every
+ * field/input passed in is trusted as reviewed. */
+export function computeRatios(
   assessmentId: string,
-  periods: string[],
   fields: ExtractedField[],
-  config: ScorecardConfig,
+  criterionInputs: CriterionInput[],
+  currentPeriod: string,
+  priorPeriod: string,
+  assessmentYear: number,
   now: string,
 ): Ratio[] {
-  return periods.flatMap((p) => computeRatiosForPeriod(assessmentId, p, fields, config, now));
+  return [
+    ...computePeriodRatio(assessmentId, currentPeriod, fields, now),
+    ...computePeriodRatio(assessmentId, priorPeriod, fields, now),
+    computeProfitabilityHistory(assessmentId, currentPeriod, priorPeriod, fields, now),
+    computePaidUpCapitalCover(assessmentId, criterionInputs, now),
+    computeYearsEstablished(assessmentId, criterionInputs, assessmentYear, now),
+  ];
 }

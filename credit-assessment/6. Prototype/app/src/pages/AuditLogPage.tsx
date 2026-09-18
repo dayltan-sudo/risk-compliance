@@ -1,22 +1,18 @@
 import { useMemo, useState } from "react";
-import { useStore, useCurrentUser } from "../store/useStore";
-import { auditLogVisibleToUser } from "../store/selectors";
+import { useStore } from "../store/useStore";
 import { Card, SectionHeading } from "../components/Card";
 import { formatDate } from "../utils/format";
+import type { AuditLogEntry } from "../types";
 
 export function AuditLogPage() {
-  const user = useCurrentUser();
   const auditLog = useStore((s) => s.auditLog);
-  const assessments = useStore((s) => s.assessments);
-  const customers = useStore((s) => s.customers);
   const [filter, setFilter] = useState("");
 
-  const visible = useMemo(() => auditLogVisibleToUser(user, auditLog, assessments, customers), [user, auditLog, assessments, customers]);
   const filtered = useMemo(() => {
-    if (!filter.trim()) return visible;
+    if (!filter.trim()) return auditLog;
     const q = filter.toLowerCase();
-    return visible.filter((e) => e.action.toLowerCase().includes(q) || e.entityType.toLowerCase().includes(q) || e.actor.toLowerCase().includes(q));
-  }, [visible, filter]);
+    return auditLog.filter((e: AuditLogEntry) => e.action.toLowerCase().includes(q) || e.entityType.toLowerCase().includes(q) || e.actor.toLowerCase().includes(q));
+  }, [auditLog, filter]);
 
   const sorted = [...filtered].sort((a, b) => b.timestamp.localeCompare(a.timestamp));
 
@@ -25,14 +21,8 @@ export function AuditLogPage() {
       <SectionHeading
         eyebrow="FR9"
         title="Audit Trail"
-        dek="Immutable, append-only (FR9.2). Every extraction confidence score, confirm/amend action, computation, and approval decision is logged with actor, timestamp, and before/after value (FR9.1)."
+        dek="Immutable, append-only (FR9.2). Every extraction confidence score, confirm/amend action, computation, and approval decision is logged with actor, timestamp, and before/after value (FR9.1). No per-role restriction at MVP (FR9.3)."
       />
-      {user.role === "Analyst" && (
-        <p className="text-xs text-[var(--muted)] mb-4 font-mono">
-          FR9.3 leaves Analyst read access to their own assessments' entries OPEN — this prototype resolves it as "yes, scoped to what you can
-          see" rather than leaving the screen empty.
-        </p>
-      )}
       <input
         value={filter}
         onChange={(e) => setFilter(e.target.value)}
@@ -65,7 +55,7 @@ export function AuditLogPage() {
             {sorted.length === 0 && (
               <tr>
                 <td colSpan={5} className="px-4 py-8 text-center text-[var(--muted)]">
-                  No entries in scope.
+                  No entries.
                 </td>
               </tr>
             )}

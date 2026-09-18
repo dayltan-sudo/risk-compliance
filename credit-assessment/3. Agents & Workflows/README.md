@@ -21,10 +21,10 @@ Six modules in PRD §5, held in five MVP files.
 | PRD §5 module | File | Type | Release | File status |
 |---|---|---|---|---|
 | Intake + Extraction | [Statement Extraction](a.%20Agents/Statement%20Extraction.md) | Deterministic + **Agent** | MVP | Current, v1.2-MVP basis |
-| Field Review | [Field Review](a.%20Agents/Field%20Review.md) | Deterministic | MVP | v1.2-MVP basis; discrepancy attribution (FR3.13) not yet written in |
+| Field Review | [Field Review](a.%20Agents/Field%20Review.md) | Deterministic | MVP | Current, v1.2-MVP basis — discrepancy attribution (FR3.13) written in |
 | Calculation | [Scoring & Decisioning](a.%20Agents/Scoring%20%26%20Decisioning.md) | Deterministic | MVP | Current, v1.2-MVP basis |
-| Risk Commentary | *(new file needed)* | **Model** | MVP | Not written |
-| Record | [Governance & Records](a.%20Agents/Governance%20%26%20Records.md) | Deterministic | MVP | Current, v1.2-MVP basis |
+| Risk Commentary | [Risk Commentary](a.%20Agents/Risk%20Commentary.md) | **Model** | MVP | Current, v1.2-MVP basis |
+| Record | [Governance & Records](a.%20Agents/Governance%20%26%20Records.md) | Deterministic | MVP | Current, v1.2-MVP basis — reads `cra:risk_commentary_store` for decision screen and export |
 | — | [Adverse-Media Screening](a.%20Agents/Adverse-Media%20Screening.md) | Deterministic + Agent | V2 | Parked, v0.12 basis |
 | — | [Assistant Q&A Orchestrator](a.%20Agents/Assistant%20Q%26A%20Orchestrator.md) | Agent | V2 | Parked, v0.12 basis |
 

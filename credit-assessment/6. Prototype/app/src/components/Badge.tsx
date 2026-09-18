@@ -1,4 +1,4 @@
-import type { AssessmentState, ConfidenceBand, FieldStatus } from "../types";
+import type { AssessmentState, ConfidenceBand, FieldStatus, RecencyFlag } from "../types";
 
 type Tone = "low" | "med" | "high" | "crit" | "mvp" | "v2" | "neutral" | "accent";
 
@@ -36,7 +36,7 @@ export function ConfidenceBadge({ score, thresholds }: { score: number | null; t
   if (band === null) return <Badge tone="neutral">n/a</Badge>;
   const tone: Tone = band === "High" ? "low" : band === "Medium" ? "med" : "crit";
   return (
-    <Badge tone={tone} title={`FR2.4 confidence band: ${band}`}>
+    <Badge tone={tone} title={`FR2.6 confidence band: ${band}`}>
       {score}% {band}
     </Badge>
   );
@@ -45,7 +45,6 @@ export function ConfidenceBadge({ score, thresholds }: { score: number | null; t
 export function FieldStatusBadge({ status }: { status: FieldStatus }) {
   if (status === "Confirmed") return <Badge tone="low">Confirmed</Badge>;
   if (status === "Amended") return <Badge tone="accent">Amended</Badge>;
-  if (status === "Not Present") return <Badge tone="mvp">Not Present</Badge>;
   return <Badge tone="med">Unconfirmed</Badge>;
 }
 
@@ -57,8 +56,16 @@ export function AssessmentStateBadge({ state, returned }: { state: AssessmentSta
   return <Badge tone="crit">Rejected</Badge>;
 }
 
-export function RatioFlagBadge({ provisional, notCalculable }: { provisional: boolean; notCalculable: boolean }) {
-  if (notCalculable) return <Badge tone="mvp" title="Required input confirmed absent — no substitution (FR3.8)">Not Calculable</Badge>;
-  if (provisional) return <Badge tone="med" title="Computed from at least one Unconfirmed input (FR3.8)">Provisional</Badge>;
-  return null;
+export function RecencyBadge({ flag }: { flag: RecencyFlag | null }) {
+  if (flag === null) return null;
+  if (flag === "Non-Recent") return <Badge tone="med" title="Latest statement's financials_date is over 540 days old (FR3.12). Advisory only — no effect on any tier, ratio, or score.">Non-Recent statement</Badge>;
+  return <Badge tone="low" title="FR3.12 — advisory only">Recent statement</Badge>;
+}
+
+export function ModelGeneratedBadge() {
+  return <Badge tone="v2" title="Risk Commentary (FR11) — advisory, cited, never changes the score">Model-generated</Badge>;
+}
+
+export function IntegrityCheckBadge({ passed }: { passed: boolean }) {
+  return passed ? <Badge tone="low">Pass</Badge> : <Badge tone="crit">Fail</Badge>;
 }

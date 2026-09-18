@@ -2,7 +2,7 @@
 
 > **Deterministic, MVP.** One PRD §5 module: Record — the audit log and Registry every other module writes and reads through, and owner of the one real judgement-adjacent logic in MVP: the Draft→Submitted→Approved|Rejected|Returned state machine and its guards. No roles, no segregation of duties at MVP (PRD §1; guard behaviour in §3) — an accepted business decision, not a placeholder gap: the guard abstraction (FR7.3) is what makes V2's SoD an additive change, never a rewrite.
 >
-> **Companion docs:** upstream — every other module writes through this one's Audit Log (§5) and reads its Registry (§4) for assessment scope; [`Statement Extraction.md`](Statement%20Extraction.md) never begins an upload until this module has minted a Draft assessment (FR8.3). [`Field Review.md`](Field%20Review.md) hands this module the FR3.12 recency determination for persistence. [`Scoring & Decisioning.md`](Scoring%20%26%20Decisioning.md) supplies the `Rating` this module's Approval Workflow locks (implicitly, via FR7.8) and its Registry compares at drill-down.
+> **Companion docs:** upstream — every other module writes through this one's Audit Log (§5) and reads its Registry (§4) for assessment scope; [`Statement Extraction.md`](Statement%20Extraction.md) never begins an upload until this module has minted a Draft assessment (FR8.3). [`Field Review.md`](Field%20Review.md) hands this module the FR3.12 recency determination for persistence. [`Scoring & Decisioning.md`](Scoring%20%26%20Decisioning.md) supplies the `Rating` this module's Approval Workflow locks (implicitly, via FR7.8) and its Registry compares at drill-down. [`Risk Commentary.md`](Risk%20Commentary.md) supplies the observations this module surfaces on the decision screen and in the export, read-only — this module has no write path into `RiskCommentary`.
 
 ## 1. Core Mandate & Operational Objectives
 
@@ -14,7 +14,7 @@ You are the record and the guard, not the arithmetic or the judgement of whether
 
 ## 2. State Management
 
-**Reads:** `cra:document_store`, `cra:extracted_field_store`, `cra:criterion_input_store`, `cra:integrity_check_store`, `cra:ratio_store`, `cra:rating_store` — all read-only, for drill-down, the Approver's pre-decision view (FR7.6), and export. `cra:identity` — acting user ID only; this module's guards are the only place any future role or scope attribute is read (no roles exist at MVP).
+**Reads:** `cra:document_store`, `cra:extracted_field_store`, `cra:criterion_input_store`, `cra:integrity_check_store`, `cra:ratio_store`, `cra:rating_store`, `cra:risk_commentary_store` — all read-only, for drill-down, the Approver's pre-decision view (FR7.6), and export. `cra:identity` — acting user ID only; this module's guards are the only place any future role or scope attribute is read (no roles exist at MVP).
 
 **Writes:** `cra:customer_registry` (sole writer). `cra:assessment_registry` (sole writer — mints versions, applies every state transition through a guard, derives and stores `relationship_type`, `division`, `recency_flag`). `cra:approval_decision_log` (sole writer). `cra:audit_log` (this module owns the store; every module, including this one, writes to it via `cra_write_audit` — never around it).
 
@@ -67,9 +67,13 @@ Split guards for Approve and Return despite identical MVP behaviour, because the
                  ▼
 [Node 1: Grant Lineage Access] ──► Full extraction, integrity-check
                                     results, ratio lineage, criterion
-                                    inputs, driver breakdown, audit trail
-                                    (FR7.6) — no restricted view; no role
-                                    to restrict by at MVP
+                                    inputs, driver breakdown, audit trail,
+                                    and Risk Commentary's observations —
+                                    labelled model-generated and visibly
+                                    separate from the computed class, no
+                                    observation blocking the decision
+                                    (FR7.6, FR11.9) — no restricted view;
+                                    no role to restrict by at MVP
                  │
                  ▼
 [Node 2: Guard by Transition] ──► can_approve (Approve | Reject) or
@@ -250,9 +254,10 @@ Must exist before Statement Extraction ships (README build sequence) — FR9.1 r
                                 source scale, integrity-check results,
                                 ratios with lineage, all eleven criterion
                                 inputs and tiers, composite, class,
-                                handling route, and the approval record
-                                (FR10.1) — read-only, never a second path
-                                to a value
+                                handling route, the approval record, and
+                                Risk Commentary's observations — labelled
+                                model-generated (FR10.1, FR11.9) —
+                                read-only, never a second path to a value
                  │
                  ▼
 [Node 2: Version Stamp] ──► Every extraction_model_version present in

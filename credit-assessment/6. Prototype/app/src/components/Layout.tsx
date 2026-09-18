@@ -2,12 +2,11 @@ import { NavLink, Outlet } from "react-router-dom";
 import { useStore } from "../store/useStore";
 import { USERS } from "../data/seed";
 import { Badge } from "./Badge";
+import { SCORECARD_VERSION } from "../data/config";
 
 export function Layout() {
   const currentUserId = useStore((s) => s.currentUserId);
   const setCurrentUser = useStore((s) => s.setCurrentUser);
-  const user = USERS.find((u) => u.id === currentUserId)!;
-  const config = useStore((s) => s.config);
 
   const navClass = ({ isActive }: { isActive: boolean }) =>
     `px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
@@ -19,8 +18,8 @@ export function Layout() {
       <header className="border-b border-[var(--line)] bg-[var(--card)]">
         <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between gap-6">
           <div className="flex items-center gap-3">
-            <span className="font-serif-heading text-lg font-semibold">Credit Assessment</span>
-            <Badge tone="v2" title="Illustrative frontend prototype, mocked data — see PRD v0.10 / Architecture Plan v1.9">
+            <span className="font-serif-heading text-lg font-semibold">Fiscus</span>
+            <Badge tone="v2" title="Illustrative frontend prototype, mocked data — see Credit_Assessment_PRD_MVP.md v1.2-MVP">
               Prototype
             </Badge>
           </div>
@@ -31,11 +30,6 @@ export function Layout() {
             <NavLink to="/start" className={navClass}>
               Prepare Assessment
             </NavLink>
-            {user.role === "Approver" && (
-              <NavLink to="/approvals" className={navClass}>
-                Approver Queue
-              </NavLink>
-            )}
             <NavLink to="/audit" className={navClass}>
               Audit Trail
             </NavLink>
@@ -49,7 +43,7 @@ export function Layout() {
             >
               {USERS.map((u) => (
                 <option key={u.id} value={u.id}>
-                  {u.name} — {u.role}
+                  {u.name}
                 </option>
               ))}
             </select>
@@ -61,8 +55,8 @@ export function Layout() {
       </main>
       <footer className="border-t border-[var(--line)] py-3">
         <div className="max-w-6xl mx-auto px-6 text-[11px] font-mono text-[var(--muted)] flex justify-between">
-          <span>Methodology config: {config.version} — PLACEHOLDER, pending client baseline template (PRD §5)</span>
-          <span>Derived from Credit_Assessment_PRD_v0.10.md · Agent_Architecture_Plan v1.9</span>
+          <span>Scorecard: {SCORECARD_VERSION} — methodology closed by Baseline_Scorecard_Extract_v1.2.md</span>
+          <span>Derived from Credit_Assessment_PRD_MVP.md (v1.2-MVP)</span>
         </div>
       </footer>
     </div>

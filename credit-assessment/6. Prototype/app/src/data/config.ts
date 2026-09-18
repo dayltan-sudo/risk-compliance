@@ -1,96 +1,99 @@
-import type { ScorecardConfig } from "../types";
+import type { CriterionNumberAll, PresentationScale, StandardFieldName, StatementSection } from "../types";
 
-// PRD §0: "The client's baseline credit-assessment Excel template — which will
-// define the exact ratio formulas, scorecard weights, and rating bands — has
-// not been supplied. Every ratio, weight, and band reference ... is marked
-// PLACEHOLDER or OPEN; none is final." (PRD v0.10, FR4.1/FR5.1/FR6.1)
-//
-// Architecture plan §5/§10: build the versioned config *seam* now, fill the
-// *content* once the template lands. This file is that seam's illustrative
-// content — clearly a placeholder, never a real credit methodology.
+// Baseline_Scorecard_Extract_v1.2.md / Credit_Assessment_PRD_MVP.md FR6.14:
+// methodology is code, not runtime config. Bump SCORECARD_VERSION whenever a
+// band boundary, weight, or class threshold changes below.
+export const SCORECARD_VERSION = "v1.2-MVP";
+export const EXTRACTION_MODEL_VERSION = "extract-v1.4.2";
 
-export const PLACEHOLDER_CONFIG: ScorecardConfig = {
-  id: "config-v0.1-prototype",
-  version: "v0.1-prototype",
-  effectiveDate: "2026-01-01",
-  createdBy: "system (seed)",
-  confidenceThresholds: { high: 90, medium: 70 }, // FR2.4
+// FR2.6 — code constants, changed by deployment, not read from a runtime config store.
+export const CONFIDENCE_THRESHOLDS = { high: 90, medium: 70 };
 
-  // direction: which side of the boundary is favourable
-  ratioBands: {
-    current_ratio: { good: 1.5, fair: 1.0, direction: "higher-better" },
-    quick_ratio: { good: 1.0, fair: 0.7, direction: "higher-better" },
-    debt_to_equity: { good: 1.0, fair: 2.0, direction: "lower-better" },
-    debt_to_ebitda: { good: 2.5, fair: 4.0, direction: "lower-better" },
-    gearing: { good: 0.4, fair: 0.6, direction: "lower-better" },
-    gross_margin: { good: 0.35, fair: 0.2, direction: "higher-better" },
-    net_margin: { good: 0.1, fair: 0.03, direction: "higher-better" },
-    roe: { good: 0.15, fair: 0.05, direction: "higher-better" },
-    roa: { good: 0.08, fair: 0.02, direction: "higher-better" },
-    interest_coverage: { good: 5, fair: 2, direction: "higher-better" },
-    dscr: { good: 2, fair: 1.2, direction: "higher-better" },
-    asset_turnover: { good: 1.2, fair: 0.7, direction: "higher-better" },
-    dso: { good: 45, fair: 65, direction: "lower-better" },
-    dpo: { good: 40, fair: 60, direction: "lower-better" },
-    dio: { good: 45, fair: 70, direction: "lower-better" },
-  },
+// FR3.7 — the three equality checks pass within 0.1% of Total Assets.
+export const INTEGRITY_TOLERANCE_PCT = 0.001;
 
-  scorecardWeights: {
-    current_ratio: 0.08,
-    quick_ratio: 0.06,
-    debt_to_equity: 0.1,
-    debt_to_ebitda: 0.1,
-    gearing: 0.06,
-    gross_margin: 0.08,
-    net_margin: 0.1,
-    roe: 0.08,
-    roa: 0.06,
-    interest_coverage: 0.1,
-    dscr: 0.08,
-    asset_turnover: 0.04,
-    dso: 0.03,
-    dpo: 0.02,
-    dio: 0.01,
-  },
+// FR3.12 — statement recency flag threshold.
+export const RECENCY_THRESHOLD_DAYS = 540;
 
-  gradeBands: [
-    { minScore: 85, grade: "A", band: "Low risk" },
-    { minScore: 70, grade: "BB", band: "Moderate risk" },
-    { minScore: 55, grade: "B", band: "Elevated risk" },
-    { minScore: 40, grade: "CCC", band: "High risk" },
-    { minScore: 0, grade: "D", band: "Very high risk" },
-  ],
+// FR2.2 — the closed field set. "amount" fields are currency amounts; the one
+// "boolean" field is FR2.2's sign test (baseline C33, Net Operating Cash Flow
+// Positive, Yes/No).
+export const FIELD_DEFS: { name: StandardFieldName; section: StatementSection; valueType: "amount" | "boolean" }[] = [
+  { name: "Sales", section: "Income Statement", valueType: "amount" },
+  { name: "NPAT", section: "Income Statement", valueType: "amount" },
+  { name: "Current Assets", section: "Balance Sheet", valueType: "amount" },
+  { name: "Cash and Bank Balances", section: "Balance Sheet", valueType: "amount" },
+  { name: "Non-Current Assets", section: "Balance Sheet", valueType: "amount" },
+  { name: "Total Assets", section: "Balance Sheet", valueType: "amount" },
+  { name: "Current Liabilities", section: "Balance Sheet", valueType: "amount" },
+  { name: "Non-Current Liabilities", section: "Balance Sheet", valueType: "amount" },
+  { name: "Total Liabilities", section: "Balance Sheet", valueType: "amount" },
+  { name: "Total Equity", section: "Balance Sheet", valueType: "amount" },
+  { name: "Net Operating Cash Flow Positive", section: "Cash Flow", valueType: "boolean" },
+];
 
-  limitRules: [
-    { grade: "A", limitMultiplierOfRevenue: 0.15, termsDays: 60 },
-    { grade: "BB", limitMultiplierOfRevenue: 0.08, termsDays: 45 },
-    { grade: "B", limitMultiplierOfRevenue: 0.04, termsDays: 30 },
-    { grade: "CCC", limitMultiplierOfRevenue: 0.02, termsDays: 15 },
-    { grade: "D", limitMultiplierOfRevenue: 0, termsDays: 0 },
-  ],
+interface IntervalBand {
+  kind: "interval";
+  // Higher-is-better, unbounded top: tier 3 when x >= tier3Min, tier 2 when
+  // tier2Min <= x < tier3Min, tier 1 when x < tier2Min. Covers criteria 1, 2,
+  // 3, 5, 7 — all of FR6.7's interval criteria except 4.
+  tier3Min: number;
+  tier2Min: number;
+  displayHint: "pct" | "x" | "years";
+}
+
+interface DebtToEquityBand {
+  // Criterion 4 alone: lower-is-better with a floor, not the higher-is-better
+  // unbounded shape above. Tier 3: 0 < x <= 1. Tier 2: 1 < x < 2. Tier 1:
+  // x >= 2 or x <= 0 (the x<=0 branch is FR6.10's "negative equity" route;
+  // the TE=0 zero-divisor route is resolved upstream in ratios.ts and read
+  // directly by rating.ts, never re-banded here).
+  kind: "debt_to_equity";
+  tier3Max: 1;
+  tier2Max: 2;
+  displayHint: "x";
+}
+
+interface CategoricalBand {
+  kind: "categorical";
+  binary: boolean; // criteria 8, 9, 10 — no tier 2
+}
+
+export interface CriterionDef {
+  number: CriterionNumberAll;
+  label: string;
+  band: IntervalBand | DebtToEquityBand | CategoricalBand;
+  weightNew: number;
+  weightRenewal: number;
+}
+
+// FR6.7 — the full scorecard table. Weights sum to 100 in both columns.
+export const SCORECARD: Record<CriterionNumberAll, CriterionDef> = {
+  1: { number: 1, label: "WC over revenue", band: { kind: "interval", tier3Min: 0.2, tier2Min: 0, displayHint: "pct" }, weightNew: 5, weightRenewal: 5 },
+  2: { number: 2, label: "Current ratio", band: { kind: "interval", tier3Min: 3, tier2Min: 2, displayHint: "x" }, weightNew: 10, weightRenewal: 10 },
+  3: { number: 3, label: "Net profit margin", band: { kind: "interval", tier3Min: 0.3, tier2Min: 0, displayHint: "pct" }, weightNew: 10, weightRenewal: 10 },
+  4: { number: 4, label: "Debt to equity", band: { kind: "debt_to_equity", tier3Max: 1, tier2Max: 2, displayHint: "x" }, weightNew: 10, weightRenewal: 10 },
+  5: { number: 5, label: "Paid-up capital cover", band: { kind: "interval", tier3Min: 2, tier2Min: 1, displayHint: "x" }, weightNew: 5, weightRenewal: 5 },
+  6: { number: 6, label: "Profitability history", band: { kind: "categorical", binary: false }, weightNew: 25, weightRenewal: 15 },
+  7: { number: 7, label: "Years registered in SG", band: { kind: "interval", tier3Min: 10, tier2Min: 5, displayHint: "years" }, weightNew: 10, weightRenewal: 5 },
+  8: { number: 8, label: "Litigation record", band: { kind: "categorical", binary: true }, weightNew: 10, weightRenewal: 10 },
+  9: { number: 9, label: "Change in directors, last 3 yrs", band: { kind: "categorical", binary: true }, weightNew: 5, weightRenewal: 5 },
+  10: { number: 10, label: "Positive net operating cash flow", band: { kind: "categorical", binary: true }, weightNew: 10, weightRenewal: 10 },
+  11: { number: 11, label: "Prompt payment record", band: { kind: "categorical", binary: true }, weightNew: 0, weightRenewal: 15 },
 };
 
-// FR2.1 — standardized field set. OPEN in the PRD (derives from the baseline
-// template); this is an illustrative generic set covering the FR4.1 ratio
-// categories, grouped by statement section for the FR3.1 review screen.
-export const STANDARD_FIELDS: { name: string; section: "Balance Sheet" | "Income Statement" | "Cash Flow" }[] = [
-  { name: "Cash & Equivalents", section: "Balance Sheet" },
-  { name: "Accounts Receivable", section: "Balance Sheet" },
-  { name: "Inventory", section: "Balance Sheet" },
-  { name: "Total Current Assets", section: "Balance Sheet" },
-  { name: "Total Assets", section: "Balance Sheet" },
-  { name: "Accounts Payable", section: "Balance Sheet" },
-  { name: "Total Current Liabilities", section: "Balance Sheet" },
-  { name: "Total Debt", section: "Balance Sheet" },
-  { name: "Total Liabilities", section: "Balance Sheet" },
-  { name: "Total Equity", section: "Balance Sheet" },
-  { name: "Revenue", section: "Income Statement" },
-  { name: "Cost of Goods Sold", section: "Income Statement" },
-  { name: "Gross Profit", section: "Income Statement" },
-  { name: "EBITDA", section: "Income Statement" },
-  { name: "EBIT", section: "Income Statement" },
-  { name: "Interest Expense", section: "Income Statement" },
-  { name: "Net Income", section: "Income Statement" },
-  { name: "Operating Cash Flow", section: "Cash Flow" },
-  { name: "Capital Expenditure", section: "Cash Flow" },
+// FR6.8 — rating classes.
+export const RATING_CLASSES: { min: number; max: number; ratingClass: "A" | "B" | "C"; handlingRoute: string }[] = [
+  { min: 240, max: 300, ratingClass: "A", handlingRoute: "Auto-recommend with GIRO; escalate to approving authority per MOA" },
+  { min: 180, max: 239, ratingClass: "B", handlingRoute: "Manual review with credit enhancement" },
+  { min: 100, max: 179, ratingClass: "C", handlingRoute: "Not recommended by Risk and Compliance" },
 ];
+
+// PRD's Division is free-text on Assessment (§4/glossary) — this bounded list
+// is a demo convenience for the prototype's select inputs, not a spec
+// requirement. Swappable for a real lookup with no schema change.
+export const DIVISIONS = ["Trade Finance", "Working Capital Solutions", "Structured Trade"];
+
+export const CURRENCIES = ["SGD", "USD"];
+
+export const PRESENTATION_SCALES: PresentationScale[] = ["units", "thousands", "millions"];

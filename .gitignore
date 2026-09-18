@@ -23,3 +23,8 @@ npm-debug.log*
 
 # Claude agent worktrees (local tooling state)
 .claude/
+
+# unlazy completion-discipline scaffolding (session-local, not a deliverable)
+GATES.md
+scripts/unlazy/
+.unlazy/
