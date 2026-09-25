@@ -1,4 +1,4 @@
-import type { Assessment, CriterionInput, CriterionNumber, ExtractedField, Rating, RelationshipType } from "../types";
+import type { AppDocument, Assessment, CriterionInput, CriterionNumber, ExtractedField, Rating, RelationshipType } from "../types";
 
 export function assessmentsForCustomerDivision(assessments: Assessment[], customerId: string, division: string): Assessment[] {
   return assessments.filter((a) => a.customerId === customerId && a.division === division).sort((a, b) => b.version - a.version);
@@ -41,6 +41,36 @@ export function mostRecentApprovedClass(assessments: Assessment[], ratings: Rati
   const approved = assessmentsForCustomerDivision(assessments, customerId, division).filter((a) => a.state === "Approved");
   if (approved.length === 0) return undefined;
   return ratings.find((r) => r.assessmentId === approved[0].id);
+}
+
+/** FR1.5 — re-uploading a period creates a new document version; it never
+ * overwrites the prior one. The prior version's document row and its
+ * ExtractedField rows stay in the store for audit, but only the latest
+ * version per period (plus any registry document, which isn't
+ * period-versioned) is live for review and computation. */
+export function liveDocumentIds(documents: AppDocument[], assessmentId: string): Set<string> {
+  const latestByPeriod = new Map<string, AppDocument>();
+  const ids = new Set<string>();
+  for (const d of documents) {
+    if (d.assessmentId !== assessmentId) continue;
+    if (d.type === "registry") {
+      ids.add(d.id);
+      continue;
+    }
+    if (!d.period) continue;
+    const existing = latestByPeriod.get(d.period);
+    if (!existing || d.version > existing.version) latestByPeriod.set(d.period, d);
+  }
+  for (const d of latestByPeriod.values()) ids.add(d.id);
+  return ids;
+}
+
+/** The live ExtractedField rows for an assessment — excludes fields tied to
+ * a superseded document version (FR1.5). Superseded fields remain in the
+ * store for audit but never feed review counts or computation. */
+export function liveExtractedFields(fields: ExtractedField[], documents: AppDocument[], assessmentId: string): ExtractedField[] {
+  const liveIds = liveDocumentIds(documents, assessmentId);
+  return fields.filter((f) => f.assessmentId === assessmentId && liveIds.has(f.documentId));
 }
 
 /** FR3.11 — one review item per field-period cell, plus one per applicable

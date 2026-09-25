@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useStore } from "../store/useStore";
-import { reviewProgress } from "../store/selectors";
+import { liveExtractedFields, reviewProgress } from "../store/selectors";
 import { fieldPeriodChange } from "../engine/ratios";
 import { Card, SectionHeading, Button } from "./Card";
 import { ConfidenceBadge, FieldStatusBadge, IntegrityCheckBadge, RecencyBadge } from "./Badge";
@@ -24,13 +24,16 @@ const CHECK_LABELS: Record<IntegrityCheckName, string> = {
 
 export function FieldReviewPanel({ assessment, editable }: { assessment: Assessment; editable: boolean }) {
   const allFields = useStore((s) => s.extractedFields);
+  const documents = useStore((s) => s.documents);
   const allCriterionInputs = useStore((s) => s.criterionInputs);
   const allChecks = useStore((s) => s.integrityChecks);
   const confirmField = useStore((s) => s.confirmField);
   const amendField = useStore((s) => s.amendField);
   const bulkConfirmHigh = useStore((s) => s.bulkConfirmHigh);
 
-  const fields = useMemo(() => allFields.filter((f) => f.assessmentId === assessment.id), [allFields, assessment.id]);
+  // FR1.5 — a superseded document version's fields stay in the store for
+  // audit but are never shown or reviewed here; only the live version's rows are.
+  const fields = useMemo(() => liveExtractedFields(allFields, documents, assessment.id), [allFields, documents, assessment.id]);
   const criterionInputs = useMemo(() => allCriterionInputs.filter((c) => c.assessmentId === assessment.id), [allCriterionInputs, assessment.id]);
   const checks = useMemo(() => allChecks.filter((c) => c.assessmentId === assessment.id), [allChecks, assessment.id]);
   const periods = assessment.periods;

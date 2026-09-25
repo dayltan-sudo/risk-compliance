@@ -1,11 +1,14 @@
 import { useState } from "react";
 import { useStore } from "../store/useStore";
+import { liveExtractedFields } from "../store/selectors";
 import { Card, SectionHeading, Button } from "./Card";
 import { formatDate } from "../utils/format";
 import type { Assessment } from "../types";
 
 export function ExportPanel({ assessment }: { assessment: Assessment }) {
-  const extractedFields = useStore((s) => s.extractedFields).filter((f) => f.assessmentId === assessment.id);
+  const documents = useStore((s) => s.documents);
+  // FR1.5 — export reflects the live document version per period only.
+  const extractedFields = liveExtractedFields(useStore((s) => s.extractedFields), documents, assessment.id);
   const criterionInputs = useStore((s) => s.criterionInputs).filter((c) => c.assessmentId === assessment.id);
   const integrityChecks = useStore((s) => s.integrityChecks).filter((c) => c.assessmentId === assessment.id);
   const ratios = useStore((s) => s.ratios).filter((r) => r.assessmentId === assessment.id);

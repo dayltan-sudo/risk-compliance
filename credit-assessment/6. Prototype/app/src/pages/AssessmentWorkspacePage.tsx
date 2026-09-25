@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useStore } from "../store/useStore";
-import { isReturnedForRevision, lastReturnComment, reviewProgress } from "../store/selectors";
+import { isReturnedForRevision, lastReturnComment, liveExtractedFields, reviewProgress } from "../store/selectors";
 import { Card, SectionHeading, Button } from "../components/Card";
 import { AssessmentStateBadge, Badge } from "../components/Badge";
 import { DocumentUploadPanel } from "../components/DocumentUploadPanel";
@@ -21,6 +21,7 @@ export function AssessmentWorkspacePage() {
   const customers = useStore((s) => s.customers);
   const assessments = useStore((s) => s.assessments);
   const extractedFields = useStore((s) => s.extractedFields);
+  const documents = useStore((s) => s.documents);
   const criterionInputs = useStore((s) => s.criterionInputs);
   const ratings = useStore((s) => s.ratings);
   const approvalDecisions = useStore((s) => s.approvalDecisions);
@@ -49,7 +50,7 @@ export function AssessmentWorkspacePage() {
   const editable = assessment.state === "Draft";
   const returned = isReturnedForRevision(assessment, approvalDecisions);
   const returnComment = returned ? lastReturnComment(assessment, approvalDecisions) : undefined;
-  const progress = reviewProgress(extractedFields, criterionInputs, assessment.id, assessment.relationshipType);
+  const progress = reviewProgress(liveExtractedFields(extractedFields, documents, assessment.id), criterionInputs, assessment.id, assessment.relationshipType);
   const hasRating = ratings.some((r) => r.assessmentId === assessment.id);
 
   const tabs: { id: Tab; label: string; show: boolean }[] = [

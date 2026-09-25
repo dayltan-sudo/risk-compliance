@@ -110,17 +110,26 @@ export function DocumentUploadPanel({ assessment }: { assessment: Assessment }) 
       </Card>
 
       <Card>
-        <SectionHeading title="Documents on this assessment" />
+        <SectionHeading eyebrow="FR1.5" title="Documents on this assessment" dek="Re-uploading a period adds a new version; the prior version is kept, never overwritten, and its fields drop out of review." />
         <ul className="divide-y divide-[var(--line)]">
-          {assessmentDocs.map((d) => (
-            <li key={d.id} className="py-3">
-              <div className="font-medium text-sm">{d.fileName}</div>
-              <div className="text-xs text-[var(--muted)] font-mono mt-0.5">
-                {d.type}{d.period ? ` · ${d.period}` : ""} · v{d.version} · uploaded {formatDate(d.uploadDate)} by {d.uploader}
-                {d.financialsDate && ` · financials as at ${formatDate(d.financialsDate)}`}
-              </div>
-            </li>
-          ))}
+          {[...assessmentDocs]
+            .sort((a, b) => (a.period ?? "").localeCompare(b.period ?? "") || b.version - a.version)
+            .map((d) => {
+              const isSuperseded = assessmentDocs.some((other) => other.supersedesDocumentId === d.id);
+              return (
+                <li key={d.id} className="py-3">
+                  <div className="font-medium text-sm flex items-center gap-2">
+                    {d.fileName}
+                    {isSuperseded && <span className="text-[10px] font-mono uppercase tracking-wide text-[var(--muted)] border border-[var(--line)] rounded-full px-2 py-0.5">Superseded</span>}
+                  </div>
+                  <div className="text-xs text-[var(--muted)] font-mono mt-0.5">
+                    {d.type}{d.period ? ` · ${d.period}` : ""} · v{d.version} · uploaded {formatDate(d.uploadDate)} by {d.uploader}
+                    {d.financialsDate && ` · financials as at ${formatDate(d.financialsDate)}`}
+                    {d.supersedesDocumentId && ` · supersedes ${d.supersedesDocumentId}`}
+                  </div>
+                </li>
+              );
+            })}
           {assessmentDocs.length === 0 && <li className="py-3 text-sm text-[var(--muted)]">No documents yet.</li>}
         </ul>
       </Card>

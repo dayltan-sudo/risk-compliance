@@ -42,7 +42,7 @@ import { computeRatios } from "../engine/ratios";
 import { computeIntegrityChecks } from "../engine/integrityChecks";
 import { computeRating } from "../engine/rating";
 import { generateRiskCommentary } from "../engine/riskCommentary";
-import { deriveRelationshipType, openAssessmentForPair, reviewComplete } from "./selectors";
+import { deriveRelationshipType, liveExtractedFields, openAssessmentForPair, reviewComplete } from "./selectors";
 
 let idCounter = 1000;
 const nextId = (prefix: string) => `${prefix}-${idCounter++}`;
@@ -306,15 +306,24 @@ export const useStore = create<AppState>((set, get) => ({
     if (!period) return; // statement path requires a period
     if (assessment.periods.length >= 2 && !assessment.periods.includes(period)) return; // FR1.3 — exactly two periods
 
+    // FR1.5 — re-uploading a period creates a new version and never
+    // overwrites the prior one. The prior document row and its
+    // ExtractedField rows are left exactly as they are (not deleted, not
+    // mutated); only the new document becomes "live" for that period
+    // (selectors.liveDocumentIds/liveExtractedFields), which is what drives
+    // review counts and computation back to Unconfirmed on the new rows.
+    const priorVersionsForPeriod = state.documents.filter((d) => d.assessmentId === assessmentId && d.type !== "registry" && d.period === period);
+    const priorLatest = priorVersionsForPeriod.reduce<AppDocument | null>((max, d) => (!max || d.version > max.version ? d : max), null);
+
     const docId = nextId("doc");
     const doc: AppDocument = {
       id: docId, assessmentId, type, period, financialsDate: financialsDate ?? nowISO(),
       presentationCurrency: presentationCurrency ?? "SGD", presentationScale: presentationScale ?? "units",
-      statementBasis: statementBasis ?? "standalone", version: 1, uploader: currentUserId, uploadDate: nowISO(),
-      fileName, supersedesDocumentId: null,
+      statementBasis: statementBasis ?? "standalone", version: (priorLatest?.version ?? 0) + 1, uploader: currentUserId, uploadDate: nowISO(),
+      fileName, supersedesDocumentId: priorLatest?.id ?? null,
     };
 
-    const financials = synthesizeFinancials(`${assessment.customerId}-${assessment.division}-${period}`, hashBias(assessment.customerId));
+    const financials = synthesizeFinancials(`${assessment.customerId}-${assessment.division}-${period}-v${doc.version}`, hashBias(assessment.customerId));
     const newFields: ExtractedField[] = FIELD_DEFS.map((fdef, i) => ({
       id: nextId("f"),
       assessmentId,
@@ -326,7 +335,7 @@ export const useStore = create<AppState>((set, get) => ({
       originalExtractedValue: financials[fdef.name],
       scaleApplied: doc.presentationScale,
       currency: doc.presentationCurrency,
-      confidenceScore: synthesizeConfidence(`${assessment.customerId}-${period}-${fdef.name}`),
+      confidenceScore: synthesizeConfidence(`${assessment.customerId}-${period}-v${doc.version}-${fdef.name}`),
       sourcePointer: `p.${2 + (i % 6)}, ${fdef.section}, row '${fdef.name}' (${period})`,
       extractionModelVersion: EXTRACTION_MODEL_VERSION,
       status: "Unconfirmed",
@@ -335,11 +344,19 @@ export const useStore = create<AppState>((set, get) => ({
 
     set((s) => ({
       documents: [...s.documents, doc],
-      extractedFields: [...s.extractedFields.filter((f) => !(f.assessmentId === assessmentId && f.period === period)), ...newFields],
+      extractedFields: [...s.extractedFields, ...newFields],
       assessments: s.assessments.map((a) => (a.id === assessmentId && !a.periods.includes(period) ? { ...a, periods: [...a.periods, period].sort() } : a)),
     }));
 
-    get().logAudit({ entityType: "Document", entityId: docId, actor: currentUserId, action: "Document uploaded", beforeValue: null, afterValue: `${fileName} (${type}, ${period})`, timestamp: nowStamp() });
+    get().logAudit({
+      entityType: "Document",
+      entityId: docId,
+      actor: currentUserId,
+      action: priorLatest ? `Document uploaded — new version (v${doc.version}, supersedes ${priorLatest.id})` : "Document uploaded",
+      beforeValue: priorLatest ? `${priorLatest.fileName} (v${priorLatest.version})` : null,
+      afterValue: `${fileName} (${type}, ${period}, v${doc.version})`,
+      timestamp: nowStamp(),
+    });
     get().runIntegrityChecksAndRecency(assessmentId);
     get().checkReviewCompleteAndRecompute(assessmentId);
   },
@@ -499,12 +516,15 @@ export const useStore = create<AppState>((set, get) => ({
     const assessment = state.assessments.find((a) => a.id === assessmentId);
     if (!assessment || assessment.periods.length === 0) return;
     const now = nowISO();
-    const fields = state.extractedFields.filter((f) => f.assessmentId === assessmentId);
+    const fields = liveExtractedFields(state.extractedFields, state.documents, assessmentId);
     const currentPeriod = assessment.periods[assessment.periods.length - 1];
     const priorPeriod = assessment.periods[0];
     const checks = computeIntegrityChecks(assessmentId, fields, assessment.periods, currentPeriod, priorPeriod, now);
 
-    const latestDoc = state.documents.find((d) => d.assessmentId === assessmentId && d.period === currentPeriod);
+    // FR1.5 — the live (highest-version) document for the current period, not just the first upload.
+    const latestDoc = state.documents
+      .filter((d) => d.assessmentId === assessmentId && d.period === currentPeriod)
+      .reduce<AppDocument | null>((max, d) => (!max || d.version > max.version ? d : max), null);
     let recencyFlag: Assessment["recencyFlag"] = assessment.recencyFlag;
     if (latestDoc?.financialsDate) {
       const daysSince = (Date.now() - new Date(latestDoc.financialsDate).getTime()) / (1000 * 60 * 60 * 24);
@@ -523,7 +543,7 @@ export const useStore = create<AppState>((set, get) => ({
     const state = get();
     const assessment = state.assessments.find((a) => a.id === assessmentId);
     if (!assessment) return;
-    if (!reviewComplete(state.extractedFields, state.criterionInputs, assessment)) return;
+    if (!reviewComplete(liveExtractedFields(state.extractedFields, state.documents, assessmentId), state.criterionInputs, assessment)) return;
     get().recompute(assessmentId);
   },
 
@@ -535,7 +555,7 @@ export const useStore = create<AppState>((set, get) => ({
     const currentPeriod = assessment.periods[assessment.periods.length - 1];
     const priorPeriod = assessment.periods[0];
 
-    const fields = state.extractedFields.filter((f) => f.assessmentId === assessmentId && f.status !== "Unconfirmed");
+    const fields = liveExtractedFields(state.extractedFields, state.documents, assessmentId).filter((f) => f.status !== "Unconfirmed");
     const criterionInputs = state.criterionInputs.filter((c) => c.assessmentId === assessmentId && c.status !== "Unconfirmed");
 
     const newRatios = computeRatios(assessmentId, fields, criterionInputs, currentPeriod, priorPeriod, assessment.assessmentYear, now);
