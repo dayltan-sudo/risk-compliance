@@ -1,32 +1,34 @@
-# React + TypeScript + Vite
+# Fiscus (prototype v2)
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Credit-assessment app: upload financial statements, LLM extracts fields, reviewer confirms, deterministic scorecard rates, LLM writes risk commentary, approval workflow.
 
-Currently, two official plugins are available:
+Live: https://fiscus-dayl.vercel.app
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Stack
+- Frontend: Vite, React, TypeScript, Tailwind, Zustand (client cache only)
+- API: Hono in `server/`, single Vercel Node function via `api/index.ts`
+- DB: Neon Postgres via Drizzle (`server/db/schema.ts`, migrations in `drizzle/`)
+- Files: Vercel Blob (store `fiscus-documents`)
+- LLM: OpenAI-compatible endpoint (`server/lib/llm.ts`); two surfaces only: `server/lib/extraction.ts`, `server/lib/riskCommentaryLLM.ts`
+- Scoring: pure functions in `src/engine/` (ratios, rating, integrity checks), covered by vitest
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+## Run locally
+```bash
+npm install
+npx vercel env pull .env.local
+npm run dev:all
 ```
+Web on :5173, API on :8787 (proxied). Log in with `APP_PASSWORD`.
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Local dev and production share one database. Test data you create locally appears in production.
+
+## Commands
+- `npm test` — vitest
+- `npx tsc -b` — typecheck
+- `npm run db:generate` / `npm run db:migrate` — schema changes
+
+## Env vars (set in Vercel, never commit)
+`DATABASE_URL`, `APP_PASSWORD`, `SESSION_SECRET`, `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`, `BLOB_STORE_ID`. Template: `.env.example`.
+
+## Deploy
+Vercel project `fiscus-prototype-v2`, Root Directory `fiscus-prototype-v2`. Merge to `main` deploys to production. Work on a branch, open a PR.
