@@ -3,9 +3,11 @@ import { useStore } from "../store/useStore";
 import { liveExtractedFields } from "../store/selectors";
 import { Card, SectionHeading, Button } from "./Card";
 import { formatDate } from "../utils/format";
+import { exportAssessmentToExcel, exportAssessmentToPdf, type ExportBundle } from "../utils/exportAssessment";
 import type { Assessment } from "../types";
 
 export function ExportPanel({ assessment }: { assessment: Assessment }) {
+  const customer = useStore((s) => s.customers).find((c) => c.id === assessment.customerId)!;
   const documents = useStore((s) => s.documents);
   // FR1.5 — export reflects the live document version per period only.
   const extractedFields = liveExtractedFields(useStore((s) => s.extractedFields), documents, assessment.id);
@@ -15,17 +17,28 @@ export function ExportPanel({ assessment }: { assessment: Assessment }) {
   const rating = useStore((s) => s.ratings).find((r) => r.assessmentId === assessment.id);
   const commentary = useStore((s) => s.riskCommentaries).find((c) => c.assessmentId === assessment.id && c.supersededAt === null);
   const decisions = useStore((s) => s.approvalDecisions).filter((d) => d.assessmentId === assessment.id);
-  const [generated, setGenerated] = useState<"pdf" | "excel" | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const extractionModelVersions = Array.from(new Set(extractedFields.map((f) => f.extractionModelVersion).filter((v): v is string => !!v)));
   const failedChecks = integrityChecks.filter((c) => !c.passed).length;
+
+  const bundle: ExportBundle = { customer, assessment, extractedFields, criterionInputs, integrityChecks, ratios, rating, commentary, decisions };
+
+  function tryExport(fn: (b: ExportBundle) => void) {
+    try {
+      fn(bundle);
+      setError(null);
+    } catch {
+      setError("Could not generate the file. Try again, or check the browser console for details.");
+    }
+  }
 
   return (
     <Card>
       <SectionHeading
         eyebrow="FR10"
         title="Export & Reporting"
-        dek="Read-only, assembled entirely from stored results — never a second path to a value the pipeline didn't produce."
+        dek="Assembled entirely from stored results — never a second path to a value the pipeline didn't produce — and downloaded as a real file."
       />
       <div className="grid grid-cols-2 gap-6 mb-6">
         <div>
@@ -50,16 +63,12 @@ export function ExportPanel({ assessment }: { assessment: Assessment }) {
         </div>
       </div>
       <div className="flex gap-2">
-        <Button onClick={() => setGenerated("pdf")}>Export PDF</Button>
-        <Button variant="secondary" onClick={() => setGenerated("excel")}>
+        <Button onClick={() => tryExport(exportAssessmentToPdf)}>Export PDF</Button>
+        <Button variant="secondary" onClick={() => tryExport(exportAssessmentToExcel)}>
           Export Excel
         </Button>
       </div>
-      {generated && (
-        <p className="text-sm text-[var(--muted)] mt-3">
-          {generated === "pdf" ? "PDF" : "Excel"} file assembled from the data above. (Prototype — no file is actually produced.)
-        </p>
-      )}
+      {error && <p className="text-sm text-[var(--crit)] mt-3">{error}</p>}
     </Card>
   );
 }

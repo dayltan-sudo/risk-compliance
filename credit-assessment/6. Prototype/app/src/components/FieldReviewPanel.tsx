@@ -4,23 +4,11 @@ import { liveExtractedFields, reviewProgress } from "../store/selectors";
 import { fieldPeriodChange } from "../engine/ratios";
 import { Card, SectionHeading, Button } from "./Card";
 import { ConfidenceBadge, FieldStatusBadge, IntegrityCheckBadge, RecencyBadge } from "./Badge";
-import { CONFIDENCE_THRESHOLDS, FIELD_DEFS } from "../data/config";
+import { CONFIDENCE_THRESHOLDS, FIELD_DEFS, INTEGRITY_CHECK_LABELS } from "../data/config";
 import { formatCurrency, formatChangePct } from "../utils/format";
-import type { Assessment, IntegrityCheckName, StatementSection } from "../types";
+import type { Assessment, StatementSection } from "../types";
 
 const SECTIONS: StatementSection[] = ["Balance Sheet", "Income Statement", "Cash Flow"];
-
-const CHECK_LABELS: Record<IntegrityCheckName, string> = {
-  npat_le_sales: "NPAT ≤ Sales",
-  cash_le_current_assets: "Cash ≤ Current Assets",
-  current_assets_le_total_assets: "Current Assets ≤ Total Assets",
-  non_current_assets_le_total_assets: "Non-Current Assets ≤ Total Assets",
-  current_liabilities_le_total_liabilities: "Current Liabilities ≤ Total Liabilities",
-  non_current_liabilities_le_total_liabilities: "Non-Current Liabilities ≤ Total Liabilities",
-  total_assets_eq_ca_plus_nca: "Total Assets = Current Assets + Non-Current Assets",
-  total_liabilities_eq_cl_plus_ncl: "Total Liabilities = Current Liabilities + Non-Current Liabilities",
-  equity_plus_liabilities_eq_assets: "Total Equity + Total Liabilities = Total Assets",
-};
 
 export function FieldReviewPanel({ assessment, editable }: { assessment: Assessment; editable: boolean }) {
   const allFields = useStore((s) => s.extractedFields);
@@ -126,10 +114,16 @@ export function FieldReviewPanel({ assessment, editable }: { assessment: Assessm
                               }`}
                             >
                               <div className="font-mono text-[13px]">{displayValue}</div>
-                              <div className="flex gap-1 mt-1 flex-wrap">
+                              <div className="flex gap-1 mt-1 flex-wrap items-center">
                                 <FieldStatusBadge status={f.status} />
                                 <ConfidenceBadge score={f.confidenceScore} thresholds={CONFIDENCE_THRESHOLDS} />
-                                {f.scaleApplied && f.scaleApplied !== "units" && <span className="text-[10px] font-mono text-[var(--muted)]">({f.scaleApplied})</span>}
+                                {/* FR3.2 — currency and presentation scale shown as provenance on every cell, not just the side panel */}
+                                {f.currency && (
+                                  <span className="text-[10px] font-mono text-[var(--muted)]">
+                                    {f.currency}
+                                    {f.scaleApplied && f.scaleApplied !== "units" && ` · ${f.scaleApplied}`}
+                                  </span>
+                                )}
                               </div>
                             </button>
                           </td>
@@ -156,7 +150,7 @@ export function FieldReviewPanel({ assessment, editable }: { assessment: Assessm
                     <li key={c.id} className="text-sm border-b border-[var(--line)] pb-2 last:border-0">
                       <div className="flex items-center gap-2">
                         <IntegrityCheckBadge passed={c.passed} />
-                        <span>{CHECK_LABELS[c.checkName]}</span>
+                        <span>{INTEGRITY_CHECK_LABELS[c.checkName]}</span>
                       </div>
                       {!c.passed && (
                         <div className="mt-1 pl-1 text-xs text-[var(--muted)] font-mono">

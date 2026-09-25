@@ -1,4 +1,4 @@
-import type { CriterionNumberAll, PresentationScale, StandardFieldName, StatementSection } from "../types";
+import type { CriterionNumberAll, IntegrityCheckName, PresentationScale, StandardFieldName, StatementSection } from "../types";
 
 // Baseline_Scorecard_Extract_v1.2.md / Credit_Assessment_PRD_MVP.md FR6.14:
 // methodology is code, not runtime config. Bump SCORECARD_VERSION whenever a
@@ -95,5 +95,19 @@ export const RATING_CLASSES: { min: number; max: number; ratingClass: "A" | "B" 
 export const DIVISIONS = ["Trade Finance", "Working Capital Solutions", "Structured Trade"];
 
 export const CURRENCIES = ["SGD", "USD"];
+
+// FR3.6/3.7/FR10.1 — shared labels for the nine integrity checks; single
+// source of truth so the review screen and the export use the same wording.
+export const INTEGRITY_CHECK_LABELS: Record<IntegrityCheckName, string> = {
+  npat_le_sales: "NPAT ≤ Sales",
+  cash_le_current_assets: "Cash ≤ Current Assets",
+  current_assets_le_total_assets: "Current Assets ≤ Total Assets",
+  non_current_assets_le_total_assets: "Non-Current Assets ≤ Total Assets",
+  current_liabilities_le_total_liabilities: "Current Liabilities ≤ Total Liabilities",
+  non_current_liabilities_le_total_liabilities: "Non-Current Liabilities ≤ Total Liabilities",
+  total_assets_eq_ca_plus_nca: "Total Assets = Current Assets + Non-Current Assets",
+  total_liabilities_eq_cl_plus_ncl: "Total Liabilities = Current Liabilities + Non-Current Liabilities",
+  equity_plus_liabilities_eq_assets: "Total Equity + Total Liabilities = Total Assets",
+};
 
 export const PRESENTATION_SCALES: PresentationScale[] = ["units", "thousands", "millions"];
