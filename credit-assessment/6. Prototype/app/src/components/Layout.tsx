@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from "react-router-dom";
-import { useStore } from "../store/useStore";
+import { useStore, resetPrototypeData } from "../store/useStore";
 import { USERS } from "../data/seed";
 import { Badge } from "./Badge";
 import { SCORECARD_VERSION } from "../data/config";
@@ -7,6 +7,12 @@ import { SCORECARD_VERSION } from "../data/config";
 export function Layout() {
   const currentUserId = useStore((s) => s.currentUserId);
   const setCurrentUser = useStore((s) => s.setCurrentUser);
+
+  function handleReset() {
+    if (window.confirm("Reset this browser's prototype data back to the seed scenarios? Anything entered in this session will be lost.")) {
+      resetPrototypeData();
+    }
+  }
 
   const navClass = ({ isActive }: { isActive: boolean }) =>
     `px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
@@ -47,6 +53,13 @@ export function Layout() {
                 </option>
               ))}
             </select>
+            <button
+              onClick={handleReset}
+              title="Clears this browser's persisted prototype data and reloads the seed scenarios"
+              className="text-xs text-[var(--muted)] hover:text-[var(--crit)] hover:underline"
+            >
+              Reset data
+            </button>
           </div>
         </div>
       </header>

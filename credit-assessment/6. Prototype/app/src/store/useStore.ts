@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 import type {
   AmendmentHistoryEntry,
   AppDocument,
@@ -49,6 +50,47 @@ const nextId = (prefix: string) => `${prefix}-${idCounter++}`;
 const nowISO = () => new Date().toISOString().slice(0, 10);
 const nowStamp = () => new Date().toISOString();
 
+// This is still a frontend prototype with no backend — persistence here
+// means "survives a page refresh in this browser," not a real database.
+// zustand/persist writes the whole store to localStorage on every change.
+export const PERSIST_KEY = "fiscus-store-v1";
+
+// All store-generated IDs are `${prefix}-${idCounter++}`, but idCounter is a
+// module-level counter, not store state, so it doesn't survive a page
+// reload on its own. Without this, a rehydrated store would restart
+// idCounter at 1000 and immediately reissue IDs already used by
+// previously-generated (and now persisted) records. Seed data uses
+// hand-picked non-numeric-suffixed IDs (e.g. "c-meridian"), so it never
+// collides with this pattern — only re-scan it defensively in case that
+// changes.
+const NUMERIC_ID_SUFFIX = /-(\d+)$/;
+function recalibrateIdCounter(state: Pick<AppState, "customers" | "documents" | "assessments" | "extractedFields" | "criterionInputs" | "approvalDecisions" | "auditLog">): void {
+  const allIds = [
+    ...state.customers.map((c) => c.id),
+    ...state.documents.map((d) => d.id),
+    ...state.assessments.map((a) => a.id),
+    ...state.extractedFields.map((f) => f.id),
+    ...state.criterionInputs.map((c) => c.id),
+    ...state.approvalDecisions.map((d) => d.id),
+    ...state.auditLog.map((e) => e.id),
+  ];
+  let maxSeen = 0;
+  for (const id of allIds) {
+    const m = NUMERIC_ID_SUFFIX.exec(id);
+    if (m) maxSeen = Math.max(maxSeen, Number(m[1]));
+  }
+  idCounter = Math.max(idCounter, maxSeen + 1);
+}
+
+/** Clears persisted state and reloads from the seed data baked into this
+ * build — the escape hatch for a prototype session that's drifted somewhere
+ * confusing, or for picking up new demo scenarios added to data/seed.ts
+ * since a browser last persisted its own copy. */
+export function resetPrototypeData(): void {
+  localStorage.removeItem(PERSIST_KEY);
+  window.location.reload();
+}
+
 interface ActionResult {
   ok: boolean;
   reason?: string;
@@ -68,6 +110,15 @@ function canReturn(_assessment: Assessment, _actor: string): ActionResult {
 }
 
 const POLICY_VERSION = "mvp-allow-all-v1";
+
+// FR7.8 — an Approved or Rejected assessment is immutable. The UI already
+// hides editable controls once state !== "Draft" (AssessmentWorkspacePage's
+// `editable` flag), but that's presentation, not enforcement: nothing
+// upstream of this file rendering the wrong prop should be able to mutate a
+// closed assessment. Every mutating action below checks this before writing.
+function assessmentIsDraft(assessments: Assessment[], assessmentId: string): boolean {
+  return assessments.find((a) => a.id === assessmentId)?.state === "Draft";
+}
 
 function emptyCriterionInput(assessmentId: string, criterionNumber: CriterionNumber): CriterionInput {
   return {
@@ -184,7 +235,9 @@ interface AppState {
   recompute: (assessmentId: string) => void;
 }
 
-export const useStore = create<AppState>((set, get) => ({
+export const useStore = create<AppState>()(
+  persist(
+    (set, get) => ({
   currentUserId: USERS[0].id,
   customers: seedCustomers,
   documents: seedDocuments,
@@ -254,6 +307,7 @@ export const useStore = create<AppState>((set, get) => ({
     const state = get();
     const assessment = state.assessments.find((a) => a.id === assessmentId);
     if (!assessment) return { ok: false, reason: "Assessment not found." };
+    if (assessment.state !== "Draft") return { ok: false, reason: "Only a Draft assessment can be edited (FR7.8)." };
     if (!reason.trim()) return { ok: false, reason: "A reason is required to override the relationship type (FR5.13)." };
     if (assessment.relationshipType === newValue) return { ok: true };
 
@@ -279,6 +333,7 @@ export const useStore = create<AppState>((set, get) => ({
     const currentUserId = state.currentUserId;
     const assessment = state.assessments.find((a) => a.id === assessmentId);
     if (!assessment) return;
+    if (assessment.state !== "Draft") return; // FR7.8 — an Approved/Rejected assessment is immutable; enforced here, not just by the editable UI gate
 
     if (type === "registry") {
       const docId = nextId("doc");
@@ -365,6 +420,7 @@ export const useStore = create<AppState>((set, get) => ({
     const state = get();
     const field = state.extractedFields.find((f) => f.id === fieldId);
     if (!field || field.status !== "Unconfirmed") return;
+    if (!assessmentIsDraft(state.assessments, field.assessmentId)) return; // FR7.8
     const confirmedValue = value === undefined ? field.value : value; // FR3.5 — Confirm with no value asserts genuine absence
     set((s) => ({ extractedFields: s.extractedFields.map((f) => (f.id === fieldId ? { ...f, value: confirmedValue, status: "Confirmed" as FieldStatus } : f)) }));
     get().logAudit({ entityType: "ExtractedField", entityId: fieldId, actor: state.currentUserId, action: `Confirmed: ${field.fieldName} (${field.period})`, beforeValue: "Unconfirmed", afterValue: confirmedValue === null ? "Confirmed absent" : "Confirmed", timestamp: nowStamp() });
@@ -375,6 +431,7 @@ export const useStore = create<AppState>((set, get) => ({
     const state = get();
     const field = state.extractedFields.find((f) => f.id === fieldId);
     if (!field) return;
+    if (!assessmentIsDraft(state.assessments, field.assessmentId)) return; // FR7.8
     const entry: AmendmentHistoryEntry = { previousValue: field.value, previousStatus: field.status, newValue, newStatus: "Amended", reason, actor: state.currentUserId, timestamp: nowStamp() };
     set((s) => ({
       extractedFields: s.extractedFields.map((f) => (f.id === fieldId ? { ...f, value: newValue, status: "Amended" as FieldStatus, amendmentHistory: [...f.amendmentHistory, entry] } : f)),
@@ -385,6 +442,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   bulkConfirmHigh: (assessmentId) => {
     const state = get();
+    if (!assessmentIsDraft(state.assessments, assessmentId)) return; // FR7.8
     const eligible = state.extractedFields.filter((f) => f.assessmentId === assessmentId && f.status === "Unconfirmed" && (f.confidenceScore ?? 0) >= CONFIDENCE_THRESHOLDS.high);
     if (eligible.length === 0) return;
     const eligibleIds = new Set(eligible.map((f) => f.id));
@@ -398,6 +456,7 @@ export const useStore = create<AppState>((set, get) => ({
     const assessment = state.assessments.find((a) => a.id === assessmentId);
     const input = state.criterionInputs.find((c) => c.assessmentId === assessmentId && c.criterionNumber === criterionNumber);
     if (!assessment || !input) return { ok: false, reason: "Criterion input not found." };
+    if (assessment.state !== "Draft") return { ok: false, reason: "Only a Draft assessment can be edited (FR7.8)." };
     if (input.status !== "Unconfirmed") return { ok: false, reason: "Already reviewed — use Amend instead." };
     const validation = validateCriterionInput(criterionNumber, values, assessment.relationshipType);
     if (!validation.ok) return validation;
@@ -417,6 +476,7 @@ export const useStore = create<AppState>((set, get) => ({
     const assessment = state.assessments.find((a) => a.id === assessmentId);
     const input = state.criterionInputs.find((c) => c.assessmentId === assessmentId && c.criterionNumber === criterionNumber);
     if (!assessment || !input) return { ok: false, reason: "Criterion input not found." };
+    if (assessment.state !== "Draft") return { ok: false, reason: "Only a Draft assessment can be edited (FR7.8)." };
     const validation = validateCriterionInput(criterionNumber, values, assessment.relationshipType);
     if (!validation.ok) return validation;
 
@@ -573,7 +633,16 @@ export const useStore = create<AppState>((set, get) => ({
       ],
     }));
   },
-}));
+    }),
+    {
+      name: PERSIST_KEY,
+      storage: createJSONStorage(() => localStorage),
+      onRehydrateStorage: () => (state) => {
+        if (state) recalibrateIdCounter(state);
+      },
+    },
+  ),
+);
 
 function summarizeCriterionInput(c: CriterionInput): string {
   switch (c.criterionNumber) {
