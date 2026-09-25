@@ -1,0 +1,1 @@
+ALTER TABLE "extracted_fields" ALTER COLUMN "document_id" SET NOT NULL;
