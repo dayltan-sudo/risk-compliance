@@ -18,7 +18,10 @@ import { requireActor } from "../lib/actor.js";
 import { writeAudit } from "../lib/audit.js";
 import { emptyCriterionInput, CRITERION_NUMBERS } from "../lib/criterionSkeleton.js";
 import { canApprove, canReturn, canSubmit, POLICY_VERSION } from "../lib/policy.js";
-import { deriveRelationshipType, openAssessmentForPair } from "../../src/store/selectors.js";
+import { deriveRelationshipType, openAssessmentForPair, reviewComplete } from "../../src/store/selectors.js";
+import { asCriterionInputs, asExtractedFields } from "../lib/rowMappers.js";
+import { checkReviewCompleteAndRecompute, supersedeLiveResults } from "../lib/recompute.js";
+import { notDraftMessage } from "../lib/guards.js";
 import { getAgentActivity } from "../lib/agentActivity.js";
 import type { Assessment } from "../../src/types.js";
 
@@ -147,6 +150,8 @@ assessmentsRoute.patch("/:id/relationship-type", async (c) => {
   const [assessment] = await db.select().from(assessments).where(eq(assessments.id, id));
   if (!assessment) return c.json({ error: "Assessment not found" }, 404);
 
+  if (assessment.state !== "Draft") return c.json({ error: notDraftMessage(assessment, "the relationship type") }, 409);
+
   const { newValue, reason } = parsed.data;
   if (assessment.relationshipType === newValue) return c.json(assessment);
 
@@ -176,6 +181,12 @@ assessmentsRoute.patch("/:id/relationship-type", async (c) => {
     afterValue: newValue,
   });
 
+  // The weight set follows the relationship type, so the live rating is now
+  // wrong. Rescore if the review gate still holds; otherwise (e.g. criterion 11
+  // just reset to Unconfirmed) retire the stale results so none is "live".
+  const recomputed = await checkReviewCompleteAndRecompute(id);
+  if (!recomputed) await supersedeLiveResults(id);
+
   const [updated] = await db.select().from(assessments).where(eq(assessments.id, id));
   return c.json(updated);
 });
@@ -192,8 +203,19 @@ assessmentsRoute.post("/:id/submit", async (c) => {
   const guard = canSubmit(assessment, actor);
   if (!guard.ok) return c.json(guard, 403);
 
+  const [rawFields, rawCriteria] = await Promise.all([
+    db.select().from(extractedFields).where(eq(extractedFields.assessmentId, id)),
+    db.select().from(criterionInputs).where(eq(criterionInputs.assessmentId, id)),
+  ]);
+  if (!reviewComplete(asExtractedFields(rawFields), asCriterionInputs(rawCriteria), assessment)) {
+    return c.json({ ok: false, reason: "Every field and applicable criterion must be reviewed before submission (FR3.8) — an item is still Unconfirmed." }, 409);
+  }
+
   const [rating] = await db.select().from(ratings).where(and(eq(ratings.assessmentId, id), isNull(ratings.supersededAt)));
   if (!rating) return c.json({ ok: false, reason: "A computed rating is required before submission (FR7.2) — complete every review item first." }, 409);
+  if (rating.weightSet !== (assessment.relationshipType === "New" ? "new" : "renewal")) {
+    return c.json({ ok: false, reason: "The rating was scored with a different relationship type's weights — it must be recomputed before submission." }, 409);
+  }
 
   const now = nowDate();
   await db.update(assessments).set({ state: "Submitted", submittedBy: actor, submittedAt: now }).where(eq(assessments.id, id));

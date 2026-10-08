@@ -12,6 +12,8 @@ export interface CriterionInputValues {
   evidencePeriodOrDate?: string | null;
 }
 
+const MIN_YEAR_REGISTERED = 1800;
+
 interface ValidationResult {
   ok: boolean;
   reason?: string;
@@ -20,16 +22,26 @@ interface ValidationResult {
 /** Field Review.md §8's per-criterion validation table (FR5.6, FR5.10,
  * FR5.12, FR5.15, FR5.5) — ported verbatim from useStore.ts's
  * validateCriterionInput. Runs on both Confirm and Amend. */
-export function validateCriterionInput(criterionNumber: CriterionNumber, v: CriterionInputValues, relationshipType: RelationshipType): ValidationResult {
+export function validateCriterionInput(
+  criterionNumber: CriterionNumber,
+  v: CriterionInputValues,
+  relationshipType: RelationshipType,
+  assessmentYear: number,
+): ValidationResult {
   if (criterionNumber === 5) {
     if (v.paidUpCapital === null || v.paidUpCapital === undefined || v.totalExposure === null || v.totalExposure === undefined) {
       return { ok: false, reason: "Paid-up capital and total exposure are both required." };
     }
-    if (v.totalExposure <= 0) return { ok: false, reason: "Total exposure must be greater than zero (FR5.15)." };
+    if (!(v.paidUpCapital > 0)) return { ok: false, reason: "Paid-up capital must be greater than zero." };
+    if (!(v.totalExposure > 0)) return { ok: false, reason: "Total exposure must be greater than zero (FR5.15)." };
+    if (!v.currency?.trim()) return { ok: false, reason: "Currency is required — paid-up capital and total exposure must be in the same currency (FR5.6)." };
     return { ok: true };
   }
   if (criterionNumber === 7) {
     if (v.yearRegisteredSg === null || v.yearRegisteredSg === undefined) return { ok: false, reason: "Year registered in Singapore is required." };
+    if (!Number.isInteger(v.yearRegisteredSg) || v.yearRegisteredSg < MIN_YEAR_REGISTERED || v.yearRegisteredSg > assessmentYear) {
+      return { ok: false, reason: `Year registered in Singapore must be a year between ${MIN_YEAR_REGISTERED} and ${assessmentYear}.` };
+    }
     return { ok: true };
   }
   if (criterionNumber === 8) {
@@ -46,6 +58,23 @@ export function validateCriterionInput(criterionNumber: CriterionNumber, v: Crit
   if (!v.promptPaymentRecord) return { ok: false, reason: "A prompt payment record selection is required." };
   if (!v.evidenceSource?.trim() || !v.evidencePeriodOrDate?.trim()) return { ok: false, reason: "System checked and period covered are both required to confirm (FR5.12)." };
   return { ok: true };
+}
+
+/** FR5.6 — a prefilled paid-up capital figure was read in one currency; the
+ * reviewer cannot relabel it to another without also changing the figure
+ * (the system converts nothing). */
+export function checkPaidUpCurrencyMatch(
+  existing: { source: string | null; currency: string | null; paidUpCapital: number | null },
+  v: CriterionInputValues,
+): ValidationResult {
+  const prefilled = existing.source === "registry" || existing.source === "statement-note";
+  if (!prefilled || !existing.currency || !v.currency) return { ok: true };
+  if (existing.currency.toUpperCase() === v.currency.toUpperCase()) return { ok: true };
+  if (v.paidUpCapital !== existing.paidUpCapital) return { ok: true };
+  return {
+    ok: false,
+    reason: `Paid-up capital was read from the ${existing.source} in ${existing.currency}. Currency ${v.currency} does not match — enter the capital in ${v.currency} or keep ${existing.currency} (FR5.6).`,
+  };
 }
 
 export function summarizeCriterionInput(c: { criterionNumber: CriterionNumber } & CriterionInputValues): string {

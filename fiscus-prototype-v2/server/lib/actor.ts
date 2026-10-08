@@ -1,11 +1,8 @@
 import type { Context } from "hono";
 
-/** No per-user login at MVP (single shared password gates the whole app, per
- * PRD §1: "one authenticated user type... No roles, no permission matrix").
- * The client still labels every action with a chosen name for FR9.1's
- * actor/timestamp attribution — the server just trusts and records it,
- * exactly as the prototype's USERS dropdown did against the in-memory store. */
+/** FR9.1 actor attribution. Set by requireSession from the signed session
+ * cookie (the user chosen at login / via the header picker); the client
+ * cannot supply or spoof it. */
 export function requireActor(c: Context): string | null {
-  const actor = c.req.header("x-actor")?.trim();
-  return actor && actor.length > 0 ? actor : null;
+  return c.get("actor") ?? null;
 }

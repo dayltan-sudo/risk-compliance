@@ -19,7 +19,7 @@ import type {
   Ratio,
   StatementBasis,
 } from "../types.js";
-import { USERS } from "../data/seed.js";
+import { USERS } from "../data/users.js";
 import { api, ApiError } from "../api/client.js";
 
 interface ActionResult {
@@ -53,6 +53,9 @@ interface AssessmentDetail {
 
 interface AppState {
   currentUserId: string;
+  /** True once the first bootstrap has landed; routes that resolve a customer
+   * or assessment from the lists must wait for it. */
+  loaded: boolean;
   customers: Customer[];
   documents: AppDocument[];
   assessments: Assessment[];
@@ -65,7 +68,11 @@ interface AppState {
   approvalDecisions: ApprovalDecision[];
   auditLog: AuditLogEntry[];
 
-  setCurrentUser: (userId: string) => void;
+  /** Adopt the user the server session already carries (no network call). */
+  adoptSessionUser: (userId: string) => void;
+  /** Switch the acting user; the server re-signs the session so audit
+   * attribution follows. */
+  switchUser: (userId: string) => Promise<ActionResult>;
 
   loadBootstrap: () => Promise<void>;
   loadAssessmentDetail: (assessmentId: string) => Promise<void>;
@@ -113,6 +120,7 @@ function toActionResult(err: unknown, fallback: string): ActionResult {
 
 export const useStore = create<AppState>((set, get) => ({
   currentUserId: USERS[0].id,
+  loaded: false,
   customers: [],
   documents: [],
   assessments: [],
@@ -125,7 +133,19 @@ export const useStore = create<AppState>((set, get) => ({
   approvalDecisions: [],
   auditLog: [],
 
-  setCurrentUser: (userId) => set({ currentUserId: userId }),
+  adoptSessionUser: (userId) => {
+    if (USERS.some((u) => u.id === userId)) set({ currentUserId: userId });
+  },
+
+  switchUser: async (userId) => {
+    try {
+      await api.setActor(userId);
+      set({ currentUserId: userId });
+      return { ok: true };
+    } catch (err) {
+      return toActionResult(err, "Could not switch user.");
+    }
+  },
 
   loadBootstrap: async () => {
     const data = (await api.bootstrap()) as {
@@ -143,6 +163,7 @@ export const useStore = create<AppState>((set, get) => ({
       documents: data.documents,
       approvalDecisions: data.approvalDecisions,
       auditLog: data.auditLog,
+      loaded: true,
     });
   },
 
@@ -165,20 +186,20 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   createCustomer: async (name, industry) => {
-    const customer = (await api.createCustomer(name, industry, get().currentUserId)) as Customer;
+    const customer = (await api.createCustomer(name, industry)) as Customer;
     set((s) => ({ customers: [...s.customers, customer] }));
     return customer.id;
   },
 
   startAssessment: async (customerId, division) => {
-    const assessment = (await api.startAssessment(customerId, division, get().currentUserId)) as Assessment;
+    const assessment = (await api.startAssessment(customerId, division)) as Assessment;
     set((s) => ({ assessments: upsert(s.assessments, assessment) }));
     return assessment.id;
   },
 
   overrideRelationshipType: async (assessmentId, newValue, reason) => {
     try {
-      const assessment = (await api.overrideRelationshipType(assessmentId, newValue, reason, get().currentUserId)) as Assessment;
+      const assessment = (await api.overrideRelationshipType(assessmentId, newValue, reason)) as Assessment;
       set((s) => ({ assessments: upsert(s.assessments, assessment) }));
       await get().loadAssessmentDetail(assessmentId);
       return { ok: true };
@@ -198,7 +219,7 @@ export const useStore = create<AppState>((set, get) => ({
       if (presentationScale) form.set("presentationScale", presentationScale);
       if (statementBasis) form.set("statementBasis", statementBasis);
 
-      await api.uploadDocument(assessmentId, form, get().currentUserId);
+      await api.uploadDocument(assessmentId, form);
       await get().loadAssessmentDetail(assessmentId);
       return { ok: true };
     } catch (err) {
@@ -209,25 +230,25 @@ export const useStore = create<AppState>((set, get) => ({
   confirmField: async (fieldId, value) => {
     const field = get().extractedFields.find((f) => f.id === fieldId);
     if (!field) return;
-    await api.confirmField(fieldId, value, get().currentUserId);
+    await api.confirmField(fieldId, value);
     await get().loadAssessmentDetail(field.assessmentId);
   },
 
   amendField: async (fieldId, newValue, reason) => {
     const field = get().extractedFields.find((f) => f.id === fieldId);
     if (!field) return;
-    await api.amendField(fieldId, newValue, reason, get().currentUserId);
+    await api.amendField(fieldId, newValue, reason);
     await get().loadAssessmentDetail(field.assessmentId);
   },
 
   bulkConfirmHigh: async (assessmentId) => {
-    await api.bulkConfirmHigh(assessmentId, get().currentUserId);
+    await api.bulkConfirmHigh(assessmentId);
     await get().loadAssessmentDetail(assessmentId);
   },
 
   confirmCriterionInput: async (assessmentId, criterionNumber, values) => {
     try {
-      const result = await api.confirmCriterion(assessmentId, criterionNumber, values, get().currentUserId);
+      const result = await api.confirmCriterion(assessmentId, criterionNumber, values);
       if (result.ok) await get().loadAssessmentDetail(assessmentId);
       return result;
     } catch (err) {
@@ -237,7 +258,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   amendCriterionInput: async (assessmentId, criterionNumber, values, reason) => {
     try {
-      const result = await api.amendCriterion(assessmentId, criterionNumber, values, reason, get().currentUserId);
+      const result = await api.amendCriterion(assessmentId, criterionNumber, values, reason);
       if (result.ok) await get().loadAssessmentDetail(assessmentId);
       return result;
     } catch (err) {
@@ -247,7 +268,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   submitForApproval: async (assessmentId) => {
     try {
-      const result = await api.submitAssessment(assessmentId, get().currentUserId);
+      const result = await api.submitAssessment(assessmentId);
       if (result.ok) await get().loadAssessmentDetail(assessmentId);
       return result;
     } catch (err) {
@@ -257,7 +278,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   approveAssessment: async (assessmentId, comments) => {
     try {
-      const result = await api.decideAssessment(assessmentId, "Approve", comments, get().currentUserId);
+      const result = await api.decideAssessment(assessmentId, "Approve", comments);
       if (result.ok) await get().loadAssessmentDetail(assessmentId);
       return result;
     } catch (err) {
@@ -267,7 +288,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   rejectAssessment: async (assessmentId, comments) => {
     try {
-      const result = await api.decideAssessment(assessmentId, "Reject", comments, get().currentUserId);
+      const result = await api.decideAssessment(assessmentId, "Reject", comments);
       if (result.ok) await get().loadAssessmentDetail(assessmentId);
       return result;
     } catch (err) {
@@ -277,7 +298,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   returnAssessment: async (assessmentId, comments) => {
     try {
-      const result = await api.decideAssessment(assessmentId, "Return", comments, get().currentUserId);
+      const result = await api.decideAssessment(assessmentId, "Return", comments);
       if (result.ok) await get().loadAssessmentDetail(assessmentId);
       return result;
     } catch (err) {
@@ -287,5 +308,5 @@ export const useStore = create<AppState>((set, get) => ({
 }));
 
 export function useCurrentUser() {
-  return useStore((s) => USERS.find((u) => u.id === s.currentUserId)!);
+  return useStore((s) => USERS.find((u) => u.id === s.currentUserId) ?? USERS[0]);
 }
