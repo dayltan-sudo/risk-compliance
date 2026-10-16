@@ -6,9 +6,10 @@ import { assessments, extractedFields, criterionInputs } from "../db/schema.js";
 import { requireActor } from "../lib/actor.js";
 import { writeAudit } from "../lib/audit.js";
 import { nowStamp } from "../lib/ids.js";
-import { checkReviewCompleteAndRecompute } from "../lib/recompute.js";
+import { checkReviewCompleteAndRecompute, refreshAfterFieldChange } from "../lib/recompute.js";
+import { notDraftMessage } from "../lib/guards.js";
 import { CONFIDENCE_THRESHOLDS } from "../../src/data/config.js";
-import { validateCriterionInput, summarizeCriterionInput } from "../lib/validateCriterionInput.js";
+import { validateCriterionInput, checkPaidUpCurrencyMatch, summarizeCriterionInput } from "../lib/validateCriterionInput.js";
 import type { AmendmentHistoryEntry, CriterionNumber } from "../../src/types.js";
 
 export const fieldReviewRoute = new Hono();
@@ -20,6 +21,10 @@ fieldReviewRoute.post("/:id/bulk-confirm-high", async (c) => {
   const actor = requireActor(c);
   if (!actor) return c.json({ error: "Missing actor" }, 400);
   const assessmentId = c.req.param("id");
+
+  const [assessment] = await db.select().from(assessments).where(eq(assessments.id, assessmentId));
+  if (!assessment) return c.json({ error: "Assessment not found" }, 404);
+  if (assessment.state !== "Draft") return c.json({ error: notDraftMessage(assessment, "fields") }, 409);
 
   const eligible = await db
     .select()
@@ -43,14 +48,14 @@ fieldReviewRoute.post("/:id/bulk-confirm-high", async (c) => {
     afterValue: "Confirmed",
   });
 
-  await checkReviewCompleteAndRecompute(assessmentId);
+  await refreshAfterFieldChange(assessmentId);
   return c.json({ ok: true, confirmed: eligible.length });
 });
 
 const criterionValuesSchema = z.object({
   paidUpCapital: z.number().nullable().optional(),
   totalExposure: z.number().nullable().optional(),
-  currency: z.string().nullable().optional(),
+  currency: z.string().trim().toUpperCase().nullable().optional(),
   yearRegisteredSg: z.number().nullable().optional(),
   litigationRecord: z.enum(["Clean", "Motor suits only", "Other record"]).nullable().optional(),
   changeInDirectors: z.boolean().nullable().optional(),
@@ -82,10 +87,13 @@ fieldReviewRoute.post("/:id/criteria/:criterionNumber/confirm", async (c) => {
   const loaded = await loadAssessmentAndCriterion(assessmentId, criterionNumber);
   if ("error" in loaded) return c.json({ ok: false, reason: loaded.error }, 404);
   const { assessment, input } = loaded;
+  if (assessment.state !== "Draft") return c.json({ ok: false, reason: notDraftMessage(assessment, "criterion inputs") }, 409);
   if (input.status !== "Unconfirmed") return c.json({ ok: false, reason: "Already reviewed — use Amend instead." }, 409);
 
-  const validation = validateCriterionInput(criterionNumber, parsed.data, assessment.relationshipType);
+  const validation = validateCriterionInput(criterionNumber, parsed.data, assessment.relationshipType, assessment.assessmentYear);
   if (!validation.ok) return c.json(validation, 400);
+  const currencyCheck = criterionNumber === 5 ? checkPaidUpCurrencyMatch(input, parsed.data) : validation;
+  if (!currencyCheck.ok) return c.json(currencyCheck, 400);
 
   await db
     .update(criterionInputs)
@@ -112,9 +120,12 @@ fieldReviewRoute.post("/:id/criteria/:criterionNumber/amend", async (c) => {
   const loaded = await loadAssessmentAndCriterion(assessmentId, criterionNumber);
   if ("error" in loaded) return c.json({ ok: false, reason: loaded.error }, 404);
   const { assessment, input } = loaded;
+  if (assessment.state !== "Draft") return c.json({ ok: false, reason: notDraftMessage(assessment, "criterion inputs") }, 409);
 
-  const validation = validateCriterionInput(criterionNumber, values, assessment.relationshipType);
+  const validation = validateCriterionInput(criterionNumber, values, assessment.relationshipType, assessment.assessmentYear);
   if (!validation.ok) return c.json(validation, 400);
+  const currencyCheck = criterionNumber === 5 ? checkPaidUpCurrencyMatch(input, values) : validation;
+  if (!currencyCheck.ok) return c.json(currencyCheck, 400);
 
   const isCriterion5AmountChange = criterionNumber === 5 && values.totalExposure !== undefined && values.totalExposure !== input.totalExposure;
   const entry: AmendmentHistoryEntry = {

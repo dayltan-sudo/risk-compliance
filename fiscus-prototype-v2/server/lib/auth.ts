@@ -3,7 +3,18 @@ import type { Context, Next } from "hono";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 
 const COOKIE_NAME = "fiscus_session";
-const SESSION_TTL_SECONDS = 60 * 60 * 12; // 12h — single shared-password gate, not per-user identity
+const SESSION_TTL_SECONDS = 60 * 60 * 12; // 12h — shared-password gate; the chosen user is attribution, not authentication
+
+declare module "hono" {
+  interface ContextVariableMap {
+    actor: string;
+  }
+}
+
+export interface SessionUser {
+  userId: string;
+  actor: string;
+}
 
 function secretKey() {
   const secret = process.env.SESSION_SECRET;
@@ -11,14 +22,16 @@ function secretKey() {
   return new TextEncoder().encode(secret);
 }
 
-export async function createSessionCookie(c: Context) {
-  const token = await new SignJWT({ role: "user" })
+export async function signSession(user: SessionUser): Promise<string> {
+  return new SignJWT({ role: "user", userId: user.userId, actor: user.actor })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(`${SESSION_TTL_SECONDS}s`)
     .sign(secretKey());
+}
 
-  setCookie(c, COOKIE_NAME, token, {
+export async function createSessionCookie(c: Context, user: SessionUser) {
+  setCookie(c, COOKIE_NAME, await signSession(user), {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "Lax",
@@ -31,22 +44,26 @@ export function clearSessionCookie(c: Context) {
   deleteCookie(c, COOKIE_NAME, { path: "/" });
 }
 
-export async function hasValidSession(c: Context): Promise<boolean> {
+/** Null for a missing/invalid/expired token, and for a pre-actor token minted
+ * before sessions carried a user — those must sign in again. */
+export async function readSession(c: Context): Promise<SessionUser | null> {
   const token = getCookie(c, COOKIE_NAME);
-  if (!token) return false;
+  if (!token) return null;
   try {
-    await jwtVerify(token, secretKey());
-    return true;
+    const { payload } = await jwtVerify(token, secretKey());
+    if (typeof payload.actor !== "string" || !payload.actor || typeof payload.userId !== "string") return null;
+    return { userId: payload.userId, actor: payload.actor };
   } catch {
-    return false;
+    return null;
   }
 }
 
 /** Every /api route except /api/auth/* and /api/health requires a valid
- * session cookie — MVP has one authenticated "user type" behind a single
- * shared password (PRD §1's NFR: "Authenticated users only"), not per-user
- * identity. */
+ * session cookie. The audit actor is taken from the signed session — never
+ * from a client-supplied header. */
 export async function requireSession(c: Context, next: Next) {
-  if (!(await hasValidSession(c))) return c.json({ error: "Not authenticated" }, 401);
+  const session = await readSession(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
+  c.set("actor", session.actor);
   await next();
 }
