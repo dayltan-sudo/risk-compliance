@@ -3,7 +3,7 @@
 Rules in `/home/dayltan/AGENTS.md` still apply. Repo is `dayltan-sudo/risk-compliance`.
 
 ## Layout
-- `salus-prototype/`: Salus code (React + Hono, TypeScript). Has its own `CLAUDE.md`; build work goes there, not in `insurance-dashboard/`.
+- `salus-prototype/`: Salus code (React + Hono, TypeScript, own `README.md` and tests). Build work goes there, not in `insurance-dashboard/`.
 - `news-aggregator/`: Python pipeline. `collector/`, `storage/`, `digest/`, `cron/`, `tests/`, `SCHEMA.md`, `requirements.txt`, own `.venv`.
 - `credit-assessment/` (Fiscus), `third-party-onboarding/` (Census), `insurance-dashboard/` (Salus planning only): PRDs, planning docs, prototypes. Treat as documents; do not restructure folders or rename numbered subfolders.
 - `fiscus-prototype-v2/`: Node prototype.
