@@ -423,17 +423,17 @@ const excerptToggleStyle: CSSProperties = {
   fontSize: 'var(--text-micro)',
   letterSpacing: '.04em',
   textTransform: 'uppercase',
-  color: 'var(--crimson-deep)',
+  color: 'var(--accent-deep)',
 };
 
 const conflictMarkerStyle: CSSProperties = {
-  boxShadow: 'inset 3px 0 0 var(--crimson)',
+  boxShadow: 'inset 3px 0 0 var(--accent)',
 };
 
 const conflictLinkStyle: CSSProperties = {
   display: 'block',
   marginBottom: 'var(--space-xxs)',
-  color: 'var(--crimson-deep)',
+  color: 'var(--accent-deep)',
   textDecoration: 'underline',
   textUnderlineOffset: '2px',
   lineHeight: 'var(--leading-snug)',

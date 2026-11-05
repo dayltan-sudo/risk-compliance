@@ -312,7 +312,7 @@
   padding: 0;
   border: 0;
   background: none;
-  color: var(--crimson-deep);
+  color: var(--accent-deep);
   font-size: var(--text-micro);
   font-weight: var(--weight-bold);
   letter-spacing: 0.04em;
@@ -343,7 +343,7 @@
 .sal-check input {
   width: 14px;
   height: 14px;
-  accent-color: var(--crimson);
+  accent-color: var(--accent);
 }
 
 /* Quick toggles */
@@ -454,7 +454,7 @@
   font-weight: var(--weight-bold);
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--crimson-deep);
+  color: var(--accent-deep);
 }
 
 .sal-page__title {
@@ -668,7 +668,7 @@
 }
 
 .sal-dock__mark {
-  color: var(--crimson);
+  color: var(--accent);
   font-size: 15px;
   line-height: 1;
 }
@@ -786,7 +786,7 @@
 
 .sal-map__marker:hover .sal-map__dot,
 .sal-map__marker:focus-visible .sal-map__dot {
-  stroke: var(--crimson);
+  stroke: var(--accent);
   stroke-width: 2.5;
 }
 
@@ -879,8 +879,8 @@
 }
 
 .sal-asset.is-selected {
-  background: var(--crimson-tint);
-  border-left-color: var(--crimson);
+  background: var(--accent-tint);
+  border-left-color: var(--accent);
 }
 
 .sal-asset__dot {
@@ -993,7 +993,7 @@
   margin-top: var(--space-sm);
   padding: var(--space-lg);
   border: var(--border-hairline);
-  border-left: 3px solid var(--crimson);
+  border-left: 3px solid var(--accent);
   border-radius: var(--radius-lg);
   background: var(--paper);
 }

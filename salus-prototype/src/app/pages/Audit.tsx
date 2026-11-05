@@ -470,7 +470,7 @@ const scopeCountStyle: CSSProperties = {
 };
 
 const scopeEntityStyle: CSSProperties = {
-  color: 'var(--crimson-deep)',
+  color: 'var(--accent-deep)',
 };
 
 const scopeNoteStyle: CSSProperties = {
@@ -483,9 +483,9 @@ const scopeNoteStyle: CSSProperties = {
 const errorStyle: CSSProperties = {
   marginTop: 'var(--space-lg)',
   padding: 'var(--space-sm) var(--space-lg)',
-  background: 'var(--crimson-tint)',
+  background: 'var(--accent-tint)',
   borderRadius: 'var(--radius-md)',
-  color: 'var(--crimson-deeper)',
+  color: 'var(--accent-deeper)',
   fontSize: 'var(--text-body-sm)',
 };
 

@@ -299,7 +299,7 @@ const entryStyle: CSSProperties = {
 
 const activeEntryStyle: CSSProperties = {
   paddingLeft: 'var(--space-sm)',
-  boxShadow: 'inset 3px 0 0 var(--crimson)',
+  boxShadow: 'inset 3px 0 0 var(--accent)',
 };
 
 const termHeadingStyle: CSSProperties = {

@@ -1356,9 +1356,9 @@ const fixtureButtonStyle: CSSProperties = {
 };
 
 const fixtureButtonSelectedStyle: CSSProperties = {
-  borderColor: 'var(--crimson)',
+  borderColor: 'var(--accent)',
   background: 'var(--card)',
-  boxShadow: 'inset 0 0 0 1px var(--crimson)',
+  boxShadow: 'inset 0 0 0 1px var(--accent)',
 };
 
 const fixtureTitleStyle: CSSProperties = {
@@ -1371,7 +1371,7 @@ const fixtureTitleStyle: CSSProperties = {
 const fixtureFileStyle: CSSProperties = {
   fontSize: 'var(--text-micro)',
   letterSpacing: '.04em',
-  color: 'var(--crimson-deep)',
+  color: 'var(--accent-deep)',
 };
 
 const fixtureDescriptionStyle: CSSProperties = {
@@ -1504,7 +1504,7 @@ const rejectedItemStyle: CSSProperties = {
 
 const rejectedKeyStyle: CSSProperties = {
   flex: 'none',
-  color: 'var(--crimson-deep)',
+  color: 'var(--accent-deep)',
 };
 
 const postHeadlineStyle: CSSProperties = {
@@ -1526,7 +1526,7 @@ const postMetaStyle: CSSProperties = {
 const auditSummaryStyle: CSSProperties = {
   marginTop: 'var(--space-lg)',
   padding: 'var(--space-sm) var(--space-lg)',
-  borderLeft: '3px solid var(--crimson)',
+  borderLeft: '3px solid var(--accent)',
   background: 'var(--paper)',
   fontSize: 'var(--text-body-sm)',
   lineHeight: 'var(--leading-snug)',
@@ -1540,7 +1540,7 @@ const auditLabelStyle: CSSProperties = {
   fontSize: 'var(--text-micro)',
   letterSpacing: '.05em',
   textTransform: 'uppercase',
-  color: 'var(--crimson-deep)',
+  color: 'var(--accent-deep)',
 };
 
 const beforeStyle: CSSProperties = {

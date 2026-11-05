@@ -195,7 +195,7 @@ export function GlobalMapPage(): JSX.Element {
                           cy={y}
                           r={r + 5}
                           fill="none"
-                          stroke="var(--crimson)"
+                          stroke="var(--focus)"
                           strokeWidth={1.4}
                           strokeDasharray="3 3"
                         />

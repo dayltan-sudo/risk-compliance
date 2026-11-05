@@ -185,7 +185,7 @@ function failureCopy(failure: Failure): { label: string; detail: string } {
 
 function FailureBlock({ failure }: { failure: Failure }) {
   const copy = failureCopy(failure);
-  const accent = failure.kind === 'not-configured' ? 'var(--dusk)' : 'var(--crimson)';
+  const accent = failure.kind === 'not-configured' ? 'var(--dusk)' : 'var(--band-critical)';
   return (
     <div role="alert" style={{ ...FAILURE, borderLeftColor: accent }}>
       <p style={FAILURE_LABEL}>{copy.label}</p>
@@ -320,9 +320,9 @@ const INPUT: CSSProperties = {
 const SEND: CSSProperties = {
   flex: 'none',
   padding: '9px 14px',
-  border: '1px solid var(--crimson-deep)',
+  border: '1px solid var(--accent-deep)',
   borderRadius: 'var(--radius-lg)',
-  background: 'var(--crimson-deep)',
+  background: 'var(--accent-deep)',
   color: 'var(--card)',
   fontSize: 'var(--text-sm)',
   fontWeight: 'var(--weight-semibold)',

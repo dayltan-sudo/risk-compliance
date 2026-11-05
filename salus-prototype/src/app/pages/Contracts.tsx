@@ -801,8 +801,8 @@ const agreementStyle: CSSProperties = {
 };
 
 const highlightedRowStyle: CSSProperties = {
-  background: 'var(--crimson-tint)',
-  boxShadow: 'inset 3px 0 0 var(--crimson)',
+  background: 'var(--accent-tint)',
+  boxShadow: 'inset 3px 0 0 var(--accent)',
 };
 
 const microUpperStyle: CSSProperties = {
@@ -894,7 +894,7 @@ const wordingStyle: CSSProperties = {
 };
 
 const linkStyle: CSSProperties = {
-  color: 'var(--crimson-deep)',
+  color: 'var(--accent-deep)',
   textDecoration: 'underline',
   textUnderlineOffset: '2px',
 };
