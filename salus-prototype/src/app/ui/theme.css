@@ -5,61 +5,80 @@
    src/app/ui/tokens.ts one-for-one; if a value changes in one place it must
    change in the other.
 
-   Fonts are referenced by family name only. If Source Serif 4 / Inter /
-   JetBrains Mono are not installed the stacks fall back to Georgia, the system
-   UI sans and a system mono, so this file renders standalone with nothing
-   fetched from the network.
+   Source Serif 4 and JetBrains Mono are self-hosted variable fonts, imported
+   in main.tsx from the bundled @fontsource packages: no CDN, no network fetch
+   at runtime. The sans stack is deliberately system-only (Inter is not shipped,
+   so naming it first would cost a silent 48KB of nothing). If the fonts fail to
+   load the stacks still degrade to Georgia and the platform mono.
    ========================================================================== */
 
 :root {
   /* ---- ink / neutrals ---- */
-  --ink-950: #18130E;
-  --ink-850: #241C15;
-  --ink-800: #2E2419;
-  --ink: #221C16;
+  --ink-950: #14130F;
+  --ink-850: #1C1B17;
+  --ink-800: #26251F;
+  --ink: #21201C;
   --paper: #F7F4EE;
   --card: #FFFFFF;
-  --muted: #736A5C;
-  --line: #E7E0D3;
-  --parchment: #C9BFAC;
-  --dusk: #9A8E7A;
-  --dusk-dim: #6E6350;
+  --muted: #63635E;
+  --line: #DAD9D6;
+  --line-strong: #BCBBB5;
+  --control-border: #8D8D86;
+  /* Faint text. Both are used only as `color:` in the shell and the dock, and
+     both failed WCAG AA on paper (3.22:1 and 1.66:1). These are the lightest
+     values along their existing warm hues that clear 4.5:1 on paper and white,
+     so the ramp keeps its steps instead of collapsing to one grey. */
+  --parchment: #6E6E69;
+  --dusk: #6B6B66;
+  --dusk-dim: #4A4A46;
 
-  /* ---- accent ---- */
-  --crimson: #E51D37;
-  --crimson-deep: #A81530;
-  --crimson-deeper: #87101F;
-  --crimson-tint: #FBE4E8;
+  /* ---- accent ----
+     Indigo, not crimson: red is reserved for risk, so a link, a focus ring and
+     a critical tag can never be mistaken for one another. Crimson survives as
+     the wordmark. Measured on canvas: accent 5.46:1, deep 7.57:1, tint 5.35:1. */
+  --accent: #3A5BC7;
+  --accent-deep: #2C46A5;
+  --accent-deeper: #1F2D5C;
+  --accent-tint: #EDF2FE;
+  --focus: #3E63DD;
+  --brand: #CB1D63;
 
-  /* ---- risk bands ---- */
-  --band-low: #1F7A5C;
-  --band-low-bg: #E6F3EC;
-  --band-low-text: #1F7A5C;
-  --band-medium: #C9932E;
-  --band-medium-bg: #FBF1DE;
-  --band-medium-text: #8A6A1E;
-  --band-high: #C9642E;
-  --band-high-bg: #FBE9DE;
-  --band-high-text: #96481E;
-  --band-critical: #8B2E22;
-  --band-critical-bg: #F5E2DA;
-  --band-critical-text: #6E2418;
+  /* ---- risk bands ----
+     Radix red/orange/amber/teal. Chip text is step 12 on a step-3 tint because
+     step 11 on step 3 measures 3.99-4.54:1 and fails AA; step 12 measures
+     10.27-10.85:1. The bare token is the mark (dot, rule, bar). */
+  --band-low: #008573;
+  --band-low-bg: #E0F8F3;
+  --band-low-text: #0D3D38;
+  --band-medium: #AB6400;
+  --band-medium-bg: #FFF7C2;
+  --band-medium-text: #4F3422;
+  --band-high: #CC4E00;
+  --band-high-bg: #FFEFD6;
+  --band-high-text: #582D1D;
+  --band-critical: #CE2C31;
+  --band-critical-bg: #FEEBEC;
+  --band-critical-text: #641723;
 
   /* ---- type ---- */
-  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-serif: 'Source Serif 4', Georgia, 'Times New Roman', serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  --text-micro: 9.5px;
-  --text-tiny: 10px;
-  --text-label: 10.5px;
+  /* Six steps, not thirteen. The old ramp ran 9.5 to 13.5 in half-pixel
+     increments, which carries no ratio and made every screen look hand-tuned.
+     The old names survive as aliases so components keep working; 11px is the
+     floor and is for mono micro labels only. */
+  --text-micro: 11px;
+  --text-tiny: 11px;
+  --text-label: 11px;
   --text-xs: 11px;
-  --text-sm: 11.5px;
+  --text-sm: 12px;
   --text-body-sm: 12px;
-  --text-body: 12.5px;
+  --text-body: 13px;
   --text-base: 13px;
-  --text-lead: 13.5px;
-  --text-h3: 16.5px;
+  --text-lead: 13px;
+  --text-h3: 16px;
   --text-h2: 21px;
   --text-h1: 26px;
 
@@ -102,9 +121,9 @@
   --border-width: 1px;
   --border-hairline: 1px solid var(--line);
   --border-rail: 1px solid var(--ink-800);
-  --border-accent: 1px solid var(--crimson);
+  --border-accent: 1px solid var(--accent);
 
-  --shadow: 0 1px 2px rgba(30, 20, 10, .05), 0 8px 22px -12px rgba(30, 20, 10, .15);
+  --shadow: 0 1px 1px rgba(20, 19, 15, .04), 0 2px 4px -2px rgba(20, 19, 15, .06), 0 12px 28px -18px rgba(20, 19, 15, .18);
 
   /* ---- layout ---- */
   --sidebar-w: 236px;
@@ -175,12 +194,12 @@ button {
 }
 
 :focus-visible {
-  outline: 2px solid var(--crimson);
+  outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
 
 ::selection {
-  background: var(--crimson-tint);
+  background: var(--accent-tint);
   color: var(--ink);
 }
 
@@ -207,9 +226,9 @@ button {
 }
 
 .sal-tone--accent {
-  --tone-fg: var(--crimson-deep);
-  --tone-bg: var(--crimson-tint);
-  --tone-dot: var(--crimson);
+  --tone-fg: var(--accent-deep);
+  --tone-bg: var(--accent-tint);
+  --tone-dot: var(--accent);
 }
 
 .sal-tone--low {
@@ -267,7 +286,7 @@ button {
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-lg);
-  background: var(--crimson-deep);
+  background: var(--accent-deep);
   color: var(--card);
 }
 
@@ -348,14 +367,14 @@ button {
 }
 
 .sal-sidebar__item:focus-visible {
-  outline: 2px solid var(--crimson);
+  outline: 2px solid var(--focus);
   outline-offset: -2px;
 }
 
 .sal-sidebar__item--active {
   background: var(--ink-800);
   color: var(--card);
-  border-left-color: var(--crimson);
+  border-left-color: var(--accent);
 }
 
 .sal-sidebar__icon {
@@ -383,7 +402,7 @@ button {
   flex: none;
   padding: 1px 6px;
   border-radius: var(--radius-pill);
-  background: var(--crimson-deep);
+  background: var(--accent-deep);
   color: var(--card);
   font-family: var(--font-mono);
   font-size: var(--text-micro);
@@ -449,7 +468,7 @@ button {
 }
 
 .sal-topbar__crumb--link:hover {
-  color: var(--crimson-deep);
+  color: var(--muted);
   text-decoration: underline;
 }
 
@@ -564,7 +583,7 @@ button {
 }
 
 .sal-seg__btn--active.sal-seg__btn--accent {
-  background: var(--crimson-deep);
+  background: var(--accent-deep);
 }
 
 /* --------------------------------------------------------------------- card */
@@ -643,6 +662,21 @@ button {
   letter-spacing: .03em;
   text-transform: uppercase;
   white-space: nowrap;
+}
+
+/* A register renders severity as a mark, not a pill. Thirty tinted chips down a
+   screen is what made the tables read flat; the tint survives for the one
+   element per row that carries the exception itself (.sal-tag--chip). */
+.sal-table .sal-tag {
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+}
+
+.sal-table .sal-tag--chip {
+  padding: 2px var(--space-sm);
+  background: var(--tone-bg, var(--paper));
+  border-radius: var(--radius-xs);
 }
 
 .sal-tag__dot {
@@ -786,7 +820,12 @@ button {
 }
 
 .sal-table--dense th {
-  padding: var(--space-xs) var(--space-md);
+  padding: var(--space-xs) var(--space-sm);
+  letter-spacing: .02em;
+}
+
+.sal-table--dense td {
+  padding: 8px var(--space-sm);
 }
 
 .sal-table--dense td {
@@ -806,7 +845,7 @@ button {
 }
 
 .sal-table tbody tr[data-selected='true'] td {
-  background: var(--crimson-tint);
+  background: var(--accent-tint);
 }
 
 .sal-table__cell--right { text-align: right; }
@@ -842,7 +881,7 @@ button {
 }
 
 .sal-table__sort:hover {
-  color: var(--crimson-deep);
+  color: var(--muted);
 }
 
 .sal-table__sort-mark {

@@ -17,6 +17,7 @@ type AssistantAnswer = {
 /** The three states the task requires to be distinct, plus honest fallbacks. */
 type Failure =
   | { kind: 'not-configured' }
+  | { kind: 'scoped' }
   | { kind: 'uncited' }
   | { kind: 'network' }
   | { kind: 'rejected'; detail: string }
@@ -147,6 +148,12 @@ function failureCopy(failure: Failure): { label: string; detail: string } {
         label: 'Not configured',
         detail: 'Assistant is not configured in this build; set the model keys to enable it',
       };
+    case 'scoped':
+      return {
+        label: 'Group scope only',
+        detail:
+          'The assistant answers across the whole group in this build. Switch the role back to Group Insurance to ask it; entity-scoped answers are not wired yet.',
+      };
     case 'uncited':
       return {
         label: 'Citation check failed',
@@ -178,7 +185,7 @@ function failureCopy(failure: Failure): { label: string; detail: string } {
 
 function FailureBlock({ failure }: { failure: Failure }) {
   const copy = failureCopy(failure);
-  const accent = failure.kind === 'not-configured' ? 'var(--dusk)' : 'var(--crimson)';
+  const accent = failure.kind === 'not-configured' ? 'var(--dusk)' : 'var(--band-critical)';
   return (
     <div role="alert" style={{ ...FAILURE, borderLeftColor: accent }}>
       <p style={FAILURE_LABEL}>{copy.label}</p>
@@ -313,9 +320,9 @@ const INPUT: CSSProperties = {
 const SEND: CSSProperties = {
   flex: 'none',
   padding: '9px 14px',
-  border: '1px solid var(--crimson-deep)',
+  border: '1px solid var(--accent-deep)',
   borderRadius: 'var(--radius-lg)',
-  background: 'var(--crimson-deep)',
+  background: 'var(--accent-deep)',
   color: 'var(--card)',
   fontSize: 'var(--text-sm)',
   fontWeight: 'var(--weight-semibold)',
@@ -400,6 +407,10 @@ export function AssistantDock() {
       const body = await readFailureBody(response);
       if (response.status === 503) {
         appendFailure({ kind: 'not-configured' });
+      } else if (response.status === 403) {
+        // A scoped role is refused by the API rather than answered with
+        // group-wide figures, so the dock says so instead of showing an error.
+        appendFailure({ kind: 'scoped' });
       } else if (response.status === 502 && isUncitedFailure(body)) {
         appendFailure({ kind: 'uncited' });
       } else if (response.status === 400) {

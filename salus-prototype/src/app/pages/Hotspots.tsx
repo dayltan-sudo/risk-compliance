@@ -6,29 +6,20 @@
  * driver doing most of the work. Selecting a row opens the full breakdown as an
  * SVG bar chart, with the contribution sum reconciled against the score.
  *
- * The weight preview is deliberately local state: it re-runs `scoreSite()` with
- * adjusted weights so a reviewer can watch the ranking move, but it never
- * writes to the dated config version. Change-control is V2.
+ * The weights are the ones in the dated config version, read-only. An earlier
+ * build offered sliders that re-scored in browser state and never wrote back:
+ * a control that cannot save invites lost tuning and implies the ranking is
+ * negotiable. Weight change-control is V2, so this page shows the weights and
+ * explains the score instead of pretending to edit them.
  */
 import { useId, useMemo, useState } from 'react';
 import type { CSSProperties, JSX, ReactNode } from 'react';
 
-import { portfolio } from '../../data/portfolio';
 import { DRIVERS, scoreSite } from '../../engine';
 import type { Band, Driver, DriverScore, Portfolio, Site, SiteScore } from '../../engine';
+import { useFilteredPortfolio } from '../layout/filters';
 import { Card, DataTable, Tag, bandColor, cn } from '../ui';
 import type { Column } from '../ui';
-
-/* ------------------------------------------------------------------ data seam */
-
-/**
- * The page's only read of the portfolio. The shell replaces the body with the
- * filtered data from the global filter bar; every calculation below receives
- * `data` as an argument and never reaches for the module again.
- */
-function loadPortfolio(): Portfolio {
-  return portfolio;
-}
 
 /* --------------------------------------------------------------------- labels */
 
@@ -77,11 +68,11 @@ function compareText(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
-function rankSites(data: Portfolio, weights: Record<Driver, number>): ScoredSite[] {
+function rankSites(data: Portfolio): ScoredSite[] {
   const entityNames = new Map(data.entities.map((entity) => [entity.id, entity.name]));
 
   const scored = data.sites.map((site) => {
-    const result = scoreSite(site, data, { weights });
+    const result = scoreSite(site, data);
     const topDriver = result.drivers.reduce<DriverScore | null>(
       (best, driver) =>
         best === null || driver.contribution > best.contribution ? driver : best,
@@ -323,108 +314,6 @@ function BandFilter({
   );
 }
 
-function WeightPreview({
-  drivers,
-  weights,
-  baseWeights,
-  onChange,
-  onReset,
-}: {
-  drivers: Driver[];
-  weights: Record<Driver, number>;
-  baseWeights: Record<Driver, number>;
-  onChange: (driver: Driver, value: number) => void;
-  onReset: () => void;
-}): JSX.Element {
-  const generatedId = useId();
-  const prefix = `sal-weight-${generatedId.replace(/[^a-zA-Z0-9_-]/g, '')}`;
-  const previewActive = drivers.some((driver) => weights[driver] !== baseWeights[driver]);
-
-  return (
-    <Card
-      title="Weight preview"
-      subtitle="The three heaviest drivers are adjustable. Every site is re-scored with scoreSite() as a slider moves; the ranking below updates live."
-      actions={
-        <>
-          <Tag tone={previewActive ? 'accent' : 'neutral'}>
-            {previewActive ? 'Preview active' : 'Config weights'}
-          </Tag>
-          <button
-            type="button"
-            style={{
-              ...GHOST_BUTTON,
-              opacity: previewActive ? 1 : 0.45,
-              cursor: previewActive ? 'pointer' : 'default',
-            }}
-            disabled={!previewActive}
-            onClick={onReset}
-          >
-            Reset
-          </button>
-        </>
-      }
-      footer="Preview only. Slider values are held in browser state and never written to the dated config version. Weight change-control ships in V2."
-    >
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-xxl)' }}>
-        {drivers.map((driver) => {
-          const inputId = `${prefix}-${driver}`;
-          const value = Math.round(weights[driver] * 100);
-          const base = Math.round(baseWeights[driver] * 100);
-
-          return (
-            <div key={driver} style={{ flex: '1 1 220px', minWidth: 0 }}>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'baseline',
-                  justifyContent: 'space-between',
-                  gap: 'var(--space-sm)',
-                }}
-              >
-                <label
-                  htmlFor={inputId}
-                  style={{
-                    fontFamily: 'var(--font-sans)',
-                    fontSize: 'var(--text-body)',
-                    fontWeight: 600,
-                    color: 'var(--ink)',
-                  }}
-                >
-                  {DRIVER_LABEL[driver]}
-                </label>
-                <span className="sal-mono" style={{ fontSize: 'var(--text-body)' }}>
-                  {value}%
-                </span>
-              </div>
-              <input
-                id={inputId}
-                type="range"
-                min={0}
-                max={100}
-                step={1}
-                value={value}
-                aria-valuetext={`${value} percent`}
-                onChange={(event) => onChange(driver, Number(event.target.value) / 100)}
-                style={{ width: '100%', accentColor: 'var(--crimson)', margin: '6px 0 2px' }}
-              />
-              <div
-                className="sal-mono"
-                style={{
-                  fontSize: 'var(--text-micro)',
-                  letterSpacing: '.03em',
-                  color: 'var(--muted)',
-                }}
-              >
-                Config {base}%{value === base ? '' : ` → preview ${value}%`}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </Card>
-  );
-}
-
 /* --------------------------------------------------------------------- cells */
 
 function TopDriverCell({ row }: { row: ScoredSite }): JSX.Element {
@@ -653,10 +542,14 @@ function downloadCsv(filename: string, header: string[], rows: string[][]): void
   window.setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
+/**
+ * One row per site plus the weights the ranking actually used. There is no
+ * preview dimension any more: the weights are the dated config's, so the export
+ * cannot disagree with the score in the row.
+ */
 function exportHotspotsCsv(
   rows: ScoredSite[],
   weights: Record<Driver, number>,
-  previewDrivers: Driver[],
   refDate: string,
 ): void {
   const header = [
@@ -668,7 +561,7 @@ function exportHotspotsCsv(
     'band',
     'top_driver',
     'top_contribution',
-    ...previewDrivers.map((driver) => `weight_${driver}`),
+    ...DRIVERS.map((driver) => `weight_${driver}`),
   ];
   const body = rows.map((row) => [
     String(row.rank),
@@ -679,7 +572,7 @@ function exportHotspotsCsv(
     row.score.band,
     row.topDriver?.driver ?? '',
     row.topDriver === null ? '' : row.topDriver.contribution.toFixed(2),
-    ...previewDrivers.map((driver) => weights[driver].toFixed(4)),
+    ...DRIVERS.map((driver) => (weights[driver] ?? 0).toFixed(4)),
   ]);
 
   downloadCsv(`risk-hotspots-${refDate}.csv`, header, body);
@@ -688,26 +581,16 @@ function exportHotspotsCsv(
 /* ----------------------------------------------------------------------- page */
 
 export function HotspotsPage(): JSX.Element {
-  const data = loadPortfolio();
+  const { portfolio: data } = useFilteredPortfolio();
   const refDate = data.config.effectiveFrom;
   const thresholds = data.config.thresholds;
-  const baseWeights = data.config.weights;
+  const weights = data.config.weights;
 
-  const previewDrivers = useMemo(
-    () =>
-      DRIVERS.filter((driver) => (baseWeights[driver] ?? 0) > 0)
-        .sort((a, b) => (baseWeights[b] ?? 0) - (baseWeights[a] ?? 0))
-        .slice(0, 3),
-    [baseWeights],
-  );
-
-  const [weights, setWeights] = useState<Record<Driver, number>>(() => ({ ...baseWeights }));
   const [activeBands, setActiveBands] = useState<Band[]>([...BANDS]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const ranked = useMemo(() => rankSites(data, weights), [data, weights]);
+  const ranked = useMemo(() => rankSites(data), [data]);
   const bandCounts = useMemo(() => countBands(ranked), [ranked]);
-  const previewActive = previewDrivers.some((driver) => weights[driver] !== baseWeights[driver]);
 
   const visible = ranked.filter((row) => activeBands.includes(row.score.band));
   const active = visible.find((row) => row.site.id === selectedId) ?? visible[0] ?? null;
@@ -726,12 +609,12 @@ export function HotspotsPage(): JSX.Element {
       <PageHeader
         eyebrow="P3 · Risk"
         title="Risk hotspots"
-        subtitle="Every site scored on the eight-driver model, ranked worst-first. The panel explains the score; the preview shows what a weight change would do without touching the config."
+        subtitle="Every site scored on the eight-driver model at the dated config weights, ranked worst-first. Selecting a site explains its score, driver by driver."
         actions={
           <button
             type="button"
             style={GHOST_BUTTON}
-            onClick={() => exportHotspotsCsv(visible, weights, previewDrivers, refDate)}
+            onClick={() => exportHotspotsCsv(visible, weights, refDate)}
           >
             Export CSV
           </button>
@@ -744,16 +627,6 @@ export function HotspotsPage(): JSX.Element {
           gap: 'var(--space-section)',
         }}
       >
-        <WeightPreview
-          drivers={previewDrivers}
-          weights={weights}
-          baseWeights={baseWeights}
-          onChange={(driver, value) =>
-            setWeights((current) => ({ ...current, [driver]: value }))
-          }
-          onReset={() => setWeights({ ...baseWeights })}
-        />
-
         <div
           style={{
             display: 'flex',
@@ -765,9 +638,7 @@ export function HotspotsPage(): JSX.Element {
           <div style={{ flex: '1 1 620px', minWidth: 0 }}>
             <Card
               title="Ranked sites"
-              subtitle={`${ranked.length} sites scored on the ${DRIVERS.length}-driver model at config ${refDate}. ${
-                previewActive ? 'Preview weights are active.' : 'Config weights are active.'
-              }`}
+              subtitle={`${ranked.length} sites scored on the ${DRIVERS.length}-driver model at config ${refDate}.`}
               actions={
                 <BandFilter active={activeBands} counts={bandCounts} onToggle={toggleBand} />
               }

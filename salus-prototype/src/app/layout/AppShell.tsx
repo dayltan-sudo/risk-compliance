@@ -1,56 +1,54 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 
 import { Sidebar, Tag, TopBar, cn } from '../ui';
 import type { SidebarItem, SidebarSection } from '../ui';
 import { formatDate } from '../components/format';
+import { GlossaryProvider, useGlossary } from '../components/Glossary';
+import { ScopeChip, SessionScopeProvider, useScopedSession } from '../components/sessionScope';
 import { FilterBar } from './FilterBar';
+import { Globe, LayoutGrid } from 'lucide-react';
 import { RailPanel } from './RailPanel';
 import { useFilteredPortfolio } from './filters';
 
 function OverviewIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round">
-      <rect x="3.5" y="3.5" width="7" height="7" rx="1.2" />
-      <rect x="13.5" y="3.5" width="7" height="7" rx="1.2" />
-      <rect x="3.5" y="13.5" width="7" height="7" rx="1.2" />
-      <rect x="13.5" y="13.5" width="7" height="7" rx="1.2" />
-    </svg>
-  );
+  return <LayoutGrid size={16} strokeWidth={1.75} aria-hidden />;
 }
 
 function MapIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round">
-      <circle cx="12" cy="12" r="8.5" />
-      <path d="M3.5 12h17" />
-      <path d="M12 3.5c2.4 2.4 3.6 5.3 3.6 8.5S14.4 18.1 12 20.5c-2.4-2.4-3.6-5.3-3.6-8.5S9.6 5.9 12 3.5z" />
-    </svg>
-  );
+  return <Globe size={16} strokeWidth={1.75} aria-hidden />;
 }
 
-function UserBlock() {
-  return (
-    <div className="sal-user">
-      <span className="sal-user__avatar" aria-hidden="true">
-        GR
-      </span>
-      <span className="sal-user__body">
-        <span className="sal-user__name">Group Risk</span>
-        <span className="sal-user__role">Demo workspace</span>
-      </span>
-    </div>
-  );
-}
-
-export function AppShell() {
+function ShellLayout() {
   const { summary, portfolio } = useFilteredPortfolio();
+  const { refresh } = useScopedSession();
+  const { open: openGlossary } = useGlossary();
   const location = useLocation();
   const navigate = useNavigate();
 
   useEffect(() => {
     window.scrollTo({ top: 0 });
   }, [location.pathname]);
+
+  /**
+   * The role switcher lives on the Audit screen, so a scope read taken at mount
+   * goes stale the moment it is used. Re-read on navigation and on focus, and
+   * leave the chip clickable for a manual read.
+   */
+  const mounted = useRef(false);
+  useEffect(() => {
+    if (!mounted.current) {
+      mounted.current = true;
+      return;
+    }
+    refresh();
+  }, [location.pathname, refresh]);
+
+  useEffect(() => {
+    const onFocus = () => refresh();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [refresh]);
 
   const PAGES: Record<string, { name: string; id: string }> = {
     '/': { name: 'Group overview', id: 'overview' },
@@ -59,6 +57,7 @@ export function AppShell() {
     '/hotspots': { name: 'Risk hotspots', id: 'hotspots' },
     '/contracts': { name: 'Contract requirements', id: 'contracts' },
     '/exclusions': { name: 'Insurance exclusions', id: 'exclusions' },
+    '/renewals': { name: 'Renewal register', id: 'renewals' },
     '/audit': { name: 'Audit trail', id: 'audit' },
     '/documents': { name: 'Document inbox', id: 'documents' },
   };
@@ -91,6 +90,7 @@ export function AppShell() {
         { id: 'hotspots', label: 'Hotspots' },
         { id: 'contracts', label: 'Contracts' },
         { id: 'exclusions', label: 'Exclusions' },
+        { id: 'renewals', label: 'Renewals' },
       ],
     },
     {
@@ -118,7 +118,7 @@ export function AppShell() {
         sections={sections}
         activeId={activeId}
         onNavigate={onNavigate}
-        footer={<UserBlock />}
+        footer={<ScopeChip />}
       />
 
       <div className="sal-app__main">
@@ -134,23 +134,33 @@ export function AppShell() {
             </>
           }
           actions={
-            <nav className="sal-topnav" aria-label="Pages">
-              <NavLink to="/" end className={({ isActive }) => cn('sal-topnav__link', isActive && 'is-active')}>
-                Overview
-              </NavLink>
-              <NavLink to="/map" className={({ isActive }) => cn('sal-topnav__link', isActive && 'is-active')}>
-                Map
-              </NavLink>
-              <NavLink to="/coverage" className={({ isActive }) => cn('sal-topnav__link', isActive && 'is-active')}>
-                Coverage
-              </NavLink>
-              <NavLink to="/contracts" className={({ isActive }) => cn('sal-topnav__link', isActive && 'is-active')}>
-                Contracts
-              </NavLink>
-              <NavLink to="/exclusions" className={({ isActive }) => cn('sal-topnav__link', isActive && 'is-active')}>
-                Exclusions
-              </NavLink>
-            </nav>
+            <>
+              <button
+                type="button"
+                className="sal-btn sal-btn--ghost sal-btn--sm"
+                aria-haspopup="dialog"
+                onClick={() => openGlossary()}
+              >
+                Glossary
+              </button>
+              <nav className="sal-topnav" aria-label="Pages">
+                <NavLink to="/" end className={({ isActive }) => cn('sal-topnav__link', isActive && 'is-active')}>
+                  Overview
+                </NavLink>
+                <NavLink to="/map" className={({ isActive }) => cn('sal-topnav__link', isActive && 'is-active')}>
+                  Map
+                </NavLink>
+                <NavLink to="/coverage" className={({ isActive }) => cn('sal-topnav__link', isActive && 'is-active')}>
+                  Coverage
+                </NavLink>
+                <NavLink to="/contracts" className={({ isActive }) => cn('sal-topnav__link', isActive && 'is-active')}>
+                  Contracts
+                </NavLink>
+                <NavLink to="/exclusions" className={({ isActive }) => cn('sal-topnav__link', isActive && 'is-active')}>
+                  Exclusions
+                </NavLink>
+              </nav>
+            </>
           }
         />
 
@@ -166,5 +176,15 @@ export function AppShell() {
         </div>
       </div>
     </div>
+  );
+}
+
+export function AppShell() {
+  return (
+    <SessionScopeProvider>
+      <GlossaryProvider>
+        <ShellLayout />
+      </GlossaryProvider>
+    </SessionScopeProvider>
   );
 }

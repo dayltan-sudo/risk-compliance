@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { CSSProperties, JSX } from 'react';
 
 import {
@@ -68,6 +68,61 @@ function compact(value: unknown): string {
 }
 
 type DiffEntry = { key: string; before: string; after: string };
+
+/* --------------------------------------------------------------- time filter */
+
+/**
+ * The audit table's own time filter. `/api/audit` takes no date parameter, and
+ * changing that is out of scope, so the window is applied to the events already
+ * returned: a smaller cut of the same list, with the count saying so.
+ */
+export const AUDIT_WINDOWS = [
+  { id: '7', label: 'Last 7 days', days: 7 },
+  { id: '30', label: 'Last 30 days', days: 30 },
+  { id: 'all', label: 'All time', days: null },
+] as const;
+
+export type AuditWindowId = (typeof AUDIT_WINDOWS)[number]['id'];
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function windowDays(id: AuditWindowId): number | null {
+  return AUDIT_WINDOWS.find((entry) => entry.id === id)?.days ?? null;
+}
+
+/** Rows inside the window, newest-first order untouched. */
+export function filterAuditEvents(
+  events: readonly AuditEvent[],
+  id: AuditWindowId,
+  now: number,
+): AuditEvent[] {
+  const days = windowDays(id);
+  if (days === null) return [...events];
+
+  const cutoff = now - days * DAY_MS;
+  return events.filter((event) => {
+    const at = Date.parse(event.at);
+    // An unparseable timestamp cannot be placed in a window, so it is not shown
+    // in one; it still appears under All time.
+    return Number.isFinite(at) && at >= cutoff;
+  });
+}
+
+function eventCount(count: number): string {
+  return `${count} ${count === 1 ? 'event' : 'events'}`;
+}
+
+/** How many of the returned events the window shows, and what it left out. */
+export function auditWindowNote(
+  shown: number,
+  returned: number,
+  id: AuditWindowId,
+): string {
+  const days = windowDays(id);
+  if (days === null) return `${eventCount(returned)} · no time filter`;
+  if (shown === returned) return `${eventCount(returned)}, all in the last ${days} days`;
+  return `${shown} of ${returned} events in the last ${days} days`;
+}
 
 /** Field-level comparison, with nested values compared by serialised form. */
 function diffEntries(before: unknown, after: unknown): DiffEntry[] {
@@ -175,6 +230,7 @@ export function AuditPage(): JSX.Element {
   const [audit, setAudit] = useState<AuditListResponse | null>(null);
   const [pending, setPending] = useState<Role | 'reset' | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [timeWindow, setTimeWindow] = useState<AuditWindowId>('all');
 
   const loadScope = useCallback(async (signal?: AbortSignal) => {
     const init = signal === undefined ? undefined : { signal };
@@ -252,6 +308,16 @@ export function AuditPage(): JSX.Element {
   const groupEntityCount = scoped?.group.entityCount ?? null;
   const scopeKind = scoped?.scope.kind ?? session?.scope.kind ?? null;
 
+  // Recomputed whenever the log changes or the window changes, so a cut is
+  // never measured against a timestamp from an earlier render.
+  const returnedEvents = useMemo<readonly AuditEvent[]>(() => audit?.events ?? [], [audit]);
+  const now = useMemo(() => Date.now(), [audit, timeWindow]);
+  const visibleEvents = useMemo(
+    () => filterAuditEvents(returnedEvents, timeWindow, now),
+    [returnedEvents, timeWindow, now],
+  );
+  const windowLabel = AUDIT_WINDOWS.find((entry) => entry.id === timeWindow)?.label ?? 'All time';
+
   return (
     <div className="sal-page">
       <PageHeader
@@ -324,18 +390,52 @@ export function AuditPage(): JSX.Element {
 
       <Card
         title="Audit trail"
-        subtitle="Newest first. Append-only: there is no edit or delete endpoint."
+        subtitle={`Newest first. ${auditWindowNote(
+          visibleEvents.length,
+          returnedEvents.length,
+          timeWindow,
+        )}. Append-only: there is no edit or delete endpoint.`}
+        actions={
+          <div className="sal-seg" role="group" aria-label="Audit time window">
+            {AUDIT_WINDOWS.map((entry) => {
+              const active = entry.id === timeWindow;
+              return (
+                <button
+                  key={entry.id}
+                  type="button"
+                  className={active ? 'sal-seg__btn sal-seg__btn--active' : 'sal-seg__btn'}
+                  aria-pressed={active}
+                  onClick={() => setTimeWindow(entry.id)}
+                >
+                  {entry.label}
+                </button>
+              );
+            })}
+          </div>
+        }
         padded={false}
-        footer="In-memory demo store. Eight seeded events plus anything this session changes; a restart clears it."
+        footer="In-memory demo store. Eight seeded events plus anything this session changes; a restart clears it. The time filter narrows the events already returned; the API is not re-queried."
       >
         <DataTable
           columns={columns}
-          rows={audit?.events ?? []}
+          rows={visibleEvents}
           rowKey={(event) => event.id}
           dense
           caption="Audit events with time, actor, action, object and before-to-after field changes"
-          emptyTitle={audit === null ? 'Loading audit trail' : 'No audit events'}
-          emptyHint={audit === null ? 'Reading /api/audit.' : 'Nothing has been recorded yet.'}
+          emptyTitle={
+            audit === null
+              ? 'Loading audit trail'
+              : timeWindow === 'all'
+                ? 'No audit events'
+                : `No events in the ${windowLabel.toLowerCase()}`
+          }
+          emptyHint={
+            audit === null
+              ? 'Reading /api/audit.'
+              : timeWindow === 'all'
+                ? 'Nothing has been recorded yet.'
+                : 'The events returned are all older than this window.'
+          }
         />
       </Card>
 
@@ -370,7 +470,7 @@ const scopeCountStyle: CSSProperties = {
 };
 
 const scopeEntityStyle: CSSProperties = {
-  color: 'var(--crimson-deep)',
+  color: 'var(--accent-deep)',
 };
 
 const scopeNoteStyle: CSSProperties = {
@@ -383,9 +483,9 @@ const scopeNoteStyle: CSSProperties = {
 const errorStyle: CSSProperties = {
   marginTop: 'var(--space-lg)',
   padding: 'var(--space-sm) var(--space-lg)',
-  background: 'var(--crimson-tint)',
+  background: 'var(--accent-tint)',
   borderRadius: 'var(--radius-md)',
-  color: 'var(--crimson-deeper)',
+  color: 'var(--accent-deeper)',
   fontSize: 'var(--text-body-sm)',
 };
 

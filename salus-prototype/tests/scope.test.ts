@@ -10,7 +10,7 @@ import {
   type SessionResponse,
 } from '../src/audit/types';
 import { portfolio } from '../src/data/portfolio';
-import { scopeFor, scopedPortfolio } from '../server/middleware/scope';
+import { isInScope, scopeFor, scopedPortfolio } from '../server/middleware/scope';
 import { exportRoutes, toCsv } from '../server/routes/export';
 import { SESSION_COOKIE_NAME, sessionRoutes } from '../server/routes/session';
 
@@ -217,6 +217,29 @@ describe('session routes', () => {
       body: JSON.stringify({ role: 'Admin' }),
     });
     expect(response.status).toBe(400);
+  });
+});
+
+describe('isInScope', () => {
+  const champion = { kind: 'entity' as const, entityId: 'ent-01', entityName: 'E1', entityIds: ['ent-01'], entityCount: 1 };
+  const empty = { kind: 'entity' as const, entityId: 'ent-99', entityName: null, entityIds: [], entityCount: 0 };
+  const group = { kind: 'group' as const, entityId: null, entityName: null, entityIds: ['ent-01', 'ent-02'], entityCount: 2 };
+
+  it('lets a group scope see every row, including unowned ones', () => {
+    expect(isInScope(group, null)).toBe(true);
+    expect(isInScope(group, 'ent-01')).toBe(true);
+    expect(isInScope(group, 'ent-02')).toBe(true);
+  });
+
+  it('lets an entity scope see its own rows only, never unowned rows', () => {
+    expect(isInScope(champion, 'ent-01')).toBe(true);
+    expect(isInScope(champion, 'ent-02')).toBe(false);
+    expect(isInScope(champion, null)).toBe(false);
+  });
+
+  it('denies everything to an entity scope with no valid entity', () => {
+    expect(isInScope(empty, 'ent-99')).toBe(false);
+    expect(isInScope(empty, null)).toBe(false);
   });
 });
 

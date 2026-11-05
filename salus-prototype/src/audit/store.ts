@@ -107,6 +107,26 @@ const SEED: readonly AuditEvent[] = [
     after: { requiredLimit: 150_000_000, placedLimit: 138_000_000, status: 'At-risk' },
   },
   {
+    id: 'aud-0009',
+    at: '2026-10-29T04:10:00.000Z',
+    actor: 'Wei Ling Chua (Entity Champion)',
+    action: 'coverage.versioned',
+    objectType: 'coverage',
+    objectId: 'cov-01',
+    before: { version: 1, limitOcc: 480_000_000 },
+    after: { version: 2, limitOcc: 500_000_000 },
+  },
+  {
+    id: 'aud-0010',
+    at: '2026-11-02T02:55:00.000Z',
+    actor: 'Wei Ling Chua (Entity Champion)',
+    action: 'requirement.reviewed',
+    objectType: 'requirement',
+    objectId: 'req-05',
+    before: { status: 'At-risk' },
+    after: { status: 'Met' },
+  },
+  {
     id: 'aud-0008',
     at: '2026-11-04T09:02:00.000Z',
     actor: 'Wei Ling Chua (Entity Champion)',
@@ -152,10 +172,21 @@ export function listAudit(query: AuditQuery = {}): AuditEvent[] {
       ? AUDIT_DEFAULT_LIMIT
       : Math.min(Math.max(Math.floor(requested), 0), AUDIT_MAX_LIMIT);
 
+  // Newest first by timestamp, not by arrival. Seeded history is written in
+  // array order, and a seed row inserted out of sequence used to surface in the
+  // wrong place while the page claimed "Newest first". Arrival order is the
+  // tiebreak: two events recorded inside the same millisecond must still read
+  // newest-recorded first.
+  const ordered = events
+    .map((event, index) => ({ event, index }))
+    .sort((a, b) =>
+      a.event.at < b.event.at ? 1 : a.event.at > b.event.at ? -1 : b.index - a.index,
+    )
+    .map((entry) => entry.event);
+
   const result: AuditEvent[] = [];
-  for (let index = events.length - 1; index >= 0 && result.length < limit; index -= 1) {
-    const event = events[index];
-    if (event === undefined) continue;
+  for (const event of ordered) {
+    if (result.length >= limit) break;
     if (query.objectType !== undefined && event.objectType !== query.objectType) continue;
     result.push(event);
   }

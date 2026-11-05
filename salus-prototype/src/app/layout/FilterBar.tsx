@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 
 import { LINES } from '../../engine';
 import type { Line } from '../../engine';
@@ -12,6 +13,13 @@ const RENEWAL_LABEL: Record<RenewalWindow, string> = {
   90: 'Next 90 days',
 };
 
+/**
+ * Screens whose body does not read the portfolio filters. The audit log comes
+ * from `/api/audit`, which takes no filter parameters, so the bar would move
+ * nothing on screen while implying it had.
+ */
+const UNFILTERED_PATHS: ReadonlySet<string> = new Set(['/audit']);
+
 function renewalFromValue(value: string): RenewalWindow | null {
   return value === '30' ? 30 : value === '60' ? 60 : value === '90' ? 90 : null;
 }
@@ -23,6 +31,7 @@ function renewalFromValue(value: string): RenewalWindow | null {
 export function FilterBar() {
   const { filters, setFilters, reset, isFiltered, portfolio, entities, summary, totalSites } =
     useFilteredPortfolio();
+  const location = useLocation();
   const menuRef = useRef<HTMLDetailsElement>(null);
   const [copied, setCopied] = useState(false);
 
@@ -64,6 +73,10 @@ export function FilterBar() {
       })
       .catch(() => undefined);
   }, []);
+
+  // Every hook above has run. Audit never reads these filters, so the bar is
+  // hidden there rather than left as a control with no effect on the page.
+  if (UNFILTERED_PATHS.has(location.pathname)) return null;
 
   return (
     <div className="sal-filters" role="region" aria-label="Portfolio filters">

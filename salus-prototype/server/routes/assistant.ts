@@ -3,6 +3,10 @@ import { z } from 'zod';
 
 import { openAiAssistantModel, type AssistantModel } from '../../src/assistant/client';
 import { AssistantCitationError, runAssistant, type Answer } from '../../src/assistant/run';
+import { portfolio } from '../../src/data/portfolio';
+import { BODY_LIMITS, bodyTooLarge, readJsonBody } from '../middleware/body';
+import { scopeFor } from '../middleware/scope';
+import { readSession } from './session';
 
 /**
  * P6 assistant route.
@@ -16,6 +20,10 @@ import { AssistantCitationError, runAssistant, type Answer } from '../../src/ass
  *   3. `SALUS_ASSISTANT_BASE_URL` + `SALUS_ASSISTANT_MODEL` in the environment.
  *
  * With none of those present the route returns 503. It never fakes an answer.
+ *
+ * Scope: the assistant's tools read the group portfolio directly, so a scoped
+ * session (an Entity Champion) is refused with 403 rather than answered with
+ * group figures. Lifting that needs the tools to take a scoped portfolio.
  */
 
 export interface AssistantRoutesOptions {
@@ -60,8 +68,26 @@ export function createAssistantRoutes(options: AssistantRoutesOptions = {}): Hon
   const explicit = options.model;
 
   app.post('/api/assistant', async (c) => {
-    const body: unknown = await c.req.json().catch(() => undefined);
-    const parsed = askSchema.safeParse(body);
+    const session = await readSession(c);
+    if (scopeFor(portfolio, session).kind !== 'group') {
+      return c.json(
+        {
+          error:
+            'the assistant answers from group-wide figures and is not available to a scoped session',
+          code: 'assistant_group_only',
+        },
+        403,
+      );
+    }
+
+    // The raw body is size-checked before it is parsed, so an oversized
+    // question never reaches JSON.parse. The 2,000-character question limit is
+    // applied by the schema below, and a body that fits but holds a longer
+    // question is a 400.
+    const read = await readJsonBody(c, BODY_LIMITS.assistantAsk);
+    if (read.kind === 'too_large') return bodyTooLarge(c, read.limitBytes);
+
+    const parsed = askSchema.safeParse(read.body);
     if (!parsed.success) {
       return c.json(
         {

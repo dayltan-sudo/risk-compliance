@@ -18,6 +18,7 @@ const screens = [
   { path: '/hotspots', heading: 'Hotspot' },
   { path: '/contracts', heading: 'Contract' },
   { path: '/exclusions', heading: 'Exclusion' },
+  { path: '/renewals', heading: 'Renewal' },
   { path: '/audit', heading: 'Audit' },
   { path: '/documents', heading: 'Document' },
 ];

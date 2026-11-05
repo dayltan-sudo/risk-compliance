@@ -1,4 +1,9 @@
-import { coverageLimitSgd, daysBetween, requirementStatus } from '../../engine';
+import {
+  coverageLimitSgd,
+  daysBetween,
+  findExclusionOverride,
+  requirementStatus,
+} from '../../engine';
 import type { Band, Portfolio, Site } from '../../engine';
 import type { ScoredSite } from '../layout/filters';
 import { formatDate, formatMoneyCompact, formatPct } from './format';
@@ -17,6 +22,41 @@ export interface ExceptionRow {
   /** Short line for the action rail. */
   meta: string;
   valueSgd: number;
+  /** Deep link to the record that caused the exception, not to the site's map pin. */
+  href: string;
+  /**
+   * `record` links go straight to the page that owns the row, so they are kept
+   * bare: a hash link is only useful if the anchored row is definitely rendered,
+   * which a filtered page cannot promise. `map` links are the fallback for rows
+   * with no page of their own, and callers may add the current filter scope.
+   */
+  target: 'record' | 'map';
+}
+
+/** Singular and plural nouns for the one-line breakdown under the table. */
+const KIND_NOUN: Record<ExceptionKind, readonly [string, string]> = {
+  'Requirement gap': ['requirement gap', 'requirement gaps'],
+  'Excluded cover': ['exclusion', 'exclusions'],
+  Renewal: ['renewal', 'renewals'],
+  'Under-insured': ['under-insured site', 'under-insured sites'],
+};
+
+/**
+ * "4 requirement gaps + 3 exclusions + 2 renewals + 4 under-insured sites",
+ * counted from the same rows the table and rail render. Empty set gives ''.
+ */
+export function describeExceptions(rows: readonly ExceptionRow[]): string {
+  const counts = new Map<ExceptionKind, number>();
+  for (const row of rows) counts.set(row.kind, (counts.get(row.kind) ?? 0) + 1);
+
+  return (Object.keys(KIND_NOUN) as ExceptionKind[])
+    .filter((kind) => (counts.get(kind) ?? 0) > 0)
+    .map((kind) => {
+      const count = counts.get(kind) ?? 0;
+      const [one, many] = KIND_NOUN[kind];
+      return `${count} ${count === 1 ? one : many}`;
+    })
+    .join(' + ');
 }
 
 const BAND_RANK: Record<Band, number> = { Critical: 0, High: 1, Medium: 2, Low: 3 };
@@ -53,6 +93,8 @@ export function buildExceptions(
     const placedPct = assessment.requiredSgd > 0 ? (assessment.placedSgd / assessment.requiredSgd) * 100 : 0;
     const isGap = assessment.status === 'Gap';
     const shortfall = Math.max(0, assessment.requiredSgd - assessment.placedSgd);
+    // Null for a plain gap: an override would have made the status Excluded.
+    const override = isGap ? null : findExclusionOverride(requirement, assessment.requiredSgd, portfolio, asOf);
 
     rows.push({
       id: `requirement-${requirement.id}`,
@@ -69,6 +111,11 @@ export function buildExceptions(
         : (assessment.note ?? `${requirement.line} requirement is overridden by an exclusion.`),
       meta: `${site.name} · ${requirement.clauseRef}`,
       valueSgd: isGap ? shortfall : assessment.requiredSgd,
+      href:
+        override === null
+          ? `/contracts#${requirement.id}`
+          : `/exclusions#${override.exclusion.id}`,
+      target: 'record',
     });
   }
 
@@ -105,6 +152,9 @@ export function buildExceptions(
       detail: `${policy.line} · ${carrier} · expires ${formatDate(policy.expiry)}.`,
       meta: `${site.name} · ${days}d`,
       valueSgd: limitSgd,
+      // No renewal page yet, so the map's site focus is the best available target.
+      href: `/map?site=${site.id}`,
+      target: 'map',
     });
   }
 
@@ -121,6 +171,12 @@ export function buildExceptions(
       detail: `TIV ${formatMoneyCompact(entry.site.tivSgd)}; property cover ${formatMoneyCompact(entry.coverSgd)}.`,
       meta: `${entry.site.name} · ITV ${formatPct(entry.tivCoverRatio * 100, 0)}`,
       valueSgd: Math.max(0, entry.site.tivSgd - entry.coverSgd),
+      // `/coverage#<site id>` is not wired: the Coverage page renders no element
+      // carrying a site id, so the hash would land on the page top with no
+      // highlight. The map's site focus is the only surface that can point at one
+      // site, so it stays the target until Coverage grows per-site anchors.
+      href: `/map?site=${entry.site.id}`,
+      target: 'map',
     });
   }
 

@@ -3,6 +3,8 @@ import type { ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { portfolio as seedPortfolio } from '../../data/portfolio';
+import { applyPostedRecords } from '../../data/overlay';
+import { usePostedRecords } from './posted';
 import {
   LINES,
   activeCoveragesForSite,
@@ -350,7 +352,12 @@ export function FilterProvider({ children }: { children: ReactNode }) {
     apply(EMPTY_FILTERS);
   }, [apply]);
 
-  const portfolio = useMemo(() => filterPortfolio(seedPortfolio, filters), [filters]);
+  const posted = usePostedRecords();
+  const base = useMemo(
+    () => (posted.length === 0 ? seedPortfolio : applyPostedRecords(seedPortfolio, posted).portfolio),
+    [posted],
+  );
+  const portfolio = useMemo(() => filterPortfolio(base, filters), [base, filters]);
   const summary = useMemo(() => groupSummary(portfolio), [portfolio]);
   const sites = useMemo(() => scoreSites(portfolio.sites), [portfolio.sites]);
 

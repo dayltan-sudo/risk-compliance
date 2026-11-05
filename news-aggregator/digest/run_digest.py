@@ -2,7 +2,8 @@
 
     cd news-aggregator && python3 digest/run_digest.py [--db PATH] [--out-dir DIR]
 
-Local output only. No delivery (Telegram/email/webhook) is implemented.
+Writes the local file, then sends the digest to Telegram. A failed send is reported but does not
+change the exit code.
 """
 import argparse
 import os
@@ -12,6 +13,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 
 from digest.formatter import ensure_digest_table, make_digest, record_digest_run  # noqa: E402
+from digest.telegram_delivery import send_digest  # noqa: E402
 from storage import connect  # noqa: E402
 
 DEFAULT_OUT_DIR = os.path.join(ROOT, "digest", "output")
@@ -42,6 +44,11 @@ def main(argv=None):
     md, path = run(args.db, args.out_dir)
     print(md, end="")
     print(f"\n(written to {path})", file=sys.stderr)
+    try:
+        send_digest(md)
+        print("Telegram: digest sent", file=sys.stderr)
+    except Exception as e:
+        print(f"Telegram delivery FAILED: {e}", file=sys.stderr)
 
 
 if __name__ == "__main__":

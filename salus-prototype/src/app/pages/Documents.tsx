@@ -1,5 +1,5 @@
 /// <reference types="vite/client" />
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CSSProperties, JSX } from 'react';
 
 import endorsementText from '../../../fixtures/documents/endorsement-property-1.txt?raw';
@@ -11,6 +11,7 @@ import type { QueueItemSummary, PostedDocument } from '../../ingestion/queue';
 import type { DocumentType } from '../../ingestion/schema';
 import type { Field, QueuedField, QueueReason, RejectedField } from '../../ingestion/validate';
 import { PageHeader } from '../components/PageHeader';
+import { recordPosted } from '../layout/posted';
 import { Card, DataTable, KpiTile, Tag } from '../ui';
 import type { Column, TagTone } from '../ui';
 
@@ -340,6 +341,17 @@ interface CreateDocumentResponse extends QueueItemSummary {
   rejected: RejectedField[];
 }
 
+/** The upload endpoint returns the same shape plus how the file was read. */
+interface UploadResponse extends CreateDocumentResponse {
+  extraction: {
+    source: 'model' | 'rules';
+    kind: 'pdf' | 'docx' | 'txt';
+    pages: number;
+    documentType: string;
+    bytes: number;
+  };
+}
+
 interface QueueListResponse {
   documents: QueueItemSummary[];
   total: number;
@@ -482,7 +494,9 @@ const queueColumns: Array<Column<QueueItemSummary>> = [
   },
 ];
 
-const acceptedColumns: Array<Column<AcceptedRow>> = [
+/** Where the accepted values came from: a model read or the rules matcher. */
+function acceptedColumns(origin: 'Model' | 'Rules' | 'Replay'): Array<Column<AcceptedRow>> {
+  return [
   {
     key: 'key',
     header: 'Field',
@@ -523,10 +537,11 @@ const acceptedColumns: Array<Column<AcceptedRow>> = [
       row.reviewed ? (
         <Tag tone="accent">You</Tag>
       ) : (
-        <Tag tone="neutral">Model</Tag>
+        <Tag tone="neutral">{origin}</Tag>
       ),
   },
-];
+  ];
+}
 
 const correctionColumns: Array<Column<CorrectionRow>> = [
   {
@@ -567,6 +582,10 @@ export function DocumentsPage(): JSX.Element {
   const [loadedFixtureId, setLoadedFixtureId] = useState<string | null>(null);
   const [text, setText] = useState('');
   const [extraction, setExtraction] = useState<ExtractionView | null>(null);
+  const [uploadInfo, setUploadInfo] = useState<UploadResponse['extraction'] | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [queuedValues, setQueuedValues] = useState<Record<string, string>>({});
   const [posted, setPosted] = useState<PostedDocument | null>(null);
   const [queue, setQueue] = useState<QueueListResponse | null>(null);
@@ -602,6 +621,14 @@ export function DocumentsPage(): JSX.Element {
   const postView = posted === null ? null : buildPostView(posted);
   const busy = extracting || posting || acceptingKey !== null;
 
+  /**
+   * Fixture replay is neither a model read nor a rules read: it repeats a
+   * checked-in answer, and saying otherwise in the Origin column would be the
+   * one misrepresentation this pipeline cannot afford.
+   */
+  const extractionOrigin: 'Model' | 'Rules' | 'Replay' =
+    uploadInfo === null ? 'Replay' : uploadInfo.source === 'model' ? 'Model' : 'Rules';
+
   const loadDocument = () => {
     if (selectedFixture === undefined) return;
     setLoadedFixtureId(selectedFixture.id);
@@ -617,6 +644,7 @@ export function DocumentsPage(): JSX.Element {
 
     setExtracting(true);
     setFailure(null);
+    sourceRef.current = { kind: 'fixture', id: loadedFixture.id, file: loadedFixture.file, text };
     try {
       const response = await requestJson<CreateDocumentResponse>('/api/documents', {
         method: 'POST',
@@ -650,6 +678,95 @@ export function DocumentsPage(): JSX.Element {
     }
   };
 
+  const uploadDocument = async (file: File) => {
+    if (busy || uploading) return;
+
+    setUploading(true);
+    setFailure(null);
+    setUploadInfo(null);
+    setExtraction(null);
+    setPosted(null);
+    sourceRef.current = { kind: 'upload', file };
+
+    try {
+      const body = new FormData();
+      body.append('file', file);
+
+      const response = await requestJson<UploadResponse>('/api/documents/upload', {
+        method: 'POST',
+        body,
+      });
+
+      const rows = splitFields(response.accepted, response.queued);
+      setLoadedFixtureId(null);
+      setText('');
+      setExtraction({
+        documentId: response.documentId,
+        name: response.name,
+        documentType: response.documentType,
+        completeness: response.completeness,
+        accepted: rows.accepted,
+        queued: rows.queued,
+        rejected: response.rejected,
+      });
+      setUploadInfo(response.extraction);
+      setQueuedValues(Object.fromEntries(rows.queued.map((row) => [row.key, row.value])));
+      void loadQueue();
+    } catch (cause) {
+      setFailure(toFailure(cause));
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  /**
+   * How the current draft got here, so it can be rebuilt if the server forgot
+   * it. A serverless instance can be replaced between two clicks: extract on
+   * one, post on another, and the post 404s. Re-running the source costs one
+   * repeat call and turns a broken demo into a latency blip.
+   */
+  const sourceRef = useRef<
+    | { kind: 'upload'; file: File }
+    | { kind: 'fixture'; id: string; file: string; text: string }
+    | null
+  >(null);
+
+  const reenqueue = async (): Promise<void> => {
+    const source = sourceRef.current;
+    if (source === null) return;
+
+    if (source.kind === 'upload') {
+      const body = new FormData();
+      body.append('file', source.file);
+      if (extraction !== null) body.append('documentId', extraction.documentId);
+      await requestJson<UploadResponse>('/api/documents/upload', { method: 'POST', body });
+      return;
+    }
+
+    await requestJson<CreateDocumentResponse>('/api/documents', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: source.id, name: source.file, text: source.text }),
+    });
+  };
+
+  /** Retry once after rebuilding the queue entry, only for a missing document. */
+  const withRecovery = async <T,>(operation: () => Promise<T>): Promise<T> => {
+    try {
+      return await operation();
+    } catch (cause) {
+      if (cause instanceof ApiError && cause.status === 404) {
+        try {
+          await reenqueue();
+        } catch {
+          // 409 means another instance already has it; either way, retry.
+        }
+        return operation();
+      }
+      throw cause;
+    }
+  };
+
   const acceptField = async (row: QueuedRow) => {
     if (extraction === null || acceptingKey !== null) return;
 
@@ -659,13 +776,15 @@ export function DocumentsPage(): JSX.Element {
     setAcceptingKey(row.key);
     setFailure(null);
     try {
-      const response = await requestJson<AcceptFieldResponse>(
-        `/api/documents/${encodeURIComponent(extraction.documentId)}/fields/${encodeURIComponent(row.key)}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ value }),
-        },
+      const response = await withRecovery(() =>
+        requestJson<AcceptFieldResponse>(
+          `/api/documents/${encodeURIComponent(extraction.documentId)}/fields/${encodeURIComponent(row.key)}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ value }),
+          },
+        ),
       );
 
       setExtraction((current) =>
@@ -698,12 +817,20 @@ export function DocumentsPage(): JSX.Element {
     setPosting(true);
     setFailure(null);
     try {
-      const response = await requestJson<PostedDocument>(
-        `/api/documents/${encodeURIComponent(extraction.documentId)}/post`,
-        { method: 'POST' },
+      const response = await withRecovery(() =>
+        requestJson<PostedDocument>(
+          `/api/documents/${encodeURIComponent(extraction.documentId)}/post`,
+          { method: 'POST' },
+        ),
       );
 
       setPosted(response);
+      recordPosted({
+        documentId: response.documentId,
+        version: response.version,
+        fields: response.fields,
+        postedAt: response.postedAt,
+      });
       setExtraction((current) =>
         current === null
           ? current
@@ -796,10 +923,10 @@ export function DocumentsPage(): JSX.Element {
       <PageHeader
         eyebrow="Ingestion · P5"
         title="Document inbox"
-        subtitle="Load a checked-in fixture, extract its fields, correct what the model was unsure about, then post an immutable version. Extraction runs on a fixture-replay client: no model call, no network, no API key."
+        subtitle="Upload a PDF, DOCX or text file: the server reads the text layer, extracts the labelled fields, and queues anything it cannot support. Correct what it was unsure about, then post an immutable version. Saved examples are still available as a replay."
         actions={
-          <Tag tone="accent" dot title="POST /api/documents replays fixtures/expected/<id>.json">
-            Fixture replay · no model
+          <Tag tone="accent" dot title="POST /api/documents/upload parses the file; POST /api/documents replays a checked-in fixture">
+            Real upload · fixture replay available
           </Tag>
         }
       />
@@ -807,42 +934,122 @@ export function DocumentsPage(): JSX.Element {
       {failure === null ? null : <ErrorNotice failure={failure} />}
 
       <Card
-        title="1 · Load a document"
-        subtitle="Pick a fixture, then load it. The preview is the exact text that would be uploaded."
-        footer="Fixture replay is a demo path: POSTing a fixture id returns its checked-in fixtures/expected/<id>.json rather than a model extraction."
+        title="1 · Upload a document"
+        subtitle="Drop a PDF, DOCX or text file, or open one of the saved examples underneath. Either way the preview below is what the extractor actually read."
+        footer="Uploads are parsed on the server (PDF and DOCX text layers). Saved examples use POST /api/documents, which replays a checked-in fixture — the response says which path ran."
         actions={
-          <Tag tone={loadedFixture === undefined ? 'neutral' : 'accent'}>
-            {loadedFixture === undefined ? 'No document loaded' : loadedFixture.file}
-          </Tag>
+          uploadInfo === null ? (
+            <Tag tone={loadedFixture === undefined ? 'neutral' : 'accent'}>
+              {loadedFixture === undefined ? 'No document loaded' : loadedFixture.file}
+            </Tag>
+          ) : (
+            <Tag
+              tone={uploadInfo.source === 'model' ? 'accent' : 'medium'}
+              dot
+              title={
+                uploadInfo.source === 'model'
+                  ? 'Fields were read by the configured extraction model'
+                  : 'Fields were read by the deterministic label matcher: no model was called'
+              }
+            >
+              {uploadInfo.source === 'model' ? 'Read by model' : 'Read by rules'} ·{' '}
+              {uploadInfo.kind.toUpperCase()} · {uploadInfo.pages} page
+              {uploadInfo.pages === 1 ? '' : 's'}
+            </Tag>
+          )
         }
       >
-        <div style={fixtureGridStyle}>
-          {FIXTURES.map((fixture) => {
-            const selected = fixture.id === selectedFixtureId;
-            return (
-              <button
-                key={fixture.id}
-                type="button"
-                aria-pressed={selected}
-                style={selected ? { ...fixtureButtonStyle, ...fixtureButtonSelectedStyle } : fixtureButtonStyle}
-                onClick={() => setSelectedFixtureId(fixture.id)}
-              >
-                <span style={fixtureTitleStyle}>{fixture.title}</span>
-                <span className="sal-mono" style={fixtureFileStyle}>
-                  {fixture.file}
-                </span>
-                <span style={fixtureDescriptionStyle}>{fixture.description}</span>
-                {inQueue(fixture.id) ? (
-                  <span style={fixtureTagsStyle}>
-                    <Tag tone="medium" dot>
-                      In queue
-                    </Tag>
-                  </span>
-                ) : null}
-              </button>
-            );
-          })}
+        <div
+          onDragOver={(event) => {
+            event.preventDefault();
+            setDragging(true);
+          }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={(event) => {
+            event.preventDefault();
+            setDragging(false);
+            const file = event.dataTransfer.files.item(0);
+            if (file !== null) void uploadDocument(file);
+          }}
+          style={{
+            border: `1px dashed ${dragging ? '#6b8afd' : 'rgba(120,130,150,0.45)'}`,
+            borderRadius: 10,
+            padding: '16px 18px',
+            marginBottom: 18,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 16,
+            flexWrap: 'wrap',
+            background: dragging ? 'rgba(107,138,253,0.06)' : 'transparent',
+          }}
+        >
+          <div>
+            <div style={{ fontWeight: 600, marginBottom: 3 }}>Drop a file here, or choose one</div>
+            <div style={{ fontSize: 12, opacity: 0.72 }}>
+              PDF, DOCX or TXT, up to 8 MB. A scanned PDF with no text layer is refused rather than
+              guessed at.
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
+              style={{ display: 'none' }}
+              onChange={(event) => {
+                const file = event.target.files?.item(0) ?? null;
+                event.target.value = '';
+                if (file !== null) void uploadDocument(file);
+              }}
+            />
+            <button
+              type="button"
+              className="sal-btn"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={busy || uploading}
+            >
+              {uploading ? 'Reading…' : 'Choose file'}
+            </button>
+          </div>
         </div>
+
+        <details style={sampleDisclosureStyle}>
+          <summary style={sampleSummaryStyle}>
+            <span style={sampleTitleStyle}>Try a sample document</span>{' '}
+            <span style={sampleMetaStyle}>
+              {FIXTURES.length} saved examples · replay, no upload
+            </span>
+          </summary>
+
+          <div style={{ ...fixtureGridStyle, marginTop: 'var(--space-sm)' }}>
+            {FIXTURES.map((fixture) => {
+              const selected = fixture.id === selectedFixtureId;
+              return (
+                <button
+                  key={fixture.id}
+                  type="button"
+                  aria-pressed={selected}
+                  style={selected ? { ...fixtureButtonStyle, ...fixtureButtonSelectedStyle } : fixtureButtonStyle}
+                  onClick={() => setSelectedFixtureId(fixture.id)}
+                >
+                  <span style={fixtureTitleStyle}>{fixture.title}</span>
+                  <span className="sal-mono" style={fixtureFileStyle}>
+                    {fixture.file}
+                  </span>
+                  <span style={fixtureDescriptionStyle}>{fixture.description}</span>
+                  {inQueue(fixture.id) ? (
+                    <span style={fixtureTagsStyle}>
+                      <Tag tone="medium" dot>
+                        In queue
+                      </Tag>
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+        </details>
 
         <div style={toolbarStyle}>
           <button
@@ -878,7 +1085,7 @@ export function DocumentsPage(): JSX.Element {
           readOnly
           spellCheck={false}
           rows={14}
-          placeholder="Pick a fixture above, then choose Load document."
+          placeholder="Pick a sample above, then choose Load document."
         />
       </Card>
 
@@ -933,7 +1140,7 @@ export function DocumentsPage(): JSX.Element {
 
             <p style={sectionHeadingStyle}>Accepted fields</p>
             <DataTable
-              columns={acceptedColumns}
+              columns={acceptedColumns(extractionOrigin)}
               rows={extraction.accepted}
               rowKey={(row) => row.key}
               dense
@@ -1107,6 +1314,33 @@ const fixtureGridStyle: CSSProperties = {
   gap: 'var(--space-sm)',
 };
 
+/**
+ * The five saved examples sit behind one disclosure below the dropzone, so the
+ * first thing an employee meets is the upload they came to do. Each card keeps
+ * the select → Load document → Extract fields behaviour unchanged.
+ */
+const sampleDisclosureStyle: CSSProperties = {
+  marginBottom: 'var(--space-xs)',
+};
+
+const sampleSummaryStyle: CSSProperties = {
+  padding: '2px 0',
+  color: 'var(--ink)',
+  cursor: 'pointer',
+};
+
+const sampleTitleStyle: CSSProperties = {
+  fontWeight: 'var(--weight-semibold)',
+  fontSize: 'var(--text-body-sm)',
+};
+
+const sampleMetaStyle: CSSProperties = {
+  fontFamily: 'var(--font-mono)',
+  fontSize: 'var(--text-micro)',
+  letterSpacing: '.03em',
+  color: 'var(--muted)',
+};
+
 const fixtureButtonStyle: CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
@@ -1122,9 +1356,9 @@ const fixtureButtonStyle: CSSProperties = {
 };
 
 const fixtureButtonSelectedStyle: CSSProperties = {
-  borderColor: 'var(--crimson)',
+  borderColor: 'var(--accent)',
   background: 'var(--card)',
-  boxShadow: 'inset 0 0 0 1px var(--crimson)',
+  boxShadow: 'inset 0 0 0 1px var(--accent)',
 };
 
 const fixtureTitleStyle: CSSProperties = {
@@ -1137,7 +1371,7 @@ const fixtureTitleStyle: CSSProperties = {
 const fixtureFileStyle: CSSProperties = {
   fontSize: 'var(--text-micro)',
   letterSpacing: '.04em',
-  color: 'var(--crimson-deep)',
+  color: 'var(--accent-deep)',
 };
 
 const fixtureDescriptionStyle: CSSProperties = {
@@ -1270,7 +1504,7 @@ const rejectedItemStyle: CSSProperties = {
 
 const rejectedKeyStyle: CSSProperties = {
   flex: 'none',
-  color: 'var(--crimson-deep)',
+  color: 'var(--accent-deep)',
 };
 
 const postHeadlineStyle: CSSProperties = {
@@ -1292,7 +1526,7 @@ const postMetaStyle: CSSProperties = {
 const auditSummaryStyle: CSSProperties = {
   marginTop: 'var(--space-lg)',
   padding: 'var(--space-sm) var(--space-lg)',
-  borderLeft: '3px solid var(--crimson)',
+  borderLeft: '3px solid var(--accent)',
   background: 'var(--paper)',
   fontSize: 'var(--text-body-sm)',
   lineHeight: 'var(--leading-snug)',
@@ -1306,7 +1540,7 @@ const auditLabelStyle: CSSProperties = {
   fontSize: 'var(--text-micro)',
   letterSpacing: '.05em',
   textTransform: 'uppercase',
-  color: 'var(--crimson-deep)',
+  color: 'var(--accent-deep)',
 };
 
 const beforeStyle: CSSProperties = {

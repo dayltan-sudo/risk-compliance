@@ -10,21 +10,25 @@
 /* ------------------------------------------------------------------ colour */
 
 export const color = {
-  ink950: '#18130E',
-  ink850: '#241C15',
-  ink800: '#2E2419',
-  ink: '#221C16',
-  crimson: '#E51D37',
-  crimsonDeep: '#A81530',
-  crimsonDeeper: '#87101F',
-  crimsonTint: '#FBE4E8',
-  parchment: '#C9BFAC',
-  dusk: '#9A8E7A',
-  duskDim: '#6E6350',
+  ink950: '#14130F',
+  ink850: '#1C1B17',
+  ink800: '#26251F',
+  ink: '#21201C',
+  accent: '#3A5BC7',
+  accentDeep: '#2C46A5',
+  accentDeeper: '#1F2D5C',
+  accentTint: '#EDF2FE',
+  focus: '#3E63DD',
+  brand: '#CB1D63',
+  parchment: '#6E6E69',
+  dusk: '#6B6B66',
+  duskDim: '#4A4A46',
   paper: '#F7F4EE',
   card: '#FFFFFF',
-  muted: '#736A5C',
-  line: '#E7E0D3',
+  muted: '#63635E',
+  line: '#DAD9D6',
+  lineStrong: '#BCBBB5',
+  controlBorder: '#8D8D86',
 } as const;
 
 export type ColorName = keyof typeof color;
@@ -52,10 +56,10 @@ export interface StatusColors {
 }
 
 export const band: Record<BandName, BandColors> = {
-  Low: { fg: '#1F7A5C', bg: '#E6F3EC', text: '#1F7A5C' },
-  Medium: { fg: '#C9932E', bg: '#FBF1DE', text: '#8A6A1E' },
-  High: { fg: '#C9642E', bg: '#FBE9DE', text: '#96481E' },
-  Critical: { fg: '#8B2E22', bg: '#F5E2DA', text: '#6E2418' },
+  Low: { fg: '#008573', bg: '#E0F8F3', text: '#0D3D38' },
+  Medium: { fg: '#AB6400', bg: '#FFF7C2', text: '#4F3422' },
+  High: { fg: '#CC4E00', bg: '#FFEFD6', text: '#582D1D' },
+  Critical: { fg: '#CE2C31', bg: '#FEEBEC', text: '#641723' },
 };
 
 export const status: Record<StatusName, StatusColors> = {
@@ -91,7 +95,7 @@ export interface ToneColors {
 
 export const tone: Record<ToneName, ToneColors> = {
   neutral: { name: 'neutral', fg: color.muted, bg: color.paper, dot: color.muted },
-  accent: { name: 'accent', fg: color.crimsonDeep, bg: color.crimsonTint, dot: color.crimson },
+  accent: { name: 'accent', fg: color.accentDeep, bg: color.accentTint, dot: color.accent },
   low: { name: 'low', fg: band.Low.text, bg: band.Low.bg, dot: band.Low.fg },
   medium: { name: 'medium', fg: band.Medium.text, bg: band.Medium.bg, dot: band.Medium.fg },
   high: { name: 'high', fg: band.High.text, bg: band.High.bg, dot: band.High.fg },
@@ -190,7 +194,7 @@ export const border = {
   width: '1px',
   hairline: `1px solid ${color.line}`,
   rail: `1px solid ${color.ink800}`,
-  accent: `1px solid ${color.crimson}`,
+  accent: `1px solid ${color.accent}`,
   transparent: '1px solid transparent',
 } as const;
 

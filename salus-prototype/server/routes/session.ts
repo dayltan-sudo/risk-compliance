@@ -17,6 +17,7 @@ import {
 } from '../../src/audit/types';
 import { portfolio } from '../../src/data/portfolio';
 import { groupSummary } from '../../src/engine/summary';
+import { BODY_LIMITS, bodyTooLarge, readJsonBody } from '../middleware/body';
 import { scopeFor, scopedPortfolio } from '../middleware/scope';
 
 /**
@@ -137,8 +138,9 @@ sessionRoutes.get('/api/session', async (c) => c.json(toSessionResponse(await re
 const roleSchema = z.object({ role: z.enum(ROLES) });
 
 sessionRoutes.post('/api/session/role', async (c) => {
-  const body: unknown = await c.req.json().catch(() => undefined);
-  const parsed = roleSchema.safeParse(body);
+  const read = await readJsonBody(c, BODY_LIMITS.sessionRole);
+  if (read.kind === 'too_large') return bodyTooLarge(c, read.limitBytes);
+  const parsed = roleSchema.safeParse(read.body);
 
   if (!parsed.success) {
     return c.json(

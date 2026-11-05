@@ -1,11 +1,14 @@
-import { handle } from 'hono/vercel';
+import { getRequestListener } from '@hono/node-server';
 import app from '../server/index';
 
 /**
  * Vercel Node function entry point.
  *
- * `handle(app)` is the Node-runtime adapter. A bare `export default app` is an
- * edge-runtime shape and would fail on the Node function; this still default-
- * exports the one Hono app.
+ * Vercel's Node runtime calls the default export as `(req: IncomingMessage,
+ * res: ServerResponse)`. `hono/vercel`'s `handle()` is the *edge* adapter —
+ * `(req: Request) => app.fetch(req)` — so it hands an IncomingMessage to
+ * `app.fetch` and every call fails. `getRequestListener` is the Node adapter:
+ * it builds a Request from the incoming stream, runs the app, and writes the
+ * Response back onto the response object.
  */
-export default handle(app);
+export default getRequestListener(app.fetch);

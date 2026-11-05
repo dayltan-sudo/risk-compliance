@@ -1,3 +1,4 @@
+import { Shield } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { cn } from './tokens';
 
@@ -39,12 +40,9 @@ export interface SidebarProps {
   className?: string;
 }
 
+/** Lucide shield, at the 1.75 stroke the rest of the shell uses. */
 function DefaultMark() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 3l7 3v5.2c0 4.4-2.9 7.9-7 9.8-4.1-1.9-7-5.4-7-9.8V6l7-3z" />
-    </svg>
-  );
+  return <Shield size={18} strokeWidth={1.75} aria-hidden />;
 }
 
 export function Sidebar({
