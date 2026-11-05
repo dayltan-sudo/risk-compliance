@@ -65,16 +65,20 @@
   --font-serif: 'Source Serif 4', Georgia, 'Times New Roman', serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  --text-micro: 9.5px;
-  --text-tiny: 10px;
-  --text-label: 10.5px;
+  /* Six steps, not thirteen. The old ramp ran 9.5 to 13.5 in half-pixel
+     increments, which carries no ratio and made every screen look hand-tuned.
+     The old names survive as aliases so components keep working; 11px is the
+     floor and is for mono micro labels only. */
+  --text-micro: 11px;
+  --text-tiny: 11px;
+  --text-label: 11px;
   --text-xs: 11px;
-  --text-sm: 11.5px;
+  --text-sm: 12px;
   --text-body-sm: 12px;
-  --text-body: 12.5px;
+  --text-body: 13px;
   --text-base: 13px;
-  --text-lead: 13.5px;
-  --text-h3: 16.5px;
+  --text-lead: 13px;
+  --text-h3: 16px;
   --text-h2: 21px;
   --text-h1: 26px;
 
@@ -119,7 +123,7 @@
   --border-rail: 1px solid var(--ink-800);
   --border-accent: 1px solid var(--accent);
 
-  --shadow: 0 1px 2px rgba(30, 20, 10, .05), 0 8px 22px -12px rgba(30, 20, 10, .15);
+  --shadow: 0 1px 1px rgba(20, 19, 15, .04), 0 2px 4px -2px rgba(20, 19, 15, .06), 0 12px 28px -18px rgba(20, 19, 15, .18);
 
   /* ---- layout ---- */
   --sidebar-w: 236px;
@@ -660,6 +664,21 @@ button {
   white-space: nowrap;
 }
 
+/* A register renders severity as a mark, not a pill. Thirty tinted chips down a
+   screen is what made the tables read flat; the tint survives for the one
+   element per row that carries the exception itself (.sal-tag--chip). */
+.sal-table .sal-tag {
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+}
+
+.sal-table .sal-tag--chip {
+  padding: 2px var(--space-sm);
+  background: var(--tone-bg, var(--paper));
+  border-radius: var(--radius-xs);
+}
+
 .sal-tag__dot {
   width: 6px;
   height: 6px;
@@ -801,7 +820,12 @@ button {
 }
 
 .sal-table--dense th {
-  padding: var(--space-xs) var(--space-md);
+  padding: var(--space-xs) var(--space-sm);
+  letter-spacing: .02em;
+}
+
+.sal-table--dense td {
+  padding: 8px var(--space-sm);
 }
 
 .sal-table--dense td {

@@ -85,12 +85,12 @@ export function buildRenewalRows(portfolio: Portfolio, asOf: string): RenewalRow
 
 type Window = 'all' | 'd30' | 'd60' | 'd90' | 'expired';
 
-const WINDOWS: ReadonlyArray<{ key: Window; label: string }> = [
-  { key: 'all', label: 'All active' },
-  { key: 'd30', label: 'Next 30 days' },
-  { key: 'd60', label: 'Next 60 days' },
-  { key: 'd90', label: 'Next 90 days' },
-  { key: 'expired', label: 'Expired' },
+const WINDOWS: ReadonlyArray<{ key: Window; label: string; long: string }> = [
+  { key: 'all', label: 'All', long: 'All active policies' },
+  { key: 'd30', label: '30d', long: 'Expiring within 30 days' },
+  { key: 'd60', label: '60d', long: 'Expiring within 60 days' },
+  { key: 'd90', label: '90d', long: 'Expiring within 90 days' },
+  { key: 'expired', label: 'Expired', long: 'Already expired' },
 ];
 
 export function filterByWindow(rows: readonly RenewalRow[], window: Window): RenewalRow[] {
@@ -188,6 +188,8 @@ export function RenewalsPage() {
                 type="button"
                 className={window === option.key ? 'sal-seg__btn sal-seg__btn--active' : 'sal-seg__btn'}
                 aria-pressed={window === option.key}
+                aria-label={option.long}
+                title={option.long}
                 onClick={() => setWindow(option.key)}
               >
                 {option.label}
@@ -197,35 +199,35 @@ export function RenewalsPage() {
         }
         footer={`Premiums are gross annual, valued at ${formatDate(asOf)}. Expiry drives the window; nothing here is a forecast.`}
       >
-        <table className="sal-table">
+        <table className="sal-table sal-table--dense">
           <caption className="sal-sr-only">
             Policies in scope with entity, line, carrier, covered sites, expiry, days remaining and
             annual premium
           </caption>
           <thead>
             <tr>
-              <th scope="col" style={{ width: '13%' }}>
+              <th scope="col">
                 Policy
               </th>
-              <th scope="col" style={{ width: '16%' }}>
+              <th scope="col">
                 Entity
               </th>
-              <th scope="col" style={{ width: '13%' }}>
+              <th scope="col">
                 Line
               </th>
-              <th scope="col" style={{ width: '14%' }}>
+              <th scope="col">
                 Carrier
               </th>
-              <th scope="col" style={{ width: '18%' }}>
+              <th scope="col">
                 Sites
               </th>
-              <th scope="col" style={{ width: '10%' }}>
+              <th scope="col">
                 Expiry
               </th>
-              <th scope="col" className="sal-table__cell--right" style={{ width: '8%' }}>
-                Days left
+              <th scope="col" className="sal-table__cell--right">
+                Days
               </th>
-              <th scope="col" className="sal-table__cell--right" style={{ width: '8%' }}>
+              <th scope="col" className="sal-table__cell--right">
                 Premium
               </th>
             </tr>
