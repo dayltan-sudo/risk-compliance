@@ -280,7 +280,7 @@ describe('CSV export', () => {
     const text = await response.text();
     const lines = text.trimEnd().split('\r\n');
     expect(lines[0]).toBe(
-      'entity_id,entity_name,policy_id,policy_no,line,carrier,broker,inception,expiry,currency,status',
+      'entity_id,entity_name,policy_id,policy_no,line,carrier,broker,inception,expiry,currency,status,documentation',
     );
 
     const rows = lines.slice(1);

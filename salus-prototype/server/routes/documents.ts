@@ -110,7 +110,13 @@ export function createDocumentRoutes(options: DocumentRoutesOptions = {}): Hono 
 
   /** Owning entity per document id. An id with no entry here is group-wide. */
   const owners = new Map<string, string | null>();
-  const ownerOf = (documentId: string): string | null => owners.get(documentId) ?? null;
+  /**
+   * The local map covers the routes in this file. A record queued by another
+   * route on the same queue carries its owner on the entry itself, so fall back
+   * to that instead of reading a manual capture as group-wide.
+   */
+  const ownerOf = (documentId: string): string | null =>
+    owners.get(documentId) ?? queue.get(documentId)?.entityId ?? null;
   const tagged = (item: QueueItemSummary): ScopedQueueItem => ({
     ...item,
     entityId: ownerOf(item.documentId),

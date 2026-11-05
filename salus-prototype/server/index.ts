@@ -7,6 +7,7 @@ import { assistantRoutes } from './routes/assistant';
 import { auditRoutes } from './routes/audit';
 import { configureDocumentRoutes, documentQueue, documentRoutes } from './routes/documents';
 import { createUploadRoutes } from './routes/upload';
+import { questionnaireRoutes } from './routes/questionnaire';
 import { exportRoutes } from './routes/export';
 import { readSession, sessionRoutes } from './routes/session';
 import { scopeFor, scopedPortfolio } from './middleware/scope';
@@ -83,6 +84,8 @@ app.route(
   // honest choices are a model or the rules path, not a replay.
   createUploadRoutes({ queue: documentQueue, resolveClient: () => modelClient }),
 );
+// The manual path: no file, no model, the same queue and the same validator.
+app.route('/', questionnaireRoutes);
 app.route('/', assistantRoutes);
 app.route('/', auditRoutes);
 app.route('/', exportRoutes);

@@ -28,9 +28,30 @@ export interface Field {
   key: CanonicalFieldKey;
   value: string;
   confidence: number;
+  /** 1-based document page. 0 means there is no document: a questionnaire answer. */
   page: number;
   quote: string;
 }
+
+/**
+ * Where a capture came from, which decides what counts as evidence.
+ *
+ * A document capture is admissible only with a page and a verbatim quote. A
+ * questionnaire answer has no document to cite: the evidence is the person who
+ * typed it, so the citation rule does not apply and the confidence is 1 by
+ * definition rather than a model score.
+ */
+export type CaptureSource = 'document' | 'questionnaire';
+
+/**
+ * The confidence of a figure a person typed and that passed validation.
+ *
+ * It is a literal type, not a comment: a questionnaire capture cannot be stored
+ * with 0.83 and read later as if a model had estimated it.
+ */
+export const HUMAN_ENTERED_CONFIDENCE = 1 as const;
+
+export type HumanEnteredConfidence = typeof HUMAN_ENTERED_CONFIDENCE;
 
 export type QueueReason =
   | 'low_confidence'
@@ -60,6 +81,12 @@ export interface Normalised {
 export interface NormaliseOptions {
   /** Minimum confidence for acceptance. Below this, a capture is queued. */
   threshold?: number;
+  /**
+   * Where the captures came from. `document` (the default) requires a page and
+   * a quote for acceptance; `questionnaire` requires neither, because a person
+   * is the source. Every other admission rule is identical.
+   */
+  source?: CaptureSource;
 }
 
 export const DEFAULT_CONFIDENCE_THRESHOLD = 0.8;
@@ -70,6 +97,7 @@ const CANONICAL_ORDER: ReadonlyMap<CanonicalFieldKey, number> = new Map(
 
 export function normalise(raw: RawExtraction, opts: NormaliseOptions = {}): Normalised {
   const threshold = opts.threshold ?? DEFAULT_CONFIDENCE_THRESHOLD;
+  const source = opts.source ?? 'document';
 
   if (!Number.isFinite(threshold) || threshold < 0 || threshold > 1) {
     throw new RangeError(`threshold must be between 0 and 1, got ${threshold}`);
@@ -150,7 +178,7 @@ export function normalise(raw: RawExtraction, opts: NormaliseOptions = {}): Norm
       return;
     }
 
-    if (field.page < 1 || field.quote === '') {
+    if (source === 'document' && (field.page < 1 || field.quote === '')) {
       queued.push({ ...field, reason: 'missing_citation' });
       queuedKeys.add(key);
       return;
@@ -168,6 +196,43 @@ export function normalise(raw: RawExtraction, opts: NormaliseOptions = {}): Norm
   }
 
   return { documentType: raw.documentType, accepted, queued, rejected };
+}
+
+/**
+ * One questionnaire answer: a canonical key and the value a person typed.
+ *
+ * There is no confidence in the input on purpose. It is not a score the caller
+ * may choose; `captureQuestionnaire` assigns it.
+ */
+export interface QuestionnaireAnswer {
+  key: CanonicalFieldKey;
+  value: string;
+}
+
+/**
+ * Route a manual questionnaire through the same admission path as an
+ * extraction.
+ *
+ * This is the reason the manual path cannot drift from the document path:
+ * `normalise` still decides acceptance, duplicate winners, empty values and the
+ * missing-mandatory backfill. Only the evidence rule differs, because a typed
+ * answer has no page to cite.
+ */
+export function captureQuestionnaire(
+  documentType: DocumentType,
+  answers: readonly QuestionnaireAnswer[],
+): Normalised {
+  const confidence: HumanEnteredConfidence = HUMAN_ENTERED_CONFIDENCE;
+
+  const fields: RawField[] = answers.map((answer) => ({
+    key: answer.key,
+    value: answer.value,
+    confidence,
+    page: 0,
+    quote: '',
+  }));
+
+  return normalise({ documentType, fields }, { source: 'questionnaire' });
 }
 
 /** Accepted fields only. Queued values are never copied across. */

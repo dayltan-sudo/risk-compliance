@@ -24,12 +24,29 @@ import {
 
 export type DocumentStatus = 'queued' | 'posted';
 
+/**
+ * How a record entered the queue.
+ *
+ * `document` is an extraction from a file or a replayed fixture. `questionnaire`
+ * is a person typing the figures with no document behind them, which is why the
+ * queue records it: a reviewer looking at two similar records can see which one
+ * had a document to check against.
+ */
+export type QueueSource = 'document' | 'questionnaire';
+
 export interface NewQueuedDocument {
   documentId: string;
   /** Human label from the upload, e.g. the file name. */
   name: string;
   /** The routing result from `extractDocument`. The draft is derived from this. */
   normalised: Normalised;
+  /** Defaults to `document`; the questionnaire route passes `questionnaire`. */
+  source?: QueueSource;
+  /**
+   * Entity that owns the record, from the session that created it. `null` is an
+   * explicit group-wide record.
+   */
+  entityId?: string | null;
 }
 
 export interface QueueItemSummary {
@@ -42,6 +59,16 @@ export interface QueueItemSummary {
   unconfirmed: CanonicalFieldKey[];
   /** Latest posted version, 0 before the first post. */
   version: number;
+  /** Where the record came from: an extraction or a manual questionnaire. */
+  source: QueueSource;
+  /** Owning entity, null for a group-wide record. */
+  entityId: string | null;
+  /**
+   * Policy number from the accepted draft, when the document carries one.
+   * Wording and endorsements may not; a slip or renewal always will. Callers
+   * must treat null as "unattributable", never as "no policy".
+   */
+  policyNo: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -111,6 +138,8 @@ interface QueueEntry {
   documentId: string;
   name: string;
   normalised: Normalised;
+  source: QueueSource;
+  entityId: string | null;
   /** Original capture values, keyed by field, including null for a key the model never returned. */
   extractedValues: Map<CanonicalFieldKey, string | null>;
   draft: DraftPolicy;
@@ -181,6 +210,8 @@ export class ValidationQueue {
       documentId,
       name: doc.name,
       normalised: doc.normalised,
+      source: doc.source ?? 'document',
+      entityId: doc.entityId ?? null,
       extractedValues: collectExtractedValues(doc.normalised),
       draft,
       status: 'queued',
@@ -325,6 +356,9 @@ export class ValidationQueue {
       completeness: draftCompleteness(entry.draft),
       unconfirmed: [...entry.draft.unconfirmed],
       version: entry.versions.at(-1)?.version ?? 0,
+      source: entry.source,
+      entityId: entry.entityId,
+      policyNo: entry.draft.policy_no ?? null,
       createdAt: entry.createdAt,
       updatedAt: entry.updatedAt,
     };

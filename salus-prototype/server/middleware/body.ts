@@ -16,6 +16,11 @@ export const BODY_LIMITS = {
   fieldAccept: 131_072,
   /** A 2,000-character question and an 80-character page at six bytes each. */
   assistantAsk: 16_384,
+  /**
+   * A 2,000-character note, a 200-character site name and a 60-character policy
+   * number at six bytes each, plus the amounts and envelope.
+   */
+  questionnaire: 16_384,
   /** A role name and envelope. */
   sessionRole: 4_096,
 } as const;
