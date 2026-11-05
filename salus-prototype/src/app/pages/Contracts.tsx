@@ -1,5 +1,6 @@
-import { Fragment, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import type { CSSProperties, KeyboardEvent } from 'react';
+import { useLocation, useSearchParams } from 'react-router-dom';
 
 import {
   findExclusionOverride,
@@ -13,8 +14,10 @@ import type {
   Portfolio,
   RequirementStatus,
 } from '../../engine';
+import { GlossaryTerm } from '../components/Glossary';
 import { formatDate, formatMoneyCompact, formatPct } from '../components/format';
-import { useFilteredPortfolio } from '../layout/filters';
+import { useScopedSession } from '../components/sessionScope';
+import { EMPTY_FILTERS, filterPortfolio, useFilteredPortfolio } from '../layout/filters';
 import { Card, KpiTile, Tag } from '../ui';
 
 /**
@@ -22,11 +25,25 @@ import { Card, KpiTile, Tag } from '../ui';
  *
  * Every figure on this page is an engine result: `requirementStatus` supplies
  * the ratio, status and override note, `requirementSummary` supplies the
- * counts. The page only formats, filters and expands them.
+ * counts. The page only formats, filters, searches and expands them.
+ *
+ * Two scopes meet here and are kept apart on purpose:
+ *
+ * - the URL filter (`?entity=`, `?line=` …) is a view control, and the FilterBar
+ *   above the page owns it;
+ * - the session scope (`/api/session/portfolio`) is who the server says you
+ *   are. A scoped role narrows the register before any count is taken, so the
+ *   tiles, the "N of M" line and the rows always describe the same book.
+ *
+ * `?q=` is the search term, held in the URL so a shared link reproduces the
+ * view. It never changes the totals: those stay on the scoped register and the
+ * toolbar reports "N shown of M".
  */
 
 const EXCLUDED_HINT =
   'Excluded is a qualitative failure: the placed limit can be sufficient, but policy wording removes the required peril. A Gap is a numerical shortfall in the placed limit.';
+
+const COLUMN_COUNT = 9;
 
 type RequirementRow = {
   requirement: ContractRequirement;
@@ -41,7 +58,20 @@ type RequirementRow = {
   exclusion: Exclusion | null;
   exclusionPolicyNo: string | null;
   exclusionCarrier: string | null;
+  /** Policies and coverage ids that respond to this requirement, for search. */
+  policyNos: string[];
+  coverageIds: string[];
+  /** Lower-cased haystack: every field the search box matches. */
+  searchText: string;
 };
+
+/** Clause forms the search box should accept for `Cl. 8.4`. */
+function clauseForms(clauseRef: string): string[] {
+  const digits = clauseRef.replace(/[^0-9.]/g, '');
+  const forms = [clauseRef];
+  if (digits !== '') forms.push(`clause ${digits}`, `cl ${digits}`);
+  return forms;
+}
 
 function buildRows(portfolio: Portfolio): RequirementRow[] {
   const asOf = portfolio.config.effectiveFrom;
@@ -68,6 +98,17 @@ function buildRows(portfolio: Portfolio): RequirementRow[] {
       carrierName = carrier?.name ?? null;
     }
 
+    // Coverages that answer this requirement's site and line, so a policy
+    // number or coverage id in the search box finds the row that depends on it.
+    const responding = portfolio.coverages.filter(
+      (candidate) => candidate.siteId === requirement.siteId && candidate.line === requirement.line,
+    );
+    const respondingPolicyIds = new Set(responding.map((candidate) => candidate.policyId));
+    const policyNos = portfolio.policies
+      .filter((candidate) => respondingPolicyIds.has(candidate.id))
+      .map((candidate) => candidate.policyNo);
+    const coverageIds = responding.map((candidate) => candidate.id);
+
     const siteName = site?.name ?? requirement.siteId;
     const prefix = `${siteName} \u2014 `;
     const assetLabel =
@@ -76,6 +117,21 @@ function buildRows(portfolio: Portfolio): RequirementRow[] {
         : asset.label.startsWith(prefix)
           ? asset.label.slice(prefix.length)
           : asset.label;
+
+    const searchText = [
+      siteName,
+      assetLabel,
+      requirement.counterparty,
+      requirement.counterpartyType,
+      requirement.agreementRef,
+      ...clauseForms(requirement.clauseRef),
+      requirement.line,
+      requirement.peril,
+      ...policyNos,
+      ...coverageIds,
+    ]
+      .join(' ')
+      .toLowerCase();
 
     return {
       requirement,
@@ -90,8 +146,21 @@ function buildRows(portfolio: Portfolio): RequirementRow[] {
       exclusion: override?.exclusion ?? null,
       exclusionPolicyNo: policyNo,
       exclusionCarrier: carrierName,
+      policyNos,
+      coverageIds,
+      searchText,
     };
   });
+}
+
+/**
+ * Every whitespace-separated token must appear in the haystack, so "clause 8.4"
+ * and "merlion 8.4" both work without an index or a dependency.
+ */
+export function matchesQuery(searchText: string, query: string): boolean {
+  const tokens = query.trim().toLowerCase().split(/\s+/).filter((token) => token !== '');
+  if (tokens.length === 0) return true;
+  return tokens.every((token) => searchText.includes(token));
 }
 
 type Filter = 'all' | 'attention' | RequirementStatus;
@@ -100,6 +169,50 @@ function matchesFilter(status: RequirementStatus, filter: Filter): boolean {
   if (filter === 'all') return true;
   if (filter === 'attention') return status === 'Gap' || status === 'At-risk';
   return status === filter;
+}
+
+/**
+ * Empty states name the cause. A scoped role is never described as a filter the
+ * reader could clear, a search is never described as missing data, and when
+ * both apply the copy says so.
+ */
+export function emptyStateFor(input: {
+  query: string;
+  scopeName: string | null;
+  role: string | null;
+  rowsInScope: number;
+  outOfScope: number;
+  filterLabel: string;
+}): { title: string; body: string } {
+  const query = input.query.trim();
+  const plural = (count: number): string => (count === 1 ? '' : 's');
+  const role = input.role ?? 'a scoped role';
+
+  if (query !== '') {
+    return {
+      title: `No requirements match “${query}”`,
+      body: `Searched site, asset, counterparty, agreement and clause reference, and policy or coverage id across ${input.rowsInScope} requirement${plural(input.rowsInScope)}${input.scopeName === null ? '' : ` in ${input.scopeName}`}.`,
+    };
+  }
+
+  if (input.scopeName !== null && input.rowsInScope === 0) {
+    return {
+      title: `No requirements in ${input.scopeName}`,
+      body: `You are viewing as ${role}, which limits this register to ${input.scopeName}. ${input.outOfScope} requirement${plural(input.outOfScope)} sit outside that scope.`,
+    };
+  }
+
+  if (input.scopeName !== null) {
+    return {
+      title: `No ${input.filterLabel} requirements in ${input.scopeName}`,
+      body: `You are viewing as ${role}, which limits this register to ${input.scopeName}: ${input.rowsInScope} requirement${plural(input.rowsInScope)} in total, none of them ${input.filterLabel}.`,
+    };
+  }
+
+  return {
+    title: 'No requirements in this view',
+    body: `No requirement currently has the ${input.filterLabel} status. Clear the status filter to see all ${input.rowsInScope}.`,
+  };
 }
 
 function statusExplanation(row: RequirementRow): string {
@@ -138,8 +251,8 @@ function RequirementDetail({ row }: { row: RequirementRow }) {
       <div>
         <p style={detailLabelStyle}>Assessment</p>
         <p style={detailValueStyle}>
-          {row.status} · {formatPct(row.ratio * 100)} placed · {formatMoneyCompact(row.requiredSgd)}{' '}
-          required
+          {row.status} · {formatPct(row.ratio * 100)} <GlossaryTerm id="placement">placed</GlossaryTerm>{' '}
+          · {formatMoneyCompact(row.requiredSgd)} required
         </p>
         <p style={detailMutedStyle}>{statusExplanation(row)}</p>
       </div>
@@ -176,12 +289,49 @@ function RequirementDetail({ row }: { row: RequirementRow }) {
 
 export function Contracts() {
   const { portfolio } = useFilteredPortfolio();
+  const { session } = useScopedSession();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
+
   const AS_OF = portfolio.config.effectiveFrom;
   const [filter, setFilter] = useState<Filter>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const rows = useMemo(() => buildRows(portfolio), [portfolio]);
-  const counts = useMemo(() => requirementSummary(portfolio, AS_OF), [portfolio, AS_OF]);
+  const query = searchParams.get('q') ?? '';
+
+  const setQuery = (next: string) => {
+    const params = new URLSearchParams(searchParams);
+    if (next.trim() === '') params.delete('q');
+    else params.set('q', next);
+    setSearchParams(params, { replace: true });
+  };
+
+  /** The session's entity, when the server says the role is entity-scoped. */
+  const scopeEntityId =
+    session !== null && session.scope.kind === 'entity' ? session.scope.entityId : null;
+  const scopeName = scopeEntityId === null ? null : (session?.scope.entityName ?? scopeEntityId);
+
+  /**
+   * Session scope is applied before any count is taken. Reusing the FilterBar's
+   * own predicate means a scoped champion and a hand-picked entity filter can
+   * never disagree about what an entity contains.
+   */
+  const scoped = useMemo(
+    () =>
+      scopeEntityId === null
+        ? portfolio
+        : filterPortfolio(portfolio, { ...EMPTY_FILTERS, entityId: scopeEntityId }),
+    [portfolio, scopeEntityId],
+  );
+
+  const rows = useMemo(() => buildRows(scoped), [scoped]);
+  const counts = useMemo(() => requirementSummary(scoped, AS_OF), [scoped, AS_OF]);
+
+  /** Requirements in the view before the session narrowed it, for the empty state. */
+  const outOfScopeCount = useMemo(
+    () => (scopeEntityId === null ? 0 : buildRows(portfolio).length - rows.length),
+    [portfolio, scopeEntityId, rows.length],
+  );
 
   /** Required minus placed, summed across every requirement below 100%. */
   const exposureSgd = useMemo(
@@ -202,7 +352,30 @@ export function Contracts() {
     { key: 'attention', label: 'Gaps and at-risk', count: counts.Gap + counts['At-risk'] },
   ];
 
-  const visible = rows.filter((row) => matchesFilter(row.status, filter));
+  const searched = rows.filter((row) => matchesQuery(row.searchText, query));
+  const visible = searched.filter((row) => matchesFilter(row.status, filter));
+  const trimmedQuery = query.trim();
+  const activeFilterLabel = FILTERS.find((option) => option.key === filter)?.label ?? 'filtered';
+
+  /* Deep link: /contracts#req-06 opens that row and highlights it. */
+  const hashId = useMemo(() => {
+    const raw = location.hash.replace(/^#/, '');
+    if (raw === '') return '';
+    try {
+      return decodeURIComponent(raw);
+    } catch {
+      return raw;
+    }
+  }, [location.hash]);
+
+  useEffect(() => {
+    if (hashId === '' || !rows.some((row) => row.requirement.id === hashId)) return;
+    setExpandedId(hashId);
+    const target = document.getElementById(hashId);
+    if (target !== null && typeof target.scrollIntoView === 'function') {
+      target.scrollIntoView({ block: 'center' });
+    }
+  }, [hashId, rows]);
 
   const toggle = (id: string) =>
     setExpandedId((current) => (current === id ? null : id));
@@ -214,16 +387,27 @@ export function Contracts() {
     }
   };
 
+  const emptyState = emptyStateFor({
+    query: trimmedQuery,
+    scopeName,
+    role: session?.role ?? null,
+    rowsInScope: rows.length,
+    outOfScope: outOfScopeCount,
+    filterLabel: activeFilterLabel,
+  });
+
   return (
     <div className="sal-page" style={pageStyle}>
       <header style={headerStyle}>
         <p style={eyebrowStyle}>Contracts · P4</p>
         <h1>Contract requirements</h1>
         <p style={subtitleStyle}>
-          What counterparties require us to insure, and whether the placed programme actually does
-          it. {counts.total} requirements across {portfolio.sites.length} sites, assessed at{' '}
-          {formatDate(AS_OF)}. {counts.Excluded} are excluded by policy wording, not by a limit
-          shortfall.
+          What counterparties require us to insure, and whether the{' '}
+          <GlossaryTerm id="placement">placed</GlossaryTerm> programme actually does it.{' '}
+          {counts.total} requirements across {scoped.sites.length} sites, assessed at{' '}
+          {formatDate(AS_OF)}. {counts.Excluded} {counts.Excluded === 1 ? 'is' : 'are'} excluded by
+          policy wording, not by a limit shortfall.
+          {scopeName === null ? '' : ` Showing ${scopeName} only, because of your role.`}
         </p>
       </header>
 
@@ -264,64 +448,90 @@ export function Contracts() {
 
       <Card
         title="Requirement register"
-        subtitle="Click a row for its contractual source and any exclusion override."
+        subtitle={
+          <>
+            Search a clause, a site, a counterparty or a policy, then click a row for its
+            contractual source and any <GlossaryTerm id="exclusion">exclusion override</GlossaryTerm>.
+          </>
+        }
         padded={false}
         footer={`Synthetic data only. Limits, ratios and statuses are engine results for the portfolio currently in scope as at ${formatDate(AS_OF)}.`}
       >
         <div style={toolbarStyle}>
-          <div
-            className="sal-seg"
-            role="group"
-            aria-label="Filter requirements by status"
-            style={{ flexWrap: 'wrap' }}
-          >
-            {FILTERS.map((option) => (
-              <button
-                key={option.key}
-                type="button"
-                className={
-                  filter === option.key ? 'sal-seg__btn sal-seg__btn--active' : 'sal-seg__btn'
-                }
-                aria-pressed={filter === option.key}
-                onClick={() => setFilter(option.key)}
-              >
-                {option.label} <span className="sal-mono">{option.count}</span>
-              </button>
-            ))}
+          <div style={toolbarLeftStyle}>
+            <label style={searchStyle}>
+              <span className="sal-field__label">Search</span>
+              <input
+                type="search"
+                name="q"
+                value={query}
+                aria-label="Search contract requirements by site, counterparty, clause or policy"
+                placeholder="Site, counterparty, Cl. 8.4, policy no."
+                onChange={(event) => setQuery(event.target.value)}
+                style={searchInputStyle}
+              />
+            </label>
+
+            <div
+              className="sal-seg"
+              role="group"
+              aria-label="Filter requirements by status"
+              style={{ flexWrap: 'wrap' }}
+            >
+              {FILTERS.map((option) => (
+                <button
+                  key={option.key}
+                  type="button"
+                  className={
+                    filter === option.key ? 'sal-seg__btn sal-seg__btn--active' : 'sal-seg__btn'
+                  }
+                  aria-pressed={filter === option.key}
+                  onClick={() => setFilter(option.key)}
+                >
+                  {option.label} <span className="sal-mono">{option.count}</span>
+                </button>
+              ))}
+            </div>
           </div>
-          <span style={toolbarCountStyle}>{visible.length} shown</span>
+
+          <span style={toolbarCountStyle} aria-live="polite">
+            {visible.length} shown of {rows.length}
+          </span>
         </div>
 
         <div className="sal-table-wrap">
           <table className="sal-table">
             <caption className="sal-sr-only">
-              Contract requirements with required and placed limits, ratio, status and any
-              override note
+              Contract requirements with clause reference, required and placed limits, ratio,
+              status and any override note
             </caption>
             <thead>
               <tr>
-                <th scope="col" style={{ width: '17%' }}>
+                <th scope="col" style={{ width: '16%' }}>
                   Site / asset
                 </th>
-                <th scope="col" style={{ width: '16%' }}>
+                <th scope="col" style={{ width: '13%' }}>
+                  Clause
+                </th>
+                <th scope="col" style={{ width: '14%' }}>
                   Counterparty
                 </th>
-                <th scope="col" style={{ width: '12%' }}>
+                <th scope="col" style={{ width: '11%' }}>
                   Coverage line
                 </th>
-                <th scope="col" className="sal-table__cell--right" style={{ width: '10%' }}>
+                <th scope="col" className="sal-table__cell--right" style={{ width: '9%' }}>
                   Required
                 </th>
-                <th scope="col" className="sal-table__cell--right" style={{ width: '10%' }}>
+                <th scope="col" className="sal-table__cell--right" style={{ width: '9%' }}>
                   Placed
                 </th>
                 <th scope="col" className="sal-table__cell--right" style={{ width: '7%' }}>
                   Ratio
                 </th>
-                <th scope="col" style={{ width: '10%' }}>
+                <th scope="col" style={{ width: '9%' }}>
                   Status
                 </th>
-                <th scope="col" style={{ width: '18%' }}>
+                <th scope="col" style={{ width: '12%' }}>
                   Note
                 </th>
               </tr>
@@ -329,9 +539,20 @@ export function Contracts() {
             <tbody>
               {visible.length === 0 ? (
                 <tr>
-                  <td className="sal-table__empty" colSpan={8}>
-                    <span className="sal-table__empty-title">No requirements in this view</span>
-                    No requirement currently has this status.
+                  <td className="sal-table__empty" colSpan={COLUMN_COUNT}>
+                    <span className="sal-table__empty-title">{emptyState.title}</span>
+                    {emptyState.body}
+                    {trimmedQuery === '' ? null : (
+                      <span style={emptyActionStyle}>
+                        <button
+                          type="button"
+                          className="sal-btn sal-btn--ghost sal-btn--sm"
+                          onClick={() => setQuery('')}
+                        >
+                          Clear search
+                        </button>
+                      </span>
+                    )}
                   </td>
                 </tr>
               ) : (
@@ -339,6 +560,7 @@ export function Contracts() {
                   const id = row.requirement.id;
                   const expanded = expandedId === id;
                   const excluded = row.status === 'Excluded';
+                  const highlighted = hashId === id;
 
                   return (
                     <Fragment key={id}>
@@ -346,12 +568,16 @@ export function Contracts() {
                         id={id}
                         data-clickable="true"
                         data-selected={expanded ? 'true' : undefined}
+                        data-highlighted={highlighted ? 'true' : undefined}
                         aria-expanded={expanded}
                         aria-controls={`requirement-detail-${id}`}
                         tabIndex={0}
                         onClick={() => toggle(id)}
                         onKeyDown={(event) => handleKeyDown(event, id)}
-                        style={{ scrollMarginTop: 'calc(var(--topbar-h) + var(--space-lg))' }}
+                        style={{
+                          scrollMarginTop: 'calc(var(--topbar-h) + var(--space-lg))',
+                          ...(highlighted ? highlightedRowStyle : {}),
+                        }}
                       >
                         <td style={excluded ? excludedMarkerStyle : undefined}>
                           <span style={siteCellStyle}>
@@ -362,6 +588,15 @@ export function Contracts() {
                               <span style={siteNameStyle}>{row.siteName}</span>
                               <span style={subLineStyle}>{row.assetLabel}</span>
                             </span>
+                          </span>
+                        </td>
+                        <td>
+                          <span style={clauseCellStyle}>{row.requirement.clauseRef}</span>
+                          <span
+                            style={agreementStyle}
+                            title={`Agreement ${row.requirement.agreementRef}`}
+                          >
+                            {row.requirement.agreementRef}
                           </span>
                         </td>
                         <td>
@@ -406,7 +641,7 @@ export function Contracts() {
 
                       {expanded ? (
                         <tr id={`requirement-detail-${id}`}>
-                          <td colSpan={8} style={detailCellStyle}>
+                          <td colSpan={COLUMN_COUNT} style={detailCellStyle}>
                             <RequirementDetail row={row} />
                           </td>
                         </tr>
@@ -471,12 +706,47 @@ const toolbarStyle: CSSProperties = {
   borderBottom: 'var(--border-hairline)',
 };
 
+const toolbarLeftStyle: CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  flexWrap: 'wrap',
+  gap: 'var(--space-md)',
+  minWidth: 0,
+  flex: '1 1 380px',
+};
+
+const searchStyle: CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 'var(--space-xs)',
+  minWidth: 0,
+  flex: '0 1 300px',
+};
+
+const searchInputStyle: CSSProperties = {
+  width: '100%',
+  minWidth: 0,
+  height: '32px',
+  padding: '0 var(--space-sm)',
+  border: 'var(--border-hairline)',
+  borderRadius: 'var(--radius-lg)',
+  background: 'var(--card)',
+  color: 'var(--ink)',
+  fontSize: 'var(--text-sm)',
+};
+
 const toolbarCountStyle: CSSProperties = {
   fontFamily: 'var(--font-mono)',
   fontSize: 'var(--text-micro)',
   letterSpacing: '.04em',
   textTransform: 'uppercase',
   color: 'var(--muted)',
+  whiteSpace: 'nowrap',
+};
+
+const emptyActionStyle: CSSProperties = {
+  display: 'block',
+  marginTop: 'var(--space-md)',
 };
 
 const siteCellStyle: CSSProperties = {
@@ -507,6 +777,32 @@ const subLineStyle: CSSProperties = {
   fontSize: 'var(--text-micro)',
   lineHeight: 'var(--leading-snug)',
   color: 'var(--muted)',
+};
+
+const clauseCellStyle: CSSProperties = {
+  display: 'block',
+  fontFamily: 'var(--font-mono)',
+  fontSize: 'var(--text-sm)',
+  fontWeight: 'var(--weight-semibold)',
+  lineHeight: 'var(--leading-snug)',
+  color: 'var(--ink)',
+};
+
+const agreementStyle: CSSProperties = {
+  display: 'block',
+  marginTop: '1px',
+  overflow: 'hidden',
+  fontFamily: 'var(--font-mono)',
+  fontSize: 'var(--text-micro)',
+  lineHeight: 'var(--leading-snug)',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+  color: 'var(--muted)',
+};
+
+const highlightedRowStyle: CSSProperties = {
+  background: 'var(--crimson-tint)',
+  boxShadow: 'inset 3px 0 0 var(--crimson)',
 };
 
 const microUpperStyle: CSSProperties = {

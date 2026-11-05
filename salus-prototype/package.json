@@ -13,6 +13,8 @@
     "db:push": "drizzle-kit push"
   },
   "dependencies": {
+    "@fontsource-variable/jetbrains-mono": "^5.3.0",
+    "@fontsource-variable/source-serif-4": "^5.3.1",
     "@hono/node-server": "^2.1.1",
     "@vercel/blob": "^2.8.0",
     "dotenv": "^18.0.0",
@@ -24,7 +26,9 @@
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.2",
+    "topojson-client": "^3.1.0",
     "unpdf": "^2.1.0",
+    "world-atlas": "^2.0.2",
     "zod": "^4.6.5",
     "zustand": "^5.0.14"
   },
@@ -34,6 +38,7 @@
     "@types/pg": "^8.23.1",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
+    "@types/topojson-client": "^3.1.5",
     "@vitejs/plugin-react": "^6.0.4",
     "drizzle-kit": "^0.31.10",
     "tailwindcss": "^4.3.3",

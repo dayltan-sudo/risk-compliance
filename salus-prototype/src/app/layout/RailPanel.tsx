@@ -1,18 +1,27 @@
 import { useMemo } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { ActionRail } from '../ui';
 import type { ActionItem } from '../ui';
 import { buildExceptions } from '../components/exceptions';
+import type { ExceptionRow } from '../components/exceptions';
 import { useFilteredPortfolio } from './filters';
 import { AssistantDock } from './AssistantDock';
 
-const RAIL_LIMIT = 9;
+/** Preview budget only. The total always comes from `buildExceptions`. */
+const RAIL_LIMIT = 5;
 
 /**
- * The persistent right rail: derived action queue on top, assistant dock at the
- * bottom. Every row drills into the site on the map, which is the only
- * site-level page wired in P2; the P3/P4 pages will take over their own rows.
+ * Mirrors the query keys `parseFilters` reads, so "view all" opens the
+ * overview in the same scope the reader is in without dragging along unrelated
+ * params such as `site` or `all`.
+ */
+const FILTER_KEYS = ['line', 'entity', 'renew', 'gaps', 'risk'] as const;
+
+/**
+ * The persistent right rail: a short preview of the same ordered queue the
+ * Overview table renders, then the assistant dock. Rows drill into the record
+ * behind the exception; the remainder of the queue is one link away.
  */
 export function RailPanel() {
   const { portfolio, sites } = useFilteredPortfolio();
@@ -22,9 +31,14 @@ export function RailPanel() {
   const exceptions = useMemo(() => buildExceptions(portfolio, sites), [portfolio, sites]);
   const visible = exceptions.slice(0, RAIL_LIMIT);
 
-  const goToSite = (siteId: string) => {
+  const goToRow = (row: ExceptionRow) => {
+    if (row.target === 'record') {
+      navigate(row.href);
+      return;
+    }
+    // Map targets keep the current filter scope; record links do not.
     const next = new URLSearchParams(params);
-    next.set('site', siteId);
+    next.set('site', row.siteId);
     navigate(`/map?${next.toString()}`);
   };
 
@@ -33,13 +47,30 @@ export function RailPanel() {
     title: row.title,
     severity: row.severity,
     meta: row.meta,
-    onClick: () => goToSite(row.siteId),
+    onClick: () => goToRow(row),
   }));
 
+  const scoped = new URLSearchParams();
+  for (const key of FILTER_KEYS) {
+    const value = params.get(key);
+    if (value !== null) scoped.set(key, value);
+  }
+  scoped.set('all', '1');
+  const allHref = `/?${scoped.toString()}`;
+
   const footer =
-    exceptions.length > visible.length
-      ? `Showing ${visible.length} of ${exceptions.length} open items. Open the map to work the queue.`
-      : `${exceptions.length} open item${exceptions.length === 1 ? '' : 's'} in this view`;
+    exceptions.length > visible.length ? (
+      <>
+        Top {visible.length} of {exceptions.length} open items.{' '}
+        {params.get('all') === '1' ? null : (
+          <Link to={allHref} style={linkStyle}>
+            View all {exceptions.length}
+          </Link>
+        )}
+      </>
+    ) : (
+      `${exceptions.length} open item${exceptions.length === 1 ? '' : 's'} in this view`
+    );
 
   return (
     <div className="sal-rail-stack">
@@ -54,3 +85,9 @@ export function RailPanel() {
     </div>
   );
 }
+
+const linkStyle = {
+  color: 'var(--crimson-deep)',
+  textDecoration: 'underline',
+  textUnderlineOffset: '2px',
+} as const;

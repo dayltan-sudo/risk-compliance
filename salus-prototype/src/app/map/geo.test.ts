@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   DEFAULT_DOT_STEP,
+  isOnLand,
   pointInPoly,
   project,
   projectPolygon,
@@ -25,7 +26,8 @@ function ringAt(index: number): readonly Point[] {
   return ring;
 }
 
-function isOnLand(point: Point): boolean {
+/** Coarse-ring membership, for the synthetic-ring tests only. */
+function inCoarseLand(point: Point): boolean {
   return projectedLand.some((ring) => pointInPoly(point, ring));
 }
 
@@ -70,8 +72,8 @@ describe('pointInPoly', () => {
     const midAtlantic = project(-30, 40);
 
     expect(pointInPoly(pacific, ringAt(AFRICA))).toBe(false);
-    expect(isOnLand(pacific)).toBe(false);
-    expect(isOnLand(midAtlantic)).toBe(false);
+    expect(inCoarseLand(pacific)).toBe(false);
+    expect(inCoarseLand(midAtlantic)).toBe(false);
   });
 });
 
@@ -110,9 +112,29 @@ describe('sampleWorldDots', () => {
     expect(outside).toEqual([]);
   });
 
-  it('only keeps dots that fall on land', () => {
-    const offLand = sampleWorldDots().filter((dot) => !isOnLand(dot));
-    expect(offLand).toEqual([]);
+  it('places land where land is, and none where the ocean is', () => {
+    const dots = sampleWorldDots();
+    const step = DEFAULT_DOT_STEP;
+
+    // Singapore sits on a dot; the middle of the Pacific does not.
+    const singapore = project(103.8, 1.35);
+    const nearSingapore = dots.some(
+      (dot) => Math.abs(dot.x - singapore.x) <= step && Math.abs(dot.y - singapore.y) <= step,
+    );
+    expect(nearSingapore).toBe(true);
+
+    const pacific = project(-140, 0);
+    const nearPacific = dots.some(
+      (dot) => Math.abs(dot.x - pacific.x) <= step && Math.abs(dot.y - pacific.y) <= step,
+    );
+    expect(nearPacific).toBe(false);
+  });
+
+  it('answers whether a coordinate is on land', () => {
+    expect(isOnLand(103.8, 1.35)).toBe(true); // Singapore
+    expect(isOnLand(-140, 0)).toBe(false); // mid-Pacific
+    expect(isOnLand(0, 51.5)).toBe(true); // London
+    expect(isOnLand(-30, -60)).toBe(false); // Southern Ocean
   });
 
   it('is deterministic between calls', () => {

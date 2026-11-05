@@ -1,9 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 
 import { Sidebar, Tag, TopBar, cn } from '../ui';
 import type { SidebarItem, SidebarSection } from '../ui';
 import { formatDate } from '../components/format';
+import { GlossaryProvider, useGlossary } from '../components/Glossary';
+import { ScopeChip, SessionScopeProvider, useScopedSession } from '../components/sessionScope';
 import { FilterBar } from './FilterBar';
 import { RailPanel } from './RailPanel';
 import { useFilteredPortfolio } from './filters';
@@ -29,28 +31,36 @@ function MapIcon() {
   );
 }
 
-function UserBlock() {
-  return (
-    <div className="sal-user">
-      <span className="sal-user__avatar" aria-hidden="true">
-        GR
-      </span>
-      <span className="sal-user__body">
-        <span className="sal-user__name">Group Risk</span>
-        <span className="sal-user__role">Demo workspace</span>
-      </span>
-    </div>
-  );
-}
-
-export function AppShell() {
+function ShellLayout() {
   const { summary, portfolio } = useFilteredPortfolio();
+  const { refresh } = useScopedSession();
+  const { open: openGlossary } = useGlossary();
   const location = useLocation();
   const navigate = useNavigate();
 
   useEffect(() => {
     window.scrollTo({ top: 0 });
   }, [location.pathname]);
+
+  /**
+   * The role switcher lives on the Audit screen, so a scope read taken at mount
+   * goes stale the moment it is used. Re-read on navigation and on focus, and
+   * leave the chip clickable for a manual read.
+   */
+  const mounted = useRef(false);
+  useEffect(() => {
+    if (!mounted.current) {
+      mounted.current = true;
+      return;
+    }
+    refresh();
+  }, [location.pathname, refresh]);
+
+  useEffect(() => {
+    const onFocus = () => refresh();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [refresh]);
 
   const PAGES: Record<string, { name: string; id: string }> = {
     '/': { name: 'Group overview', id: 'overview' },
@@ -118,7 +128,7 @@ export function AppShell() {
         sections={sections}
         activeId={activeId}
         onNavigate={onNavigate}
-        footer={<UserBlock />}
+        footer={<ScopeChip />}
       />
 
       <div className="sal-app__main">
@@ -134,23 +144,33 @@ export function AppShell() {
             </>
           }
           actions={
-            <nav className="sal-topnav" aria-label="Pages">
-              <NavLink to="/" end className={({ isActive }) => cn('sal-topnav__link', isActive && 'is-active')}>
-                Overview
-              </NavLink>
-              <NavLink to="/map" className={({ isActive }) => cn('sal-topnav__link', isActive && 'is-active')}>
-                Map
-              </NavLink>
-              <NavLink to="/coverage" className={({ isActive }) => cn('sal-topnav__link', isActive && 'is-active')}>
-                Coverage
-              </NavLink>
-              <NavLink to="/contracts" className={({ isActive }) => cn('sal-topnav__link', isActive && 'is-active')}>
-                Contracts
-              </NavLink>
-              <NavLink to="/exclusions" className={({ isActive }) => cn('sal-topnav__link', isActive && 'is-active')}>
-                Exclusions
-              </NavLink>
-            </nav>
+            <>
+              <button
+                type="button"
+                className="sal-btn sal-btn--ghost sal-btn--sm"
+                aria-haspopup="dialog"
+                onClick={() => openGlossary()}
+              >
+                Glossary
+              </button>
+              <nav className="sal-topnav" aria-label="Pages">
+                <NavLink to="/" end className={({ isActive }) => cn('sal-topnav__link', isActive && 'is-active')}>
+                  Overview
+                </NavLink>
+                <NavLink to="/map" className={({ isActive }) => cn('sal-topnav__link', isActive && 'is-active')}>
+                  Map
+                </NavLink>
+                <NavLink to="/coverage" className={({ isActive }) => cn('sal-topnav__link', isActive && 'is-active')}>
+                  Coverage
+                </NavLink>
+                <NavLink to="/contracts" className={({ isActive }) => cn('sal-topnav__link', isActive && 'is-active')}>
+                  Contracts
+                </NavLink>
+                <NavLink to="/exclusions" className={({ isActive }) => cn('sal-topnav__link', isActive && 'is-active')}>
+                  Exclusions
+                </NavLink>
+              </nav>
+            </>
           }
         />
 
@@ -166,5 +186,15 @@ export function AppShell() {
         </div>
       </div>
     </div>
+  );
+}
+
+export function AppShell() {
+  return (
+    <SessionScopeProvider>
+      <GlossaryProvider>
+        <ShellLayout />
+      </GlossaryProvider>
+    </SessionScopeProvider>
   );
 }

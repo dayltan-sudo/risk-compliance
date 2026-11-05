@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { CSSProperties } from 'react';
+import { useLocation } from 'react-router-dom';
 
 import { findExclusionOverride, formatSgd, requirementStatus, toSgd } from '../../engine';
 import type { ContractRequirement, Exclusion, Portfolio } from '../../engine';
@@ -121,6 +122,20 @@ export function Exclusions() {
   const visible = rows.filter(
     (row) => scopeFilter === 'all' || row.conflicting.length > 0,
   );
+
+  // The exception queue links here as `/exclusions#<exclusion id>`. Client-side
+  // navigation does not scroll to a fragment on its own, and neither does a
+  // reload into an SPA before the row exists, so bring the row into view.
+  const { hash } = useLocation();
+  const hashId = hash.replace(/^#/, '');
+
+  useEffect(() => {
+    if (hashId === '') return;
+    const target = document.getElementById(hashId);
+    if (target !== null && typeof target.scrollIntoView === 'function') {
+      target.scrollIntoView({ block: 'center' });
+    }
+  }, [hashId, scopeFilter]);
 
   return (
     <div className="sal-page" style={pageStyle}>

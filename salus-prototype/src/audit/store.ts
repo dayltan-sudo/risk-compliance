@@ -174,8 +174,15 @@ export function listAudit(query: AuditQuery = {}): AuditEvent[] {
 
   // Newest first by timestamp, not by arrival. Seeded history is written in
   // array order, and a seed row inserted out of sequence used to surface in the
-  // wrong place while the page claimed "Newest first".
-  const ordered = [...events].sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0));
+  // wrong place while the page claimed "Newest first". Arrival order is the
+  // tiebreak: two events recorded inside the same millisecond must still read
+  // newest-recorded first.
+  const ordered = events
+    .map((event, index) => ({ event, index }))
+    .sort((a, b) =>
+      a.event.at < b.event.at ? 1 : a.event.at > b.event.at ? -1 : b.index - a.index,
+    )
+    .map((entry) => entry.event);
 
   const result: AuditEvent[] = [];
   for (const event of ordered) {

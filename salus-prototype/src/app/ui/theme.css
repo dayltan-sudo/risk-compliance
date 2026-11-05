@@ -5,10 +5,11 @@
    src/app/ui/tokens.ts one-for-one; if a value changes in one place it must
    change in the other.
 
-   Fonts are referenced by family name only. If Source Serif 4 / Inter /
-   JetBrains Mono are not installed the stacks fall back to Georgia, the system
-   UI sans and a system mono, so this file renders standalone with nothing
-   fetched from the network.
+   Source Serif 4 and JetBrains Mono are self-hosted variable fonts, imported
+   in main.tsx from the bundled @fontsource packages: no CDN, no network fetch
+   at runtime. The sans stack is deliberately system-only (Inter is not shipped,
+   so naming it first would cost a silent 48KB of nothing). If the fonts fail to
+   load the stacks still degrade to Georgia and the platform mono.
    ========================================================================== */
 
 :root {
@@ -46,7 +47,7 @@
   --band-critical-text: #6E2418;
 
   /* ---- type ---- */
-  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-serif: 'Source Serif 4', Georgia, 'Times New Roman', serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
