@@ -2,7 +2,8 @@ import { Hono } from 'hono';
 
 import { portfolio } from '../../src/data/portfolio';
 import type { Portfolio } from '../../src/engine/types';
-import { scopedPortfolio } from '../middleware/scope';
+import { recordScopedAudit } from '../middleware/audit-scope';
+import { scopeFor, scopedPortfolio } from '../middleware/scope';
 import { readSession } from './session';
 
 /**
@@ -12,18 +13,40 @@ import { readSession } from './session';
  *
  * Every export goes through `scopedPortfolio`, so the file a caller downloads
  * is the same book their session can see in the UI. An Entity Champion who
- * asks for policies gets one entity's rows, not the group's.
+ * asks for policies gets one entity's rows, not the group's. Each export is
+ * written to the audit trail, attributed to the session role and owned by the
+ * entity it was scoped to (group exports are group-wide).
  */
 
 const EXPORT_ENTITIES = ['policies', 'requirements', 'exclusions'] as const;
 type ExportEntity = (typeof EXPORT_ENTITIES)[number];
 
+/** Audit object family for each export, so a filtered audit view finds it. */
+const EXPORT_OBJECT_TYPE = {
+  policies: 'policy',
+  requirements: 'requirement',
+  exclusions: 'exclusion',
+} as const satisfies Record<ExportEntity, string>;
+
 type CsvValue = string | number | null | undefined;
 
-/** RFC 4180 field: quote when the value carries a comma, quote or line break. */
+/**
+ * A cell that starts with one of these can be read by a spreadsheet as a
+ * formula. Tab and carriage return are included because some spreadsheets trim
+ * leading control characters before they read the cell. Such a cell gets a
+ * leading apostrophe so it stays text.
+ */
+const FORMULA_LEAD = /^[=+\-@\t\r]/;
+
+/**
+ * RFC 4180 field: quote when the value carries a comma, quote or line break.
+ * The formula apostrophe goes on the value before quoting, so a quoted cell
+ * reads `"'=...` with the apostrophe just inside the opening quote.
+ */
 export function csvCell(value: CsvValue): string {
   if (value === null || value === undefined) return '';
-  const text = String(value);
+  let text = String(value);
+  if (FORMULA_LEAD.test(text)) text = `'${text}`;
   if (!/[",\r\n]/.test(text)) return text;
   return `"${text.replace(/"/g, '""')}"`;
 }
@@ -197,7 +220,9 @@ exportRoutes.get('/api/export/:entity.csv', async (c) => {
     );
   }
 
-  const data = scopedPortfolio(portfolio, await readSession(c));
+  const session = await readSession(c);
+  const scope = scopeFor(portfolio, session);
+  const data = scopedPortfolio(portfolio, session);
   const body =
     entity === 'policies'
       ? policiesCsv(data)
@@ -205,9 +230,29 @@ exportRoutes.get('/api/export/:entity.csv', async (c) => {
         ? requirementsCsv(data)
         : exclusionsCsv(data);
 
+  const fileName = `salus-${entity}.csv`;
+  const rows =
+    entity === 'policies'
+      ? data.policies.length
+      : entity === 'requirements'
+        ? data.requirements.length
+        : data.exclusions.length;
+
+  recordScopedAudit(
+    {
+      actor: session.role,
+      action: 'export.csv',
+      objectType: EXPORT_OBJECT_TYPE[entity],
+      objectId: fileName,
+      before: null,
+      after: { rows },
+    },
+    scope.kind === 'group' ? null : scope.entityId,
+  );
+
   return c.body(body, 200, {
     'Content-Type': 'text/csv; charset=utf-8',
-    'Content-Disposition': `attachment; filename="salus-${entity}.csv"`,
+    'Content-Disposition': `attachment; filename="${fileName}"`,
     'Cache-Control': 'no-store',
   });
 });

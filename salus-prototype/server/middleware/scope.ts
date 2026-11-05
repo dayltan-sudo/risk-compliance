@@ -51,6 +51,17 @@ export function scopeFor(portfolio: Portfolio, session: Session): SessionScope {
   };
 }
 
+/**
+ * Whether a row owned by `entityId` (null means group-wide or unowned) is
+ * visible to a session with this scope. Group sees everything, unowned rows
+ * included. An entity session sees only rows owned by one of its entities, so
+ * an unowned row is group-only.
+ */
+export function isInScope(scope: SessionScope, entityId: string | null): boolean {
+  if (scope.kind === 'group') return true;
+  return entityId !== null && scope.entityIds.includes(entityId);
+}
+
 function emptyBook(portfolio: Portfolio): Portfolio {
   return {
     ...portfolio,

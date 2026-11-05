@@ -11,13 +11,12 @@
  * Ratio objects rather than introducing a second calculation. Every row opens
  * a lineage panel showing numerator, denominator and formula.
  *
- * Data access is confined to `loadPortfolio()` so the app shell can swap the
- * seed for a filtered portfolio without touching the calculations.
+ * Data access is confined to `useFilteredPortfolio()`, so every figure here
+ * follows the global filter bar.
  */
 import { useState } from 'react';
 import type { CSSProperties, JSX, ReactNode } from 'react';
 
-import { portfolio } from '../../data/portfolio';
 import {
   LINES,
   TIV_COVER_LINES,
@@ -41,19 +40,9 @@ import type {
   Site,
   Thresholds,
 } from '../../engine';
+import { useFilteredPortfolio } from '../layout/filters';
 import { Card, DataTable, KpiTile, Tag, cn } from '../ui';
 import type { Column } from '../ui';
-
-/* ------------------------------------------------------------------ data seam */
-
-/**
- * The page's only read of the portfolio. The shell replaces the body with the
- * filtered data from the global filter bar; every calculation below receives
- * `data` as an argument and never reaches for the module again.
- */
-function loadPortfolio(): Portfolio {
-  return portfolio;
-}
 
 /* --------------------------------------------------------------------- types */
 
@@ -1039,7 +1028,7 @@ const KPI_STRIP: CSSProperties = {
 };
 
 export function CoveragePage(): JSX.Element {
-  const data = loadPortfolio();
+  const { portfolio: data } = useFilteredPortfolio();
   const refDate = data.config.effectiveFrom;
   const thresholds = data.config.thresholds;
   const ctx: BuildContext = { data, refDate, thresholds };

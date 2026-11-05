@@ -78,6 +78,34 @@ ${text}
 }
 
 /**
+ * Route an already-structured extraction. Same admission path as a model
+ * response, so a rules-based read and a model read cannot diverge.
+ */
+export function extractFromRaw(
+  raw: RawExtraction,
+  opts: ExtractDocumentOptions = {},
+): ExtractionResult {
+  const documentId = opts.documentId ?? 'unassigned';
+  const parsed = rawExtractionSchema.safeParse(raw);
+  if (!parsed.success) {
+    throw new Error(
+      `extraction for document "${documentId}" did not match the extraction schema: ${parsed.error.message}`,
+    );
+  }
+
+  const value = parsed.data;
+  const normalised = normalise(value, opts.threshold === undefined ? {} : { threshold: opts.threshold });
+  const draft = toDraftPolicy(normalised, documentId);
+
+  return {
+    raw: value,
+    normalised,
+    draft,
+    completeness: draftCompleteness(draft),
+  };
+}
+
+/**
  * Run one document through the model and route the result.
  *
  * The client returns `unknown`; this function is where that becomes a
@@ -97,21 +125,5 @@ export async function extractDocument(
     ...(opts.documentTypeHint === undefined ? {} : { documentTypeHint: opts.documentTypeHint }),
   });
 
-  const parsed = rawExtractionSchema.safeParse(response);
-  if (!parsed.success) {
-    throw new Error(
-      `extraction for document "${documentId}" did not match the extraction schema: ${parsed.error.message}`,
-    );
-  }
-
-  const raw = parsed.data;
-  const normalised = normalise(raw, opts.threshold === undefined ? {} : { threshold: opts.threshold });
-  const draft = toDraftPolicy(normalised, documentId);
-
-  return {
-    raw,
-    normalised,
-    draft,
-    completeness: draftCompleteness(draft),
-  };
+  return extractFromRaw(response as RawExtraction, opts);
 }

@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { CSSProperties } from 'react';
 
-import { portfolio } from '../../data/portfolio';
 import { findExclusionOverride, formatSgd, requirementStatus, toSgd } from '../../engine';
-import type { ContractRequirement, Exclusion } from '../../engine';
+import type { ContractRequirement, Exclusion, Portfolio } from '../../engine';
 import { formatDate, formatMoneyCompact } from '../components/format';
+import { useFilteredPortfolio } from '../layout/filters';
 import { Card, KpiTile, Tag } from '../ui';
 
 /**
@@ -16,8 +16,6 @@ import { Card, KpiTile, Tag } from '../ui';
  * here comes from the seed or from `requirementStatus` / `findExclusionOverride`.
  */
 
-const AS_OF = portfolio.config.effectiveFrom;
-
 type ExclusionRow = {
   exclusion: Exclusion;
   siteName: string;
@@ -28,12 +26,13 @@ type ExclusionRow = {
   conflicting: ContractRequirement[];
 };
 
-function buildConflictMap(): Map<string, ContractRequirement[]> {
+function buildConflictMap(portfolio: Portfolio): Map<string, ContractRequirement[]> {
+  const asOf = portfolio.config.effectiveFrom;
   const map = new Map<string, ContractRequirement[]>();
 
   for (const requirement of portfolio.requirements) {
-    const assessment = requirementStatus(requirement, portfolio, AS_OF);
-    const override = findExclusionOverride(requirement, assessment.requiredSgd, portfolio, AS_OF);
+    const assessment = requirementStatus(requirement, portfolio, asOf);
+    const override = findExclusionOverride(requirement, assessment.requiredSgd, portfolio, asOf);
     if (override === null) continue;
     const existing = map.get(override.exclusion.id);
     if (existing === undefined) {
@@ -46,8 +45,9 @@ function buildConflictMap(): Map<string, ContractRequirement[]> {
   return map;
 }
 
-function buildRows(): ExclusionRow[] {
-  const conflicts = buildConflictMap();
+function buildRows(portfolio: Portfolio): ExclusionRow[] {
+  const asOf = portfolio.config.effectiveFrom;
+  const conflicts = buildConflictMap(portfolio);
 
   return portfolio.exclusions.map((exclusion) => {
     const coverage = portfolio.coverages.find(
@@ -62,7 +62,7 @@ function buildRows(): ExclusionRow[] {
 
     const sublimitSgd =
       exclusion.scope === 'sublimit' && exclusion.sublimit !== undefined && coverage !== undefined
-        ? toSgd(exclusion.sublimit, coverage.currency, portfolio.fxRates, AS_OF)
+        ? toSgd(exclusion.sublimit, coverage.currency, portfolio.fxRates, asOf)
         : null;
 
     return {
@@ -77,12 +77,6 @@ function buildRows(): ExclusionRow[] {
     };
   });
 }
-
-const rows = buildRows();
-const fullCount = portfolio.exclusions.filter((row) => row.scope === 'full').length;
-const sublimitCount = portfolio.exclusions.length - fullCount;
-const conflictCount = rows.filter((row) => row.conflicting.length > 0).length;
-const underminedCount = rows.reduce((total, row) => total + row.conflicting.length, 0);
 
 type ScopeFilter = 'all' | 'conflicts';
 
@@ -104,7 +98,24 @@ function WordingExcerpt({ text }: { text: string }) {
 }
 
 export function Exclusions() {
+  const { portfolio } = useFilteredPortfolio();
+  const AS_OF = portfolio.config.effectiveFrom;
   const [scopeFilter, setScopeFilter] = useState<ScopeFilter>('all');
+
+  const rows = useMemo(() => buildRows(portfolio), [portfolio]);
+  const fullCount = useMemo(
+    () => portfolio.exclusions.filter((row) => row.scope === 'full').length,
+    [portfolio],
+  );
+  const sublimitCount = portfolio.exclusions.length - fullCount;
+  const conflictCount = useMemo(
+    () => rows.filter((row) => row.conflicting.length > 0).length,
+    [rows],
+  );
+  const underminedCount = useMemo(
+    () => rows.reduce((total, row) => total + row.conflicting.length, 0),
+    [rows],
+  );
 
   const visible = rows.filter(
     (row) => scopeFilter === 'all' || row.conflicting.length > 0,

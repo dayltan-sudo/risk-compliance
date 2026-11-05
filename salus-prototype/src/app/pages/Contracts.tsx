@@ -1,15 +1,20 @@
-import { Fragment, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import type { CSSProperties, KeyboardEvent } from 'react';
 
-import { portfolio } from '../../data/portfolio';
 import {
   findExclusionOverride,
   formatSgd,
   requirementStatus,
   requirementSummary,
 } from '../../engine';
-import type { ContractRequirement, Exclusion, RequirementStatus } from '../../engine';
+import type {
+  ContractRequirement,
+  Exclusion,
+  Portfolio,
+  RequirementStatus,
+} from '../../engine';
 import { formatDate, formatMoneyCompact, formatPct } from '../components/format';
+import { useFilteredPortfolio } from '../layout/filters';
 import { Card, KpiTile, Tag } from '../ui';
 
 /**
@@ -19,8 +24,6 @@ import { Card, KpiTile, Tag } from '../ui';
  * the ratio, status and override note, `requirementSummary` supplies the
  * counts. The page only formats, filters and expands them.
  */
-
-const AS_OF = portfolio.config.effectiveFrom;
 
 const EXCLUDED_HINT =
   'Excluded is a qualitative failure: the placed limit can be sufficient, but policy wording removes the required peril. A Gap is a numerical shortfall in the placed limit.';
@@ -40,10 +43,12 @@ type RequirementRow = {
   exclusionCarrier: string | null;
 };
 
-function buildRows(): RequirementRow[] {
+function buildRows(portfolio: Portfolio): RequirementRow[] {
+  const asOf = portfolio.config.effectiveFrom;
+
   return portfolio.requirements.map((requirement) => {
-    const assessment = requirementStatus(requirement, portfolio, AS_OF);
-    const override = findExclusionOverride(requirement, assessment.requiredSgd, portfolio, AS_OF);
+    const assessment = requirementStatus(requirement, portfolio, asOf);
+    const override = findExclusionOverride(requirement, assessment.requiredSgd, portfolio, asOf);
     const site = portfolio.sites.find((candidate) => candidate.id === requirement.siteId);
     const asset = portfolio.assets.find((candidate) => candidate.id === requirement.assetId);
 
@@ -89,25 +94,7 @@ function buildRows(): RequirementRow[] {
   });
 }
 
-const rows = buildRows();
-const counts = requirementSummary(portfolio, AS_OF);
-
-/** Required minus placed, summed across every requirement below 100%. */
-const exposureSgd = rows.reduce(
-  (total, row) => (row.ratio < 1 ? total + (row.requiredSgd - row.placedSgd) : total),
-  0,
-);
-
 type Filter = 'all' | 'attention' | RequirementStatus;
-
-const FILTERS: ReadonlyArray<{ key: Filter; label: string; count: number }> = [
-  { key: 'all', label: 'All', count: counts.total },
-  { key: 'Met', label: 'Met', count: counts.Met },
-  { key: 'At-risk', label: 'At-risk', count: counts['At-risk'] },
-  { key: 'Gap', label: 'Gap', count: counts.Gap },
-  { key: 'Excluded', label: 'Excluded', count: counts.Excluded },
-  { key: 'attention', label: 'Gaps and at-risk', count: counts.Gap + counts['At-risk'] },
-];
 
 function matchesFilter(status: RequirementStatus, filter: Filter): boolean {
   if (filter === 'all') return true;
@@ -188,8 +175,32 @@ function RequirementDetail({ row }: { row: RequirementRow }) {
 }
 
 export function Contracts() {
+  const { portfolio } = useFilteredPortfolio();
+  const AS_OF = portfolio.config.effectiveFrom;
   const [filter, setFilter] = useState<Filter>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const rows = useMemo(() => buildRows(portfolio), [portfolio]);
+  const counts = useMemo(() => requirementSummary(portfolio, AS_OF), [portfolio, AS_OF]);
+
+  /** Required minus placed, summed across every requirement below 100%. */
+  const exposureSgd = useMemo(
+    () =>
+      rows.reduce(
+        (total, row) => (row.ratio < 1 ? total + (row.requiredSgd - row.placedSgd) : total),
+        0,
+      ),
+    [rows],
+  );
+
+  const FILTERS: ReadonlyArray<{ key: Filter; label: string; count: number }> = [
+    { key: 'all', label: 'All', count: counts.total },
+    { key: 'Met', label: 'Met', count: counts.Met },
+    { key: 'At-risk', label: 'At-risk', count: counts['At-risk'] },
+    { key: 'Gap', label: 'Gap', count: counts.Gap },
+    { key: 'Excluded', label: 'Excluded', count: counts.Excluded },
+    { key: 'attention', label: 'Gaps and at-risk', count: counts.Gap + counts['At-risk'] },
+  ];
 
   const visible = rows.filter((row) => matchesFilter(row.status, filter));
 

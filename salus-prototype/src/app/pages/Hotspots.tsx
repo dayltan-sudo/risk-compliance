@@ -13,22 +13,11 @@
 import { useId, useMemo, useState } from 'react';
 import type { CSSProperties, JSX, ReactNode } from 'react';
 
-import { portfolio } from '../../data/portfolio';
 import { DRIVERS, scoreSite } from '../../engine';
 import type { Band, Driver, DriverScore, Portfolio, Site, SiteScore } from '../../engine';
+import { useFilteredPortfolio } from '../layout/filters';
 import { Card, DataTable, Tag, bandColor, cn } from '../ui';
 import type { Column } from '../ui';
-
-/* ------------------------------------------------------------------ data seam */
-
-/**
- * The page's only read of the portfolio. The shell replaces the body with the
- * filtered data from the global filter bar; every calculation below receives
- * `data` as an argument and never reaches for the module again.
- */
-function loadPortfolio(): Portfolio {
-  return portfolio;
-}
 
 /* --------------------------------------------------------------------- labels */
 
@@ -688,7 +677,7 @@ function exportHotspotsCsv(
 /* ----------------------------------------------------------------------- page */
 
 export function HotspotsPage(): JSX.Element {
-  const data = loadPortfolio();
+  const { portfolio: data } = useFilteredPortfolio();
   const refDate = data.config.effectiveFrom;
   const thresholds = data.config.thresholds;
   const baseWeights = data.config.weights;

@@ -147,8 +147,33 @@ function textSnippet(text: string): string {
 }
 
 /**
+ * Split an answer into claim-sized chunks. Figures are bound per sentence, so a
+ * citation at the end of the answer cannot launder a figure at the start.
+ * Decimals do not split (`90.03%` stays whole) because the lookahead requires a
+ * capital, digit or opening bracket after the terminator.
+ */
+function sentencesOf(text: string): string[] {
+  return text
+    .split(/\n+/)
+    .flatMap((line) => line.split(/(?<=[.!?])\s+(?=[A-Z0-9"'([])/))
+    .map((sentence) => sentence.trim())
+    .filter((sentence) => sentence !== '');
+}
+
+const MAGNITUDE_WORD = /\b(hundred|thousand|million|billion|trillion)\b/i;
+
+/**
+ * A figure is a digit in any script (NFKC folds fullwidth ４２ to 42) or a
+ * magnitude word, which is how a model smuggles a number past a `\d` check.
+ */
+function hasFigure(sentence: string): boolean {
+  const normalised = sentence.normalize('NFKC');
+  return /\d/.test(normalised) || MAGNITUDE_WORD.test(normalised);
+}
+
+/**
  * Run one question through the tool loop. Throws `AssistantCitationError`
- * when the answer contains a digit and no citation resolves to a tool ref.
+ * when any sentence carrying a figure has no citation of its own.
  */
 export async function runAssistant(
   question: string,
@@ -217,9 +242,14 @@ export async function runAssistant(
 
   const citations = citationsInText(finalText, refs);
 
-  if (/\d/.test(finalText) && citations.length === 0) {
+  const uncited = sentencesOf(finalText).filter(
+    (sentence) => hasFigure(sentence) && citationsInText(sentence, refs).length === 0,
+  );
+
+  if (uncited.length > 0) {
+    const first = uncited[0] ?? '';
     throw new AssistantCitationError(
-      `assistant answer contains a numeric claim with no resolvable citation: ${textSnippet(finalText)}`,
+      `assistant answer states a figure in a sentence with no resolvable citation (${uncited.length} such sentence(s)): ${textSnippet(first)}`,
     );
   }
 
