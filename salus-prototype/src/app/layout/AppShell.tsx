@@ -69,6 +69,7 @@ function ShellLayout() {
     '/hotspots': { name: 'Risk hotspots', id: 'hotspots' },
     '/contracts': { name: 'Contract requirements', id: 'contracts' },
     '/exclusions': { name: 'Insurance exclusions', id: 'exclusions' },
+    '/renewals': { name: 'Renewal register', id: 'renewals' },
     '/audit': { name: 'Audit trail', id: 'audit' },
     '/documents': { name: 'Document inbox', id: 'documents' },
   };
@@ -101,6 +102,7 @@ function ShellLayout() {
         { id: 'hotspots', label: 'Hotspots' },
         { id: 'contracts', label: 'Contracts' },
         { id: 'exclusions', label: 'Exclusions' },
+        { id: 'renewals', label: 'Renewals' },
       ],
     },
     {
