@@ -644,6 +644,7 @@ export function DocumentsPage(): JSX.Element {
 
     setExtracting(true);
     setFailure(null);
+    sourceRef.current = { kind: 'fixture', id: loadedFixture.id, file: loadedFixture.file, text };
     try {
       const response = await requestJson<CreateDocumentResponse>('/api/documents', {
         method: 'POST',
@@ -685,6 +686,7 @@ export function DocumentsPage(): JSX.Element {
     setUploadInfo(null);
     setExtraction(null);
     setPosted(null);
+    sourceRef.current = { kind: 'upload', file };
 
     try {
       const body = new FormData();
@@ -717,6 +719,54 @@ export function DocumentsPage(): JSX.Element {
     }
   };
 
+  /**
+   * How the current draft got here, so it can be rebuilt if the server forgot
+   * it. A serverless instance can be replaced between two clicks: extract on
+   * one, post on another, and the post 404s. Re-running the source costs one
+   * repeat call and turns a broken demo into a latency blip.
+   */
+  const sourceRef = useRef<
+    | { kind: 'upload'; file: File }
+    | { kind: 'fixture'; id: string; file: string; text: string }
+    | null
+  >(null);
+
+  const reenqueue = async (): Promise<void> => {
+    const source = sourceRef.current;
+    if (source === null) return;
+
+    if (source.kind === 'upload') {
+      const body = new FormData();
+      body.append('file', source.file);
+      if (extraction !== null) body.append('documentId', extraction.documentId);
+      await requestJson<UploadResponse>('/api/documents/upload', { method: 'POST', body });
+      return;
+    }
+
+    await requestJson<CreateDocumentResponse>('/api/documents', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: source.id, name: source.file, text: source.text }),
+    });
+  };
+
+  /** Retry once after rebuilding the queue entry, only for a missing document. */
+  const withRecovery = async <T,>(operation: () => Promise<T>): Promise<T> => {
+    try {
+      return await operation();
+    } catch (cause) {
+      if (cause instanceof ApiError && cause.status === 404) {
+        try {
+          await reenqueue();
+        } catch {
+          // 409 means another instance already has it; either way, retry.
+        }
+        return operation();
+      }
+      throw cause;
+    }
+  };
+
   const acceptField = async (row: QueuedRow) => {
     if (extraction === null || acceptingKey !== null) return;
 
@@ -726,13 +776,15 @@ export function DocumentsPage(): JSX.Element {
     setAcceptingKey(row.key);
     setFailure(null);
     try {
-      const response = await requestJson<AcceptFieldResponse>(
-        `/api/documents/${encodeURIComponent(extraction.documentId)}/fields/${encodeURIComponent(row.key)}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ value }),
-        },
+      const response = await withRecovery(() =>
+        requestJson<AcceptFieldResponse>(
+          `/api/documents/${encodeURIComponent(extraction.documentId)}/fields/${encodeURIComponent(row.key)}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ value }),
+          },
+        ),
       );
 
       setExtraction((current) =>
@@ -765,9 +817,11 @@ export function DocumentsPage(): JSX.Element {
     setPosting(true);
     setFailure(null);
     try {
-      const response = await requestJson<PostedDocument>(
-        `/api/documents/${encodeURIComponent(extraction.documentId)}/post`,
-        { method: 'POST' },
+      const response = await withRecovery(() =>
+        requestJson<PostedDocument>(
+          `/api/documents/${encodeURIComponent(extraction.documentId)}/post`,
+          { method: 'POST' },
+        ),
       );
 
       setPosted(response);
