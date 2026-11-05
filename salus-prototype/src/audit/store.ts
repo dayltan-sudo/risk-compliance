@@ -172,10 +172,14 @@ export function listAudit(query: AuditQuery = {}): AuditEvent[] {
       ? AUDIT_DEFAULT_LIMIT
       : Math.min(Math.max(Math.floor(requested), 0), AUDIT_MAX_LIMIT);
 
+  // Newest first by timestamp, not by arrival. Seeded history is written in
+  // array order, and a seed row inserted out of sequence used to surface in the
+  // wrong place while the page claimed "Newest first".
+  const ordered = [...events].sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0));
+
   const result: AuditEvent[] = [];
-  for (let index = events.length - 1; index >= 0 && result.length < limit; index -= 1) {
-    const event = events[index];
-    if (event === undefined) continue;
+  for (const event of ordered) {
+    if (result.length >= limit) break;
     if (query.objectType !== undefined && event.objectType !== query.objectType) continue;
     result.push(event);
   }
