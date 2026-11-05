@@ -13,7 +13,8 @@ import { Card, KpiTile, Tag } from '../ui';
  * A row conflicts when the engine's exclusion override is what makes a
  * requirement Excluded. That is stricter than "same site and line": a
  * sub-limit sitting above the required limit does not conflict. Every value
- * here comes from the seed or from `requirementStatus` / `findExclusionOverride`.
+ * here comes from the portfolio currently in scope, or from `requirementStatus` /
+ * `findExclusionOverride`.
  */
 
 type ExclusionRow = {
@@ -164,7 +165,7 @@ export function Exclusions() {
         title="Exclusion register"
         subtitle="The wording excerpt is the evidence. Click it to read the full clause."
         padded={false}
-        footer="Synthetic data only. Conflict status is derived by the engine's exclusion override against the seed requirements."
+        footer="Synthetic data only. Conflict status is derived by the engine's exclusion override against the requirements currently in scope."
       >
         <div style={toolbarStyle}>
           <div className="sal-seg" role="group" aria-label="Filter exclusions">

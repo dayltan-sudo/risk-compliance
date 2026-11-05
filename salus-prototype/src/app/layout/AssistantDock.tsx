@@ -17,6 +17,7 @@ type AssistantAnswer = {
 /** The three states the task requires to be distinct, plus honest fallbacks. */
 type Failure =
   | { kind: 'not-configured' }
+  | { kind: 'scoped' }
   | { kind: 'uncited' }
   | { kind: 'network' }
   | { kind: 'rejected'; detail: string }
@@ -146,6 +147,12 @@ function failureCopy(failure: Failure): { label: string; detail: string } {
       return {
         label: 'Not configured',
         detail: 'Assistant is not configured in this build; set the model keys to enable it',
+      };
+    case 'scoped':
+      return {
+        label: 'Group scope only',
+        detail:
+          'The assistant answers across the whole group in this build. Switch the role back to Group Insurance to ask it; entity-scoped answers are not wired yet.',
       };
     case 'uncited':
       return {
@@ -400,6 +407,10 @@ export function AssistantDock() {
       const body = await readFailureBody(response);
       if (response.status === 503) {
         appendFailure({ kind: 'not-configured' });
+      } else if (response.status === 403) {
+        // A scoped role is refused by the API rather than answered with
+        // group-wide figures, so the dock says so instead of showing an error.
+        appendFailure({ kind: 'scoped' });
       } else if (response.status === 502 && isUncitedFailure(body)) {
         appendFailure({ kind: 'uncited' });
       } else if (response.status === 400) {

@@ -266,7 +266,7 @@ export function Contracts() {
         title="Requirement register"
         subtitle="Click a row for its contractual source and any exclusion override."
         padded={false}
-        footer={`Synthetic data only. Limits, ratios and statuses are engine results from the seed portfolio as at ${formatDate(AS_OF)}.`}
+        footer={`Synthetic data only. Limits, ratios and statuses are engine results for the portfolio currently in scope as at ${formatDate(AS_OF)}.`}
       >
         <div style={toolbarStyle}>
           <div
