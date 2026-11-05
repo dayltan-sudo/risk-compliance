@@ -1,0 +1,65 @@
+[[page 1]]
+
+KESTREL UNDERWRITING ASIA PTE. LTD.
+On behalf of Lloyd's Syndicate 4471
+
+CYBER AND TECHNOLOGY LIABILITY SLIP
+
+Slip reference:       KUA-CY-2026-01194
+Broker:               Aldergate Insurance Brokers Pte. Ltd.
+Broker contact:       R. Iyer, +65 6950 2211, r.iyer@aldergate.example
+Insured:              Sentinel Grid Technologies Pte. Ltd.
+Insured address:      71 Ayer Rajah Crescent, #04-18, Singapore 139951
+Line of business:     Cyber - Network Security and Technology Errors & Omissions
+Policy number:        KUA-CY-26-01194
+Period of insurance:  15 February 2026 to 14 February 2027
+                      both days inclusive, Singapore time
+Currency:             Singapore dollars (SGD)
+Country:              Singapore
+
+THE INSURED
+Sentinel Grid Technologies Pte. Ltd. and its subsidiaries, for their respective
+rights and interests.
+
+LIMITS OF LIABILITY
+Limit of liability, any one claim:      SGD 12,000,000
+Limit of liability, in the aggregate:   SGD 12,000,000
+Retention, each and every claim:        SGD 100,000
+Retention, ransomware event:            SGD 250,000
+The aggregate limit includes defence costs and breach response costs.
+
+SUBLIMITS
+Privacy breach response costs:          SGD 1,500,000
+Regulatory investigation costs:         SGD 1,000,000
+PCI DSS fines and penalties:            SGD 500,000
+Network interruption, waiting period:   12 hours
+Contingent business interruption:       not insured
+
+[[page 2]]
+
+PREMIUM
+Premium:               to be confirmed by the underwriter at binding
+GST at 9%:             9% (applies on binding)
+Payment terms:         45 days from binding
+
+COVERAGE
+Direct loss arising from a network security failure, a privacy breach, or a
+technology error in the insured's products or services, subject to the limits,
+sublimits and exclusions below.
+
+EXCLUSIONS
+System failure without a malicious or accidental external cause; unencrypted
+portable devices and removable media; loss arising from the insured's failure to
+apply a critical security patch within 30 days of release; contractual penalties;
+intellectual property infringement; bodily injury and property damage; terrorism
+and war; cryptocurrency mining and theft of cryptocurrency.
+
+CONDITIONS
+Minimum security controls: multi-factor authentication on all remote access,
+endpoint detection and response on all servers and endpoints, encrypted backups
+held offline. Warranty: the insured confirms the controls above are in place at
+inception. Claims notification within 72 hours of discovery.
+This slip is subject to the Kestrel cyber wording KUA-CYBER-2025-v3.
+
+Signed for and on behalf of Kestrel Underwriting Asia Pte. Ltd.
+Date of issue: 22 January 2026

@@ -1,0 +1,1033 @@
+/*
+ * Salus app shell and page layout.
+ *
+ * Everything here is layout, spacing and composition on top of the tokens in
+ * `src/app/ui/theme.css`. Colour values are only ever `var(--token)`; the
+ * palette lives in one place.
+ */
+
+/* --------------------------------------------------------------- app shell */
+
+.sal-app {
+  display: flex;
+  align-items: stretch;
+  min-height: 100vh;
+  background: var(--paper);
+}
+
+.sal-app__main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.sal-app__body {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--rail-w);
+  align-items: start;
+}
+
+.sal-app__content {
+  min-width: 0;
+  padding: var(--space-section) var(--space-gutter) 56px;
+}
+
+.sal-app__rail {
+  position: sticky;
+  top: calc(var(--topbar-h) + 18px);
+  align-self: start;
+  min-width: 0;
+  padding: 0 var(--space-page) 0 0;
+}
+
+/* ------------------------------------------------------- sidebar next phase */
+
+.sal-sidebar--salus .sal-sidebar__section:nth-child(2) .sal-sidebar__item {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.sal-sidebar--salus .sal-sidebar__section:nth-child(2) .sal-sidebar__item:hover {
+  background: transparent;
+  color: var(--parchment);
+}
+
+/* The pill is appended by CSS because the shared Sidebar primitive has no
+   disabled slot and `src/app/ui` belongs to another unit. */
+.sal-sidebar--salus .sal-sidebar__section:nth-child(2) .sal-sidebar__label {
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.sal-sidebar--salus .sal-sidebar__section:nth-child(2) .sal-sidebar__label::after {
+  content: 'next phase';
+  display: inline-block;
+  margin-left: var(--space-xs);
+  padding: 0 5px;
+  border: 1px solid var(--ink-800);
+  border-radius: var(--radius-pill);
+  color: var(--dusk);
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  font-weight: var(--weight-medium);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  vertical-align: 1px;
+}
+
+/* ------------------------------------------------------------- user block */
+
+.sal-user {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.sal-user__avatar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  background: var(--ink-800);
+  color: var(--parchment);
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.02em;
+}
+
+.sal-user__body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.sal-user__name {
+  font-size: var(--text-body-sm);
+  font-weight: var(--weight-semibold);
+  line-height: 1.3;
+  color: var(--card);
+}
+
+.sal-user__role {
+  font-size: var(--text-micro);
+  line-height: 1.3;
+  color: var(--dusk);
+}
+
+/* --------------------------------------------------------------- top bar */
+
+.sal-asof {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.sal-topnav {
+  display: none;
+  align-items: center;
+  gap: 4px;
+}
+
+.sal-topnav__link {
+  padding: 5px 11px;
+  border-radius: var(--radius-pill);
+  color: var(--muted);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  text-decoration: none;
+}
+
+.sal-topnav__link:hover {
+  color: var(--ink);
+  background: var(--paper);
+}
+
+.sal-topnav__link.is-active {
+  background: var(--ink-950);
+  color: var(--card);
+}
+
+/* --------------------------------------------------------------- filters */
+
+.sal-filters {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+  padding: 10px var(--space-gutter);
+  background: var(--card);
+  border-bottom: var(--border-hairline);
+}
+
+.sal-filters__title {
+  font-size: var(--text-micro);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dusk-dim);
+}
+
+.sal-filters__spacer {
+  flex: 1 1 auto;
+}
+
+.sal-filters__scope {
+  font-size: var(--text-xs);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.sal-filters__scope strong {
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-weight: var(--weight-semibold);
+}
+
+.sal-field {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.sal-field__label {
+  font-size: var(--text-micro);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dusk-dim);
+  white-space: nowrap;
+}
+
+.sal-select {
+  height: 32px;
+  max-width: 220px;
+  padding: 0 var(--space-sm);
+  border: var(--border-hairline);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  color: var(--ink);
+  font-size: var(--text-sm);
+}
+
+/* Line multi-select */
+
+.sal-menu {
+  position: relative;
+}
+
+.sal-menu > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.sal-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.sal-menu__control {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  height: 32px;
+  padding: 0 var(--space-md);
+  border: var(--border-hairline);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+}
+
+.sal-menu[open] .sal-menu__control {
+  border-color: var(--dusk);
+}
+
+.sal-menu__value {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.sal-menu__chev {
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1;
+}
+
+.sal-menu__panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 70;
+  width: 268px;
+  max-height: 340px;
+  overflow-y: auto;
+  padding: var(--space-sm);
+  background: var(--card);
+  border: var(--border-hairline);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow);
+}
+
+.sal-menu__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-xxs) var(--space-xs) var(--space-sm);
+  font-size: var(--text-micro);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dusk-dim);
+}
+
+.sal-menu__links {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.sal-menu__links button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--crimson-deep);
+  font-size: var(--text-micro);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.sal-menu__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sal-check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 5px var(--space-xs);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-body);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.sal-check:hover {
+  background: var(--paper);
+}
+
+.sal-check input {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--crimson);
+}
+
+/* Quick toggles */
+
+.sal-toggles {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  background: var(--paper);
+  border: var(--border-hairline);
+  border-radius: var(--radius-pill);
+}
+
+.sal-toggle {
+  padding: 4px var(--space-md);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--muted);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+}
+
+.sal-toggle:hover {
+  color: var(--ink);
+}
+
+.sal-toggle[aria-pressed='true'] {
+  background: var(--ink-950);
+  color: var(--card);
+}
+
+/* ---------------------------------------------------------------- buttons */
+
+.sal-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  padding: 8px var(--space-xl);
+  border: var(--border-hairline);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.sal-btn:hover {
+  border-color: var(--dusk);
+}
+
+.sal-btn--primary {
+  background: var(--ink-950);
+  border-color: var(--ink-950);
+  color: var(--card);
+}
+
+.sal-btn--primary:hover {
+  background: var(--ink-800);
+  border-color: var(--ink-800);
+}
+
+.sal-btn--ghost {
+  background: transparent;
+}
+
+.sal-btn--sm {
+  padding: 4px var(--space-md);
+  font-size: var(--text-xs);
+}
+
+.sal-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ------------------------------------------------------------------ page */
+
+.sal-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-section);
+  max-width: var(--page-max);
+}
+
+.sal-page__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-xxl);
+  flex-wrap: wrap;
+}
+
+.sal-page__heading {
+  min-width: 0;
+}
+
+.sal-eyebrow {
+  margin-bottom: 6px;
+  font-size: var(--text-micro);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--crimson-deep);
+}
+
+.sal-page__title {
+  font-size: var(--text-h1);
+  line-height: var(--leading-tight);
+  color: var(--ink);
+}
+
+.sal-page__sub {
+  max-width: 72ch;
+  margin-top: 5px;
+  font-size: var(--text-base);
+  color: var(--muted);
+}
+
+.sal-page__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.sal-page__foot {
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+
+.sal-empty {
+  padding: var(--space-xxl);
+  font-size: var(--text-body);
+  color: var(--muted);
+  text-align: center;
+}
+
+/* ------------------------------------------------------------------- kpis */
+
+.sal-kpis {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--space-lg);
+}
+
+/* -------------------------------------------------------------- heat grid */
+
+.sal-heat {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(156px, 1fr));
+  gap: var(--space-sm);
+}
+
+.sal-heat__cell {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: var(--space-md) var(--space-lg);
+  border: 1px solid transparent;
+  border-radius: var(--radius-lg);
+  background: var(--tone-bg);
+  text-decoration: none;
+  transition: border-color 0.15s ease;
+}
+
+.sal-heat__cell:hover {
+  border-color: var(--tone-dot);
+}
+
+.sal-heat__country {
+  font-size: var(--text-body-sm);
+  font-weight: var(--weight-bold);
+  color: var(--tone-fg);
+}
+
+.sal-heat__band {
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--tone-fg);
+  opacity: 0.85;
+}
+
+.sal-heat__meta {
+  font-size: var(--text-micro);
+  color: var(--tone-fg);
+  opacity: 0.72;
+}
+
+/* --------------------------------------------------------------- exceptions */
+
+.sal-exc__title {
+  display: block;
+  font-weight: var(--weight-semibold);
+  color: var(--ink);
+}
+
+.sal-exc__kind {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.sal-exc__detail {
+  color: var(--muted);
+}
+
+/* ----------------------------------------------------------- rail + dock */
+
+.sal-rail-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  height: calc(100vh - var(--topbar-h) - 36px);
+  padding-top: var(--space-section);
+}
+
+.sal-rail-stack > .sal-rail {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.sal-dock {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xxs);
+  padding: var(--space-xl);
+  background: var(--ink-950);
+  border-radius: var(--radius-xxl);
+  box-shadow: var(--shadow);
+}
+
+.sal-dock__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-xxs);
+}
+
+.sal-dock__mark {
+  color: var(--crimson);
+  font-size: 15px;
+  line-height: 1;
+}
+
+.sal-dock__title {
+  flex: 1 1 auto;
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  font-weight: var(--weight-bold);
+  color: var(--card);
+}
+
+.sal-dock__label {
+  margin-top: var(--space-xs);
+  font-size: var(--text-micro);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dusk);
+}
+
+.sal-dock__prompt {
+  margin-top: 2px;
+  font-family: var(--font-serif);
+  font-size: var(--text-lead);
+  line-height: var(--leading-snug);
+  color: var(--card);
+}
+
+.sal-dock__note {
+  margin-top: var(--space-xs);
+  font-size: var(--text-micro);
+  line-height: var(--leading-snug);
+  color: var(--dusk);
+}
+
+.sal-dock__input {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+  padding: 7px var(--space-md);
+  border: 1px solid var(--ink-800);
+  border-radius: var(--radius-lg);
+  background: var(--ink-850);
+  color: var(--dusk);
+  font-size: var(--text-sm);
+}
+
+.sal-dock__kbd {
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dusk-dim);
+}
+
+/* ------------------------------------------------------------------- map */
+
+.sal-map-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(300px, 0.85fr);
+  gap: var(--space-lg);
+  align-items: start;
+}
+
+.sal-map-layout__main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  min-width: 0;
+}
+
+.sal-map-layout__map {
+  overflow: hidden;
+}
+
+.sal-map__canvas {
+  position: relative;
+  aspect-ratio: 2 / 1;
+  overflow: hidden;
+  background: var(--ink-950);
+}
+
+.sal-map__canvas > .sal-map__dots {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  color: var(--card);
+}
+
+.sal-map__overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.sal-map__marker {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.sal-map__hit {
+  pointer-events: all;
+}
+
+.sal-map__dot {
+  transition: stroke 0.15s ease;
+}
+
+.sal-map__marker:hover .sal-map__dot,
+.sal-map__marker:focus-visible .sal-map__dot {
+  stroke: var(--crimson);
+  stroke-width: 2.5;
+}
+
+.sal-map__marker:focus,
+.sal-map__marker:focus-visible {
+  outline: none;
+}
+
+.sal-map__label {
+  opacity: 0;
+  fill: var(--card);
+  font-family: var(--font-sans);
+  font-size: 10.5px;
+  font-weight: var(--weight-semibold);
+  paint-order: stroke;
+  stroke: var(--ink-950);
+  stroke-width: 2.5px;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.sal-map__marker:hover .sal-map__label,
+.sal-map__marker.is-selected .sal-map__label {
+  opacity: 1;
+}
+
+.sal-map__empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--dusk);
+  font-size: var(--text-body);
+}
+
+.sal-legend {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.sal-legend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xxs);
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.sal-legend__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-full);
+  background: var(--tone-dot);
+}
+
+/* ------------------------------------------------------------ asset list */
+
+.sal-assetlist {
+  max-height: 520px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sal-assetlist li + li {
+  border-top: var(--border-hairline);
+}
+
+.sal-asset {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: 10px var(--space-xxl);
+  border: 0;
+  border-left: 3px solid transparent;
+  background: transparent;
+  text-align: left;
+}
+
+.sal-asset:hover {
+  background: var(--paper);
+}
+
+.sal-asset.is-selected {
+  background: var(--crimson-tint);
+  border-left-color: var(--crimson);
+}
+
+.sal-asset__dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+}
+
+.sal-asset__body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.sal-asset__name {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: var(--text-body-sm);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-snug);
+  color: var(--ink);
+}
+
+.sal-asset__meta {
+  overflow: hidden;
+  font-size: var(--text-micro);
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sal-asset__value {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  font-size: var(--text-micro);
+  color: var(--muted);
+}
+
+.sal-map__list-empty {
+  padding: var(--space-section) var(--space-xxl);
+}
+
+/* ----------------------------------------------------------- site detail */
+
+.sal-site {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+  gap: var(--space-section);
+}
+
+.sal-site__col {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.sal-site__h4 {
+  margin: var(--space-xxl) 0 var(--space-sm);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dusk-dim);
+}
+
+.sal-site__col > .sal-site__h4:first-child {
+  margin-top: 0;
+}
+
+.sal-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0;
+  overflow: hidden;
+  border: var(--border-hairline);
+  border-radius: var(--radius-lg);
+  background: var(--line);
+}
+
+.sal-facts > div {
+  padding: var(--space-sm) var(--space-md);
+  background: var(--card);
+}
+
+.sal-facts dt {
+  font-size: var(--text-micro);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.sal-facts dd {
+  margin: 2px 0 0;
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  color: var(--ink);
+}
+
+.sal-policy {
+  margin-top: var(--space-sm);
+  padding: var(--space-lg);
+  border: var(--border-hairline);
+  border-left: 3px solid var(--crimson);
+  border-radius: var(--radius-lg);
+  background: var(--paper);
+}
+
+.sal-policy__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.sal-policy__no {
+  font-family: var(--font-mono);
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  color: var(--ink);
+}
+
+.sal-policy__line {
+  margin-top: 2px;
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+
+.sal-policy__facts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-sm);
+  margin: var(--space-sm) 0 0;
+}
+
+.sal-policy__facts dt {
+  font-size: var(--text-micro);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.sal-policy__facts dd {
+  margin: 1px 0 0;
+  font-size: var(--text-body-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--ink);
+}
+
+/* -------------------------------------------------------------- responsive */
+
+@media (max-width: 1280px) {
+  .sal-kpis {
+    grid-template-columns: repeat(auto-fit, minmax(184px, 1fr));
+  }
+}
+
+@media (max-width: 1180px) {
+  .sal-app__body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sal-app__rail {
+    position: static;
+    padding: 0 var(--space-gutter) var(--space-page);
+  }
+
+  .sal-rail-stack {
+    height: auto;
+    padding-top: 0;
+  }
+
+  .sal-rail-stack > .sal-rail {
+    max-height: 460px;
+  }
+
+  .sal-map-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sal-site {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .sal-app {
+    flex-direction: column;
+  }
+
+  .sal-sidebar--salus {
+    display: none;
+  }
+
+  .sal-topnav {
+    display: flex;
+  }
+
+  .sal-app__content {
+    padding: var(--space-xxl) var(--space-xxl) 40px;
+  }
+
+  .sal-filters {
+    padding: 10px var(--space-xxl);
+  }
+}
+
+@media (max-width: 620px) {
+  .sal-page__title {
+    font-size: var(--text-h2);
+  }
+
+  .sal-facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sal-policy__facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .sal-map__canvas {
+    aspect-ratio: 4 / 3;
+  }
+}

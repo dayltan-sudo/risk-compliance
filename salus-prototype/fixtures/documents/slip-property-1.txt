@@ -1,0 +1,72 @@
+[[page 1]]
+
+NORTHGATE SPECIALTY INSURANCE (ASIA) PTE. LTD.
+PROPERTY INSURANCE SLIP
+
+Slip reference:       NGS-PROP-2026-00417
+Broker:               Corvid Risk Brokers Pte. Ltd. (MAS licence BX-1142)
+Broker contact:       D. Sundaram, +65 6812 4400, d.sundaram@corvidrisk.example
+Insured:              Orchard Lane Hospitality Pte. Ltd.
+Insured address:      88 Orchard Road, #12-01, Singapore 238841
+Line of business:     Property - Industrial Special Risks
+Policy number:        NGS-PL-SG-26-00873
+Period of insurance:  01 January 2026 to 31 December 2026
+                      both days inclusive, Singapore time
+Currency:             Singapore dollars (SGD)
+Country:              Singapore
+
+THE INSURED
+Orchard Lane Hospitality Pte. Ltd., its subsidiaries and associated companies
+as now or hereafter constituted, for their respective rights and interests.
+
+SITUATIONS
+1. Orchard Lane Hotel, 88 Orchard Road, Singapore 238841
+2. Tuas Logistics Hub, 12 Tuas Bay Link, Singapore 637530
+
+INTEREST INSURED
+Buildings, plant and machinery, stock and stock in trade, tenants' improvements,
+computer equipment and business interruption at the situations listed above.
+
+SUM INSURED AND LIMITS
+Sum insured (declared value basis):   SGD 84,500,000
+Limit any one occurrence:             SGD 84,500,000
+Annual aggregate limit:               SGD 169,000,000
+Total insurable value:                SGD 96,200,000
+Probable maximum loss:                SGD 21,100,000
+Business interruption sum insured:    SGD 18,400,000
+                                      twelve months indemnity, gross profit basis
+
+DEDUCTIBLE
+SGD 250,000 each and every loss, including business interruption losses.
+SGD 500,000 for loss arising from flood or storm.
+
+[[page 2]]
+
+SUBLIMITS
+Loss of money and negotiable instruments:        SGD 100,000
+Employee dishonesty:                             SGD 250,000
+Escalator clause, buildings:                     up to 115% of sum insured
+Automatic acquisition of new sites:              SGD 5,000,000, 90 days
+Property in transit:                             SGD 500,000
+Terrorism (including the Singapore terrorism pool): excluded
+
+PREMIUM
+Premium (exclusive of tax):   SGD 412,000
+GST at 9%:                    SGD 37,080
+Total premium payable:        SGD 449,080
+Payment terms:                30 days from inception
+Premium basis:                declared value, 100% coinsurance clause
+
+EXCLUSIONS
+Terrorism, war, civil commotion and nuclear risks; cyber loss and cyber liability;
+gradual pollution or contamination; faulty design or latent defect; wear and tear,
+inherent vice and corrosion; consequential loss other than business interruption as
+insured; penalties and fines; loss of market or delay.
+
+CONDITIONS
+Subject to Singapore Fire Code compliance and an annual loss control survey.
+Coinsurance 100%. Claims notification within 30 days of the loss.
+This slip is subject to the full wording NGS-PROP-W-2024-v2.
+
+Signed for and on behalf of Northgate Specialty Insurance (Asia) Pte. Ltd.
+Date of issue: 12 December 2025

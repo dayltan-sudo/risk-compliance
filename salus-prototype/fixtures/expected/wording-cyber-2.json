@@ -1,0 +1,40 @@
+{
+  "documentType": "wording",
+  "fields": [
+    {
+      "key": "carrier",
+      "value": "Kestrel Underwriting Asia Pte. Ltd.",
+      "confidence": 0.97,
+      "page": 3,
+      "quote": "Issued by Kestrel Underwriting Asia Pte. Ltd."
+    },
+    {
+      "key": "line_of_business",
+      "value": "Cyber and Technology Liability",
+      "confidence": 0.95,
+      "page": 1,
+      "quote": "CYBER AND TECHNOLOGY LIABILITY POLICY WORDING"
+    },
+    {
+      "key": "limit_aggregate",
+      "value": "the amount stated in the Schedule",
+      "confidence": 0.67,
+      "page": 2,
+      "quote": "stated in the Schedule. The Aggregate Limit of Liability is the amount stated in\nthe Schedule and is the maximum payable for all claims in the Period of"
+    },
+    {
+      "key": "deductible",
+      "value": "stated in the Schedule",
+      "confidence": 0.61,
+      "page": 2,
+      "quote": "Each claim is subject to the Deductible stated in the Schedule."
+    },
+    {
+      "key": "key_exclusions",
+      "value": "System failure without a malicious external cause; unencrypted portable devices; failure to patch; contractual penalties; IP infringement; bodily injury, property damage or pollution; terrorism; cryptocurrency",
+      "confidence": 0.91,
+      "page": 2,
+      "quote": "This policy does not cover: system failure without a malicious or accidental\nexternal cause; loss arising from unencrypted portable devices or removable\nmedia; loss arising from the Insured's failure to apply a critical security\npatch within 30 days of release; contractual penalties and liquidated damages;\nintellectual property infringement; bodily injury, property damage or pollution;\nterrorism, war and nuclear risks; cryptocurrency mining and theft of\ncryptocurrency; loss of market, loss of reputation not consequent on a covered\nPrivacy Breach, and fines except where insurable by law."
+    }
+  ]
+}
