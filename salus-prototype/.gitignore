@@ -1,0 +1,30 @@
+node_modules/
+dist/
+dist-singlefile/
+coverage/
+
+# Vercel
+.vercel/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+
+# Agent state
+.claude/
+
+# Internal planning documents and decks stay local; this repo is public
+docs/
+
+# Drizzle generated migrations are committed; local dumps are not
+drizzle/meta/_journal.json.bak

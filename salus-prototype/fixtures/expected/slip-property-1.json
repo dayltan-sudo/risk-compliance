@@ -1,0 +1,138 @@
+{
+  "documentType": "slip",
+  "fields": [
+    {
+      "key": "policy_no",
+      "value": "NGS-PL-SG-26-00873",
+      "confidence": 0.99,
+      "page": 1,
+      "quote": "Policy number:        NGS-PL-SG-26-00873"
+    },
+    {
+      "key": "insured_entity",
+      "value": "Orchard Lane Hospitality Pte. Ltd.",
+      "confidence": 0.97,
+      "page": 1,
+      "quote": "Insured:              Orchard Lane Hospitality Pte. Ltd."
+    },
+    {
+      "key": "carrier",
+      "value": "Northgate Specialty Insurance (Asia) Pte. Ltd.",
+      "confidence": 0.96,
+      "page": 1,
+      "quote": "NORTHGATE SPECIALTY INSURANCE (ASIA) PTE. LTD."
+    },
+    {
+      "key": "line_of_business",
+      "value": "Property - Industrial Special Risks",
+      "confidence": 0.93,
+      "page": 1,
+      "quote": "Line of business:     Property - Industrial Special Risks"
+    },
+    {
+      "key": "inception",
+      "value": "2026-01-01",
+      "confidence": 0.91,
+      "page": 1,
+      "quote": "Period of insurance:  01 January 2026 to 31 December 2026"
+    },
+    {
+      "key": "expiry",
+      "value": "2026-12-31",
+      "confidence": 0.91,
+      "page": 1,
+      "quote": "Period of insurance:  01 January 2026 to 31 December 2026"
+    },
+    {
+      "key": "sum_insured",
+      "value": "SGD 84,500,000",
+      "confidence": 0.95,
+      "page": 1,
+      "quote": "Sum insured (declared value basis):   SGD 84,500,000"
+    },
+    {
+      "key": "limit_occurrence",
+      "value": "SGD 84,500,000",
+      "confidence": 0.88,
+      "page": 1,
+      "quote": "Limit any one occurrence:             SGD 84,500,000"
+    },
+    {
+      "key": "limit_aggregate",
+      "value": "SGD 169,000,000",
+      "confidence": 0.86,
+      "page": 1,
+      "quote": "Annual aggregate limit:               SGD 169,000,000"
+    },
+    {
+      "key": "deductible",
+      "value": "SGD 250,000 each and every loss",
+      "confidence": 0.92,
+      "page": 1,
+      "quote": "SGD 250,000 each and every loss, including business interruption losses."
+    },
+    {
+      "key": "premium_gross",
+      "value": "SGD 412,000",
+      "confidence": 0.94,
+      "page": 2,
+      "quote": "Premium (exclusive of tax):   SGD 412,000"
+    },
+    {
+      "key": "premium_tax",
+      "value": "SGD 37,080",
+      "confidence": 0.9,
+      "page": 2,
+      "quote": "GST at 9%:                    SGD 37,080"
+    },
+    {
+      "key": "currency",
+      "value": "SGD",
+      "confidence": 0.98,
+      "page": 1,
+      "quote": "Currency:             Singapore dollars (SGD)"
+    },
+    {
+      "key": "site_name",
+      "value": "Tuas Logistics Hub, 12 Tuas Bay Link, Singapore 637530",
+      "confidence": 0.89,
+      "page": 1,
+      "quote": "2. Tuas Logistics Hub, 12 Tuas Bay Link, Singapore 637530"
+    },
+    {
+      "key": "country",
+      "value": "Singapore",
+      "confidence": 0.93,
+      "page": 1,
+      "quote": "Country:              Singapore"
+    },
+    {
+      "key": "tiv",
+      "value": "SGD 96,200,000",
+      "confidence": 0.87,
+      "page": 1,
+      "quote": "Total insurable value:                SGD 96,200,000"
+    },
+    {
+      "key": "pml",
+      "value": "SGD 21,100,000",
+      "confidence": 0.8,
+      "page": 1,
+      "quote": "Probable maximum loss:                SGD 21,100,000"
+    },
+    {
+      "key": "bi_sum_insured",
+      "value": "SGD 18,400,000",
+      "confidence": 0.84,
+      "page": 1,
+      "quote": "Business interruption sum insured:    SGD 18,400,000"
+    },
+    {
+      "key": "key_exclusions",
+      "value": "Terrorism, war and nuclear risks; cyber loss and cyber liability; gradual pollution; faulty design; wear and tear; penalties and fines",
+      "confidence": 0.9,
+      "page": 2,
+      "quote": "Terrorism, war, civil commotion and nuclear risks; cyber loss and cyber liability;\ngradual pollution or contamination; faulty design or latent defect; wear and tear,\ninherent vice and corrosion; consequential loss other than business interruption as\ninsured; penalties and fines; loss of market or delay."
+    }
+  ]
+}

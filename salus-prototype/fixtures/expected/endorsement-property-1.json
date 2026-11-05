@@ -1,0 +1,103 @@
+{
+  "documentType": "endorsement",
+  "fields": [
+    {
+      "key": "policy_no",
+      "value": "NGS-PL-SG-26-00873",
+      "confidence": 0.97,
+      "page": 1,
+      "quote": "Policy number:              NGS-PL-SG-26-00873"
+    },
+    {
+      "key": "endorsement_no",
+      "value": "NGS-PL-SG-26-00873-EN-004",
+      "confidence": 0.98,
+      "page": 1,
+      "quote": "Endorsement number:         NGS-PL-SG-26-00873-EN-004"
+    },
+    {
+      "key": "insured_entity",
+      "value": "Orchard Lane Hospitality Pte. Ltd.",
+      "confidence": 0.96,
+      "page": 1,
+      "quote": "Insured:                    Orchard Lane Hospitality Pte. Ltd."
+    },
+    {
+      "key": "carrier",
+      "value": "Northgate Specialty Insurance (Asia) Pte. Ltd.",
+      "confidence": 0.95,
+      "page": 1,
+      "quote": "NORTHGATE SPECIALTY INSURANCE (ASIA) PTE. LTD."
+    },
+    {
+      "key": "line_of_business",
+      "value": "Property - Industrial Special Risks",
+      "confidence": 0.9,
+      "page": 1,
+      "quote": "Line of business:           Property - Industrial Special Risks"
+    },
+    {
+      "key": "inception",
+      "value": "2026-07-01",
+      "confidence": 0.89,
+      "page": 1,
+      "quote": "Endorsement period:         01 July 2026 to 31 December 2026"
+    },
+    {
+      "key": "expiry",
+      "value": "2026-12-31",
+      "confidence": 0.89,
+      "page": 1,
+      "quote": "Endorsement period:         01 July 2026 to 31 December 2026"
+    },
+    {
+      "key": "sum_insured",
+      "value": "SGD 91,200,000",
+      "confidence": 0.93,
+      "page": 1,
+      "quote": "1. Sum insured increased from SGD 84,500,000 to SGD 91,200,000 following"
+    },
+    {
+      "key": "deductible",
+      "value": "SGD 250,000 each and every loss",
+      "confidence": 0.86,
+      "page": 1,
+      "quote": "5. Deductible unchanged at SGD 250,000 each and every loss."
+    },
+    {
+      "key": "premium_gross",
+      "value": "SGD 14,600",
+      "confidence": 0.9,
+      "page": 1,
+      "quote": "3. Additional premium: SGD 14,600, payable within 30 days of the effective date."
+    },
+    {
+      "key": "premium_tax",
+      "value": "SGD 1,314",
+      "confidence": 0.88,
+      "page": 1,
+      "quote": "4. GST at 9% on the additional premium: SGD 1,314."
+    },
+    {
+      "key": "currency",
+      "value": "SGD",
+      "confidence": 0.97,
+      "page": 1,
+      "quote": "Currency:                   Singapore dollars (SGD)"
+    },
+    {
+      "key": "site_name",
+      "value": "Tuas Logistics Hub, 12 Tuas Bay Link, Singapore 637530",
+      "confidence": 0.85,
+      "page": 1,
+      "quote": "2. Tuas Logistics Hub, 12 Tuas Bay Link, Singapore 637530 is added as a declared"
+    },
+    {
+      "key": "country",
+      "value": "Singapore",
+      "confidence": 0.9,
+      "page": 1,
+      "quote": "Country:                    Singapore"
+    }
+  ]
+}

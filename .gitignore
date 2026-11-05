@@ -28,3 +28,15 @@ npm-debug.log*
 GATES.md
 scripts/unlazy/
 .unlazy/
+
+# news-aggregator: local SQLite DB, project venv, and generated digest output (never commit)
+news-aggregator/data/
+news-aggregator/.venv/
+news-aggregator/digest/output/
+
+# Python bytecode
+__pycache__/
+*.pyc
+
+# news-aggregator generated digests (derived from vault/DB data, local only)
+news-aggregator/digest/output/

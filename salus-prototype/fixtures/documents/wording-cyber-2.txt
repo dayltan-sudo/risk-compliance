@@ -1,0 +1,59 @@
+[[page 1]]
+
+KESTREL UNDERWRITING ASIA PTE. LTD.
+CYBER AND TECHNOLOGY LIABILITY POLICY WORDING
+Form KUA-CYBER-2025-v3
+
+1. INSURING CLAUSE
+The Insurer agrees to indemnify the Insured for direct loss arising from a
+Network Security Failure, a Privacy Breach, or a Technology Error, occurring
+during the Period of Insurance and discovered during the Period of Insurance or
+within 90 days thereafter.
+
+2. DEFINITIONS
+Network Security Failure means unauthorised access to, or unauthorised use of, a
+Computer System that results in a disruption or a loss.
+Privacy Breach means the accidental or deliberate release of Personal Data.
+Technology Error means an error, omission or defect in the Insured's Technology
+Products or Technology Services.
+Computer System includes hardware, software, firmware, networks and cloud
+services used by the Insured or by a service provider on the Insured's behalf.
+
+[[page 2]]
+
+3. LIMITS OF LIABILITY
+The Limit of Liability for any one claim and in the aggregate is the amount
+stated in the Schedule. The Aggregate Limit of Liability is the amount stated in
+the Schedule and is the maximum payable for all claims in the Period of
+Insurance, inclusive of Defence Costs.
+Each claim is subject to the Deductible stated in the Schedule.
+Sublimits stated in the Schedule apply within, and not in addition to, the Limit
+of Liability.
+
+4. EXCLUSIONS
+This policy does not cover: system failure without a malicious or accidental
+external cause; loss arising from unencrypted portable devices or removable
+media; loss arising from the Insured's failure to apply a critical security
+patch within 30 days of release; contractual penalties and liquidated damages;
+intellectual property infringement; bodily injury, property damage or pollution;
+terrorism, war and nuclear risks; cryptocurrency mining and theft of
+cryptocurrency; loss of market, loss of reputation not consequent on a covered
+Privacy Breach, and fines except where insurable by law.
+
+[[page 3]]
+
+5. CONDITIONS
+5.1 The Insured must maintain the security controls warranted in the Schedule.
+5.2 Claims notification within 72 hours of discovery, in writing.
+5.3 The Insurer may appoint an independent forensic investigator.
+5.4 Defence Costs are payable within the Limit of Liability and reduce it.
+5.5 Singapore law governs this policy. Disputes are referred to the Singapore
+    International Arbitration Centre.
+5.6 Cancellation: 30 days notice by either party, pro rata premium.
+
+6. SCHEDULE
+The Schedule attached to this wording records the Insured, the Period of
+Insurance, the Limit of Liability, the Aggregate Limit of Liability, the
+Deductible, the Sublimits, the Premium and the applicable GST.
+
+Issued by Kestrel Underwriting Asia Pte. Ltd.

@@ -1,0 +1,96 @@
+{
+  "documentType": "slip",
+  "fields": [
+    {
+      "key": "policy_no",
+      "value": "KUA-CY-26-01194",
+      "confidence": 0.98,
+      "page": 1,
+      "quote": "Policy number:        KUA-CY-26-01194"
+    },
+    {
+      "key": "insured_entity",
+      "value": "Sentinel Grid Technologies Pte. Ltd.",
+      "confidence": 0.97,
+      "page": 1,
+      "quote": "Insured:              Sentinel Grid Technologies Pte. Ltd."
+    },
+    {
+      "key": "carrier",
+      "value": "Kestrel Underwriting Asia Pte. Ltd.",
+      "confidence": 0.96,
+      "page": 1,
+      "quote": "KESTREL UNDERWRITING ASIA PTE. LTD."
+    },
+    {
+      "key": "line_of_business",
+      "value": "Cyber - Network Security and Technology Errors & Omissions",
+      "confidence": 0.92,
+      "page": 1,
+      "quote": "Line of business:     Cyber - Network Security and Technology Errors & Omissions"
+    },
+    {
+      "key": "inception",
+      "value": "2026-02-15",
+      "confidence": 0.94,
+      "page": 1,
+      "quote": "Period of insurance:  15 February 2026 to 14 February 2027"
+    },
+    {
+      "key": "expiry",
+      "value": "2027-02-14",
+      "confidence": 0.94,
+      "page": 1,
+      "quote": "Period of insurance:  15 February 2026 to 14 February 2027"
+    },
+    {
+      "key": "sum_insured",
+      "value": "SGD 12,000,000",
+      "confidence": 0.64,
+      "page": 1,
+      "quote": "Limit of liability, any one claim:      SGD 12,000,000"
+    },
+    {
+      "key": "limit_occurrence",
+      "value": "SGD 12,000,000",
+      "confidence": 0.94,
+      "page": 1,
+      "quote": "Limit of liability, any one claim:      SGD 12,000,000"
+    },
+    {
+      "key": "limit_aggregate",
+      "value": "SGD 12,000,000",
+      "confidence": 0.58,
+      "page": 1,
+      "quote": "Limit of liability, in the aggregate:   SGD 12,000,000"
+    },
+    {
+      "key": "deductible",
+      "value": "SGD 100,000",
+      "confidence": 0.91,
+      "page": 1,
+      "quote": "Retention, each and every claim:        SGD 100,000"
+    },
+    {
+      "key": "currency",
+      "value": "SGD",
+      "confidence": 0.97,
+      "page": 1,
+      "quote": "Currency:             Singapore dollars (SGD)"
+    },
+    {
+      "key": "country",
+      "value": "Singapore",
+      "confidence": 0.92,
+      "page": 1,
+      "quote": "Country:              Singapore"
+    },
+    {
+      "key": "key_exclusions",
+      "value": "System failure without a malicious cause; unencrypted portable devices; failure to patch; contractual penalties; IP infringement; bodily injury and property damage; terrorism",
+      "confidence": 0.74,
+      "page": 2,
+      "quote": "System failure without a malicious or accidental external cause; unencrypted\nportable devices and removable media; loss arising from the insured's failure to\napply a critical security patch within 30 days of release; contractual penalties;\nintellectual property infringement; bodily injury and property damage; terrorism\nand war; cryptocurrency mining and theft of cryptocurrency."
+    }
+  ]
+}
