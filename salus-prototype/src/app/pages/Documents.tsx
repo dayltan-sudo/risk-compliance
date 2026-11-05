@@ -935,7 +935,7 @@ export function DocumentsPage(): JSX.Element {
 
       <Card
         title="1 · Upload a document"
-        subtitle="Drop a PDF, DOCX or text file, or load one of the saved examples. Either way the preview below is what the extractor actually read."
+        subtitle="Drop a PDF, DOCX or text file, or open one of the saved examples underneath. Either way the preview below is what the extractor actually read."
         footer="Uploads are parsed on the server (PDF and DOCX text layers). Saved examples use POST /api/documents, which replays a checked-in fixture — the response says which path ran."
         actions={
           uploadInfo === null ? (
@@ -1014,33 +1014,42 @@ export function DocumentsPage(): JSX.Element {
           </div>
         </div>
 
-        <div style={fixtureGridStyle}>
-          {FIXTURES.map((fixture) => {
-            const selected = fixture.id === selectedFixtureId;
-            return (
-              <button
-                key={fixture.id}
-                type="button"
-                aria-pressed={selected}
-                style={selected ? { ...fixtureButtonStyle, ...fixtureButtonSelectedStyle } : fixtureButtonStyle}
-                onClick={() => setSelectedFixtureId(fixture.id)}
-              >
-                <span style={fixtureTitleStyle}>{fixture.title}</span>
-                <span className="sal-mono" style={fixtureFileStyle}>
-                  {fixture.file}
-                </span>
-                <span style={fixtureDescriptionStyle}>{fixture.description}</span>
-                {inQueue(fixture.id) ? (
-                  <span style={fixtureTagsStyle}>
-                    <Tag tone="medium" dot>
-                      In queue
-                    </Tag>
+        <details style={sampleDisclosureStyle}>
+          <summary style={sampleSummaryStyle}>
+            <span style={sampleTitleStyle}>Try a sample document</span>{' '}
+            <span style={sampleMetaStyle}>
+              {FIXTURES.length} saved examples · replay, no upload
+            </span>
+          </summary>
+
+          <div style={{ ...fixtureGridStyle, marginTop: 'var(--space-sm)' }}>
+            {FIXTURES.map((fixture) => {
+              const selected = fixture.id === selectedFixtureId;
+              return (
+                <button
+                  key={fixture.id}
+                  type="button"
+                  aria-pressed={selected}
+                  style={selected ? { ...fixtureButtonStyle, ...fixtureButtonSelectedStyle } : fixtureButtonStyle}
+                  onClick={() => setSelectedFixtureId(fixture.id)}
+                >
+                  <span style={fixtureTitleStyle}>{fixture.title}</span>
+                  <span className="sal-mono" style={fixtureFileStyle}>
+                    {fixture.file}
                   </span>
-                ) : null}
-              </button>
-            );
-          })}
-        </div>
+                  <span style={fixtureDescriptionStyle}>{fixture.description}</span>
+                  {inQueue(fixture.id) ? (
+                    <span style={fixtureTagsStyle}>
+                      <Tag tone="medium" dot>
+                        In queue
+                      </Tag>
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+        </details>
 
         <div style={toolbarStyle}>
           <button
@@ -1076,7 +1085,7 @@ export function DocumentsPage(): JSX.Element {
           readOnly
           spellCheck={false}
           rows={14}
-          placeholder="Pick a fixture above, then choose Load document."
+          placeholder="Pick a sample above, then choose Load document."
         />
       </Card>
 
@@ -1303,6 +1312,33 @@ const fixtureGridStyle: CSSProperties = {
   display: 'grid',
   gridTemplateColumns: 'repeat(auto-fit, minmax(215px, 1fr))',
   gap: 'var(--space-sm)',
+};
+
+/**
+ * The five saved examples sit behind one disclosure below the dropzone, so the
+ * first thing an employee meets is the upload they came to do. Each card keeps
+ * the select → Load document → Extract fields behaviour unchanged.
+ */
+const sampleDisclosureStyle: CSSProperties = {
+  marginBottom: 'var(--space-xs)',
+};
+
+const sampleSummaryStyle: CSSProperties = {
+  padding: '2px 0',
+  color: 'var(--ink)',
+  cursor: 'pointer',
+};
+
+const sampleTitleStyle: CSSProperties = {
+  fontWeight: 'var(--weight-semibold)',
+  fontSize: 'var(--text-body-sm)',
+};
+
+const sampleMetaStyle: CSSProperties = {
+  fontFamily: 'var(--font-mono)',
+  fontSize: 'var(--text-micro)',
+  letterSpacing: '.03em',
+  color: 'var(--muted)',
 };
 
 const fixtureButtonStyle: CSSProperties = {

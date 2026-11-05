@@ -7,28 +7,16 @@ import { formatDate } from '../components/format';
 import { GlossaryProvider, useGlossary } from '../components/Glossary';
 import { ScopeChip, SessionScopeProvider, useScopedSession } from '../components/sessionScope';
 import { FilterBar } from './FilterBar';
+import { Globe, LayoutGrid } from 'lucide-react';
 import { RailPanel } from './RailPanel';
 import { useFilteredPortfolio } from './filters';
 
 function OverviewIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round">
-      <rect x="3.5" y="3.5" width="7" height="7" rx="1.2" />
-      <rect x="13.5" y="3.5" width="7" height="7" rx="1.2" />
-      <rect x="3.5" y="13.5" width="7" height="7" rx="1.2" />
-      <rect x="13.5" y="13.5" width="7" height="7" rx="1.2" />
-    </svg>
-  );
+  return <LayoutGrid size={16} strokeWidth={1.75} aria-hidden />;
 }
 
 function MapIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round">
-      <circle cx="12" cy="12" r="8.5" />
-      <path d="M3.5 12h17" />
-      <path d="M12 3.5c2.4 2.4 3.6 5.3 3.6 8.5S14.4 18.1 12 20.5c-2.4-2.4-3.6-5.3-3.6-8.5S9.6 5.9 12 3.5z" />
-    </svg>
-  );
+  return <Globe size={16} strokeWidth={1.75} aria-hidden />;
 }
 
 function ShellLayout() {

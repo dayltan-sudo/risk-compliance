@@ -22,8 +22,12 @@
   --card: #FFFFFF;
   --muted: #736A5C;
   --line: #E7E0D3;
-  --parchment: #C9BFAC;
-  --dusk: #9A8E7A;
+  /* Faint text. Both are used only as `color:` in the shell and the dock, and
+     both failed WCAG AA on paper (3.22:1 and 1.66:1). These are the lightest
+     values along their existing warm hues that clear 4.5:1 on paper and white,
+     so the ramp keeps its steps instead of collapsing to one grey. */
+  --parchment: #7C6D51;
+  --dusk: #796E5C;
   --dusk-dim: #6E6350;
 
   /* ---- accent ---- */
@@ -38,7 +42,7 @@
   --band-low-text: #1F7A5C;
   --band-medium: #C9932E;
   --band-medium-bg: #FBF1DE;
-  --band-medium-text: #8A6A1E;
+  --band-medium-text: #866719;
   --band-high: #C9642E;
   --band-high-bg: #FBE9DE;
   --band-high-text: #96481E;

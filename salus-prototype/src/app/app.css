@@ -42,6 +42,19 @@
   padding: 0 var(--space-page) 0 0;
 }
 
+/*
+ * A collapsed assistant rail gives its width back to the content column. The
+ * collapsed class lives on the rail stack inside RailPanel, so the shell grid
+ * is selected from the child rather than from a class in AppShell.
+ */
+.sal-app__body:has(.sal-rail-stack--collapsed) {
+  grid-template-columns: minmax(0, 1fr) 46px;
+}
+
+.sal-app__rail:has(.sal-rail-stack--collapsed) {
+  padding-right: var(--space-xxs);
+}
+
 /* ------------------------------------------------------- sidebar next phase */
 
 .sal-sidebar--salus .sal-sidebar__section:nth-child(2) .sal-sidebar__item {
@@ -566,6 +579,76 @@
   min-height: 0;
 }
 
+/* ------------------------------------------------- assistant rail toggle */
+
+.sal-rail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  flex: none;
+}
+
+.sal-rail-head__label {
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.sal-rail-head__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xxs);
+  padding: var(--space-hair) var(--space-sm);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-sans);
+  font-size: var(--text-micro);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+}
+
+.sal-rail-head__btn:hover,
+.sal-rail-tab:hover {
+  color: var(--ink);
+  border-color: var(--ink);
+}
+
+/* The collapsed state: a narrow vertical tab in the rail column. */
+.sal-rail-stack--collapsed {
+  gap: var(--space-sm);
+}
+
+.sal-rail-tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  width: 100%;
+  padding: var(--space-lg) var(--space-xxs);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  color: var(--muted);
+  font-family: var(--font-sans);
+  font-size: var(--text-micro);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  writing-mode: vertical-rl;
+  cursor: pointer;
+}
+
+.sal-rail-tab__chev {
+  writing-mode: horizontal-tb;
+  font-size: var(--text-body);
+  line-height: 1;
+}
+
 .sal-dock {
   flex: none;
   display: flex;
@@ -969,8 +1052,18 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
+  /* One column here, so a collapsed rail only hides the dock: the tab sits in
+     the stack below the content instead of taking a column. */
+  .sal-app__body:has(.sal-rail-stack--collapsed) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .sal-app__rail {
     position: static;
+    padding: 0 var(--space-gutter) var(--space-page);
+  }
+
+  .sal-app__rail:has(.sal-rail-stack--collapsed) {
     padding: 0 var(--space-gutter) var(--space-page);
   }
 

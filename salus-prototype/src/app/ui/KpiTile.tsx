@@ -32,8 +32,8 @@ export interface KpiTileProps {
 }
 
 const ARROW: Record<DeltaDirection, string> = {
-  up: '\u25B2',
-  down: '\u25BC',
+  up: '\u2191',
+  down: '\u2193',
   flat: '\u2013',
 };
 

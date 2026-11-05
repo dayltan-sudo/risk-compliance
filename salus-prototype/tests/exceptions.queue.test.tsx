@@ -156,7 +156,6 @@ describe('Overview exception queue', () => {
   const collapsed = render('/');
   const collapsedText = text(collapsed);
   const collapsedTable = tableTitles(collapsed);
-  const collapsedRail = railTitles(collapsed);
 
   it('shows the seed queue, 8 of 13 collapsed', () => {
     // The seed portfolio produces 13 exceptions; the collapsed table budget is 8.
@@ -164,22 +163,28 @@ describe('Overview exception queue', () => {
     expect(collapsedText).toContain('Showing the top 8 of 13 highest-priority items.');
   });
 
-  it('rail previews the same ordered queue from 5 rows, not its own list', () => {
-    expect(collapsedRail).toHaveLength(5);
-    expect(collapsedRail).toEqual(collapsedTable.slice(0, 5));
-    expect(collapsedText).toContain('Top 5 of 13 open items.');
+  it('does not repeat the queue in the rail: the card is the list', () => {
+    // The rail was a five-row preview of the same queue, so Overview showed the
+    // exceptions twice. It now holds the assistant and nothing else.
+    expect(railTitles(collapsed)).toHaveLength(0);
+    expect(collapsed).not.toContain('Action items');
+    expect(collapsedText).not.toContain('Top 5 of 13 open items');
+    // The assistant is still mounted in the rail, behind its own toggle.
+    expect(collapsed).toContain('Salus Assistant');
+    expect(collapsed).toContain('aria-label="Hide assistant"');
   });
 
-  it('rail links to the expanded table instead of the map', () => {
-    expect(collapsed).toContain('href="/?all=1"');
+  it('expands the table from its own footer, with no rail link to fall back on', () => {
     expect(collapsedText).toContain('View all 13');
+    const expandButton = collapsed.slice(collapsed.indexOf('View all 13') - 400);
+    expect(expandButton).toContain('aria-expanded="false"');
+    expect(collapsed).not.toContain('href="/?all=1"');
   });
 
   it('expands in place to every item, footer copy included', () => {
     const expanded = render('/?all=1');
     const expandedText = text(expanded);
     const expandedTable = tableTitles(expanded);
-    const expandedRail = railTitles(expanded);
 
     expect(expandedTable).toHaveLength(13);
     expect(expandedText).toContain('Showing all 13 open items.');
@@ -188,7 +193,7 @@ describe('Overview exception queue', () => {
     expect(expandedText).toContain('Show top 8');
     // Same rows, same order: the expanded table is the collapsed table plus the tail.
     expect(expandedTable.slice(0, 8)).toEqual(collapsedTable);
-    expect(expandedRail).toEqual(collapsedRail);
+    expect(railTitles(expanded)).toHaveLength(0);
   });
 
   it('links each exception to the record behind it', () => {
@@ -231,7 +236,8 @@ describe('Overview exception queue', () => {
     } else {
       expect(shown).toBe(tableTotal);
     }
-    // The rail's total is the table's total: one builder, one count.
-    expect(numberFrom(filteredText, /Top \d+ of (\d+) open items/)).toBe(tableTotal);
+    // One builder, one count: no second list in the rail can disagree with it.
+    expect(railTitles(filtered)).toHaveLength(0);
+    expect(filteredText).not.toMatch(/Top \d+ of \d+ open items/);
   });
 });
