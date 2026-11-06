@@ -147,6 +147,7 @@
 .sal-topnav {
   display: none;
   align-items: center;
+  flex-wrap: wrap;
   gap: 4px;
 }
 
@@ -1094,8 +1095,34 @@
     display: none;
   }
 
+  /* The rail is hidden here, so this strip is the only navigation: it carries
+     every page and scrolls sideways instead of pushing the page wide. */
+  .sal-topbar {
+    height: auto;
+    flex-wrap: wrap;
+    row-gap: 6px;
+    padding: 8px var(--space-lg);
+  }
+
   .sal-topnav {
     display: flex;
+    flex-wrap: nowrap;
+    gap: 2px;
+    padding: 6px var(--space-lg);
+    border-bottom: var(--border-hairline);
+    background: var(--card);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .sal-topnav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .sal-topnav__link {
+    padding: 4px 8px;
+    font-size: var(--text-xs);
+    white-space: nowrap;
   }
 
   .sal-app__content {

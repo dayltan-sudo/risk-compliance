@@ -136,7 +136,7 @@ function ShellLayout() {
       <div className="sal-app__main">
         <TopBar
           breadcrumb={[
-            { label: 'Group portfolio', onClick: () => navigate('/') },
+            { label: 'Group portfolio', href: '/', onClick: () => navigate('/') },
             { label: pageName },
           ]}
           filters={
@@ -146,35 +146,35 @@ function ShellLayout() {
             </>
           }
           actions={
-            <>
-              <button
-                type="button"
-                className="sal-btn sal-btn--ghost sal-btn--sm"
-                aria-haspopup="dialog"
-                onClick={() => openGlossary()}
-              >
-                Glossary
-              </button>
-              <nav className="sal-topnav" aria-label="Pages">
-                <NavLink to="/" end className={({ isActive }) => cn('sal-topnav__link', isActive && 'is-active')}>
-                  Overview
-                </NavLink>
-                <NavLink to="/map" className={({ isActive }) => cn('sal-topnav__link', isActive && 'is-active')}>
-                  Map
-                </NavLink>
-                <NavLink to="/coverage" className={({ isActive }) => cn('sal-topnav__link', isActive && 'is-active')}>
-                  Coverage
-                </NavLink>
-                <NavLink to="/contracts" className={({ isActive }) => cn('sal-topnav__link', isActive && 'is-active')}>
-                  Contracts
-                </NavLink>
-                <NavLink to="/exclusions" className={({ isActive }) => cn('sal-topnav__link', isActive && 'is-active')}>
-                  Exclusions
-                </NavLink>
-              </nav>
-            </>
+            <button
+              type="button"
+              className="sal-btn sal-btn--ghost sal-btn--sm"
+              aria-haspopup="dialog"
+              onClick={() => openGlossary()}
+            >
+              Glossary
+            </button>
           }
         />
+
+        {/* Narrow viewports hide the rail, so this strip becomes the only
+            navigation: every destination, scrolling sideways rather than
+            widening the page. It sits under the header, not inside it, so it
+            cannot be squeezed by the header's own flex row. */}
+        <nav className="sal-topnav" aria-label="Pages">
+          {sections.flatMap((section) =>
+            section.items.map((item) => (
+              <NavLink
+                key={item.id}
+                to={item.href ?? '/'}
+                end={item.href === '/'}
+                className={({ isActive }) => cn('sal-topnav__link', isActive && 'is-active')}
+              >
+                {item.label}
+              </NavLink>
+            )),
+          )}
+        </nav>
 
         <FilterBar />
 

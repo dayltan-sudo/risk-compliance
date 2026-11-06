@@ -4,7 +4,9 @@ import { cn } from './tokens';
 
 export interface BreadcrumbItem {
   label: string;
-  /** Given a handler the crumb renders as a button; otherwise as text. */
+  /** Destination. With a href the crumb is a real link, not a button. */
+  href?: string;
+  /** Handler for client-side navigation; modified clicks are left to the browser. */
   onClick?: () => void;
 }
 
@@ -60,6 +62,27 @@ export function TopBar({
                 <span className="sal-topbar__crumb sal-topbar__crumb--current" aria-current="page">
                   {crumb.label}
                 </span>
+              ) : crumb.href !== undefined ? (
+                <a
+                  className="sal-topbar__crumb sal-topbar__crumb--link"
+                  href={crumb.href}
+                  onClick={(event) => {
+                    if (crumb.onClick === undefined) return;
+                    if (
+                      event.metaKey ||
+                      event.ctrlKey ||
+                      event.shiftKey ||
+                      event.altKey ||
+                      event.button !== 0
+                    ) {
+                      return;
+                    }
+                    event.preventDefault();
+                    crumb.onClick();
+                  }}
+                >
+                  {crumb.label}
+                </a>
               ) : crumb.onClick ? (
                 <button
                   type="button"
