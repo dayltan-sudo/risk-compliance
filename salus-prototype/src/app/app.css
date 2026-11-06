@@ -1112,6 +1112,42 @@
     scrollbar-width: none;
   }
 
+  /* Touch targets. 28 controls sat between 17 and 38px high at 360px: sized for
+     a mouse on a wide screen, not a thumb. 44px is the practical floor.
+     Inline glossary terms are deliberately excluded: a 44px box around a word
+     inside a sentence would wreck the line it sits in. */
+  .sal-btn,
+  .sal-seg__btn,
+  .sal-toggle,
+  .sal-topnav__link,
+  .sal-topbar__crumb--link,
+  .sal-rail-head__btn,
+  .sal-dock__send,
+  .sal-menu__links button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .sal-btn--sm,
+  .sal-toggle,
+  .sal-seg__btn {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  /* Row links and the assistant's suggested prompts are the last two controls
+     that stayed at mouse size. The table rows grow slightly taller; at these
+     widths that is the right trade. */
+  .sal-table a,
+  .sal-dock__suggestion {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
   .sal-seg::-webkit-scrollbar,
   .sal-toggles::-webkit-scrollbar {
     display: none;

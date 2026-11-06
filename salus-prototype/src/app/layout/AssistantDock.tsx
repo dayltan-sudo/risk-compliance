@@ -462,6 +462,7 @@ export function AssistantDock() {
               <button
                 key={prompt}
                 type="button"
+                className="sal-dock__suggestion"
                 style={SUGGESTION}
                 onClick={() => {
                   setDraft(prompt);
@@ -512,6 +513,7 @@ export function AssistantDock() {
         />
         <button
           type="submit"
+          className="sal-dock__send"
           disabled={sendDisabled}
           style={sendDisabled ? { ...SEND, ...SEND_DISABLED } : SEND}
         >
