@@ -624,6 +624,9 @@ export function HotspotsPage(): JSX.Element {
       <div
         style={{
           display: 'grid',
+          // minmax(0, …) stops a wide child (the ranked table) from widening the
+          // grid track past the viewport at narrow widths.
+          gridTemplateColumns: 'minmax(0, 1fr)',
           gap: 'var(--space-section)',
         }}
       >
@@ -635,7 +638,7 @@ export function HotspotsPage(): JSX.Element {
             gap: 'var(--space-section)',
           }}
         >
-          <div style={{ flex: '1 1 620px', minWidth: 0 }}>
+          <div style={{ flex: '1 1 min(620px, 100%)', minWidth: 0 }}>
             <Card
               title="Ranked sites"
               subtitle={`${ranked.length} sites scored on the ${DRIVERS.length}-driver model at config ${refDate}.`}
@@ -666,7 +669,7 @@ export function HotspotsPage(): JSX.Element {
             </Card>
           </div>
 
-          <div style={{ flex: '1 1 360px', minWidth: 0 }}>
+          <div style={{ flex: '1 1 min(360px, 100%)', minWidth: 0 }}>
             {active === null ? (
               <Card title="Driver breakdown">
                 <p style={{ color: 'var(--muted)' }}>No site matches the selected bands.</p>

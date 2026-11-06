@@ -330,7 +330,8 @@ export function RenewalsPage() {
         }
         footer={`Premiums are gross annual, valued at ${formatDate(asOf)}. Expiry drives the window; nothing here is a forecast. Documentation comes from posted records and the validation queue; "unavailable" means the queue could not be read, not that a document is missing.`}
       >
-        <table className="sal-table sal-table--dense">
+        <div className="sal-table-wrap">
+          <table className="sal-table sal-table--dense">
           <caption className="sal-sr-only">
             Policies in scope with entity, line, carrier, covered sites, expiry, days remaining,
             renewal documentation and annual premium
@@ -414,6 +415,7 @@ export function RenewalsPage() {
             )}
           </tbody>
         </table>
+        </div>
       </Card>
     </div>
   );

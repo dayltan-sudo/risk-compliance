@@ -1095,7 +1095,7 @@ export function CoveragePage(): JSX.Element {
         }}
       >
         <div style={KPI_STRIP}>
-          <div style={{ flex: '1 1 220px', minWidth: 0 }}>
+          <div style={{ flex: '1 1 min(220px, 100%)', minWidth: 0 }}>
             <KpiTile
               label="TIV-weighted adequacy"
               value={summary.adequacyPct.toFixed(1)}
@@ -1105,7 +1105,7 @@ export function CoveragePage(): JSX.Element {
               tone={adequacyTone}
             />
           </div>
-          <div style={{ flex: '1 1 220px', minWidth: 0 }}>
+          <div style={{ flex: '1 1 min(220px, 100%)', minWidth: 0 }}>
             <KpiTile
               label={`Sites under ${pctText(thresholds.itvUnder, 0)} ITV`}
               value={underItv}
@@ -1114,7 +1114,7 @@ export function CoveragePage(): JSX.Element {
               tone={underItv > 0 ? 'warn' : 'good'}
             />
           </div>
-          <div style={{ flex: '1 1 220px', minWidth: 0 }}>
+          <div style={{ flex: '1 1 min(220px, 100%)', minWidth: 0 }}>
             <KpiTile
               label="Sites below limit-to-PML"
               value={belowPml}
@@ -1123,7 +1123,7 @@ export function CoveragePage(): JSX.Element {
               tone={belowPml > 0 ? 'warn' : 'good'}
             />
           </div>
-          <div style={{ flex: '1 1 220px', minWidth: 0 }}>
+          <div style={{ flex: '1 1 min(220px, 100%)', minWidth: 0 }}>
             <KpiTile
               label="TIV exposed by the gap"
               value={`SGD ${sgdCompact(tivExposed)}`}

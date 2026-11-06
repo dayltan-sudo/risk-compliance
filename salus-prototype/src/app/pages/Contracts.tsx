@@ -712,7 +712,7 @@ const toolbarLeftStyle: CSSProperties = {
   flexWrap: 'wrap',
   gap: 'var(--space-md)',
   minWidth: 0,
-  flex: '1 1 380px',
+  flex: '1 1 min(380px, 100%)',
 };
 
 const searchStyle: CSSProperties = {

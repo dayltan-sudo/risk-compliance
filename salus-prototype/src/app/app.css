@@ -1091,6 +1091,32 @@
     flex-direction: column;
   }
 
+  /* Narrow viewports: control groups shrink and scroll instead of widening the
+     page. The tables already scroll inside .sal-table-wrap; these were the
+     remaining offenders (a filter row and two segmented controls). */
+  .sal-card__head {
+    flex-wrap: wrap;
+  }
+
+  .sal-card__actions {
+    flex-wrap: wrap;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .sal-seg,
+  .sal-toggles {
+    flex: 0 1 auto;
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .sal-seg::-webkit-scrollbar,
+  .sal-toggles::-webkit-scrollbar {
+    display: none;
+  }
+
   .sal-sidebar--salus {
     display: none;
   }

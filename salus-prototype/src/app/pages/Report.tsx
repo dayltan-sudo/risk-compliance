@@ -417,7 +417,8 @@ export function ReportPage(): JSX.Element {
           }
           padded={false}
         >
-          <table className="sal-table sal-table--dense sal-report__table">
+          <div className="sal-table-wrap">
+            <table className="sal-table sal-table--dense sal-report__table">
             <caption className="sal-sr-only">
               The five open exceptions with the largest value at stake, with site, requirement,
               status, contract clause and value at stake in SGD
@@ -461,6 +462,7 @@ export function ReportPage(): JSX.Element {
               )}
             </tbody>
           </table>
+          </div>
         </Card>
       </section>
 
@@ -474,7 +476,8 @@ export function ReportPage(): JSX.Element {
           }
           padded={false}
         >
-          <table className="sal-table sal-table--dense sal-report__table">
+          <div className="sal-table-wrap">
+            <table className="sal-table sal-table--dense sal-report__table">
             <caption className="sal-sr-only">
               Active policies expiring within 90 days of the valuation date, with policy number,
               entity, expiry date and days remaining
@@ -511,6 +514,7 @@ export function ReportPage(): JSX.Element {
               )}
             </tbody>
           </table>
+          </div>
         </Card>
       </section>
 
