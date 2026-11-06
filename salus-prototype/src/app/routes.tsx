@@ -10,6 +10,7 @@ import { GlobalMapPage } from './pages/GlobalMap';
 import { HotspotsPage } from './pages/Hotspots';
 import { OverviewPage } from './pages/Overview';
 import { RenewalsPage } from './pages/Renewals';
+import { ReportPage } from './pages/Report';
 
 /**
  * Six screens wired. Ingestion and the assistant dock land in P5/P6, and the
@@ -26,6 +27,7 @@ export function AppRoutes() {
         <Route path="contracts" element={<Contracts />} />
         <Route path="exclusions" element={<Exclusions />} />
         <Route path="renewals" element={<RenewalsPage />} />
+        <Route path="report" element={<ReportPage />} />
         <Route path="audit" element={<AuditPage />} />
         <Route path="documents" element={<DocumentsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />

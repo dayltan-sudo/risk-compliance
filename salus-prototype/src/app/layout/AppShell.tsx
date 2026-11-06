@@ -58,6 +58,7 @@ function ShellLayout() {
     '/contracts': { name: 'Contract requirements', id: 'contracts' },
     '/exclusions': { name: 'Insurance exclusions', id: 'exclusions' },
     '/renewals': { name: 'Renewal register', id: 'renewals' },
+    '/report': { name: 'Board summary', id: 'report' },
     '/audit': { name: 'Audit trail', id: 'audit' },
     '/documents': { name: 'Document inbox', id: 'documents' },
   };
@@ -101,7 +102,10 @@ function ShellLayout() {
     {
       id: 'govern',
       label: 'Govern',
-      items: [{ id: 'audit', label: 'Audit trail' }],
+      items: [
+        { id: 'report', label: 'Board summary' },
+        { id: 'audit', label: 'Audit trail' },
+      ],
     },
   ];
 

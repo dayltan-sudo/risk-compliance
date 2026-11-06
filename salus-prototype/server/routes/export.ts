@@ -2,8 +2,15 @@ import { Hono } from 'hono';
 
 import { portfolio } from '../../src/data/portfolio';
 import type { Portfolio } from '../../src/engine/types';
+import type { QueueItemSummary } from '../../src/ingestion/queue';
+import {
+  buildDocumentationIndex,
+  documentationState,
+} from '../../src/app/pages/renewalDocs';
+import type { QueueDocumentLike } from '../../src/app/pages/renewalDocs';
 import { recordScopedAudit } from '../middleware/audit-scope';
 import { scopeFor, scopedPortfolio } from '../middleware/scope';
+import { documentQueue } from './documents';
 import { readSession } from './session';
 
 /**
@@ -72,6 +79,7 @@ const POLICY_HEADER = [
   'expiry',
   'currency',
   'status',
+  'documentation',
 ] as const;
 
 const REQUIREMENT_HEADER = [
@@ -118,8 +126,29 @@ function lookupMaps(data: Portfolio) {
   };
 }
 
+/**
+ * The server's view of the queue: status plus the policy number when the
+ * projection carries one. Posted records also live in the browser session, so
+ * the export can only speak for the queue it owns; an item with no policy
+ * number stays unattributable rather than being guessed onto a row.
+ */
+function queueDocumentsForExport(): QueueDocumentLike[] {
+  return documentQueue.list().map((item) => {
+    const enriched = item as QueueItemSummary & {
+      policyNo?: string | null;
+      source?: string | null;
+    };
+    return {
+      policyNo: enriched.policyNo ?? null,
+      status: item.status,
+      source: enriched.source ?? null,
+    };
+  });
+}
+
 function policiesCsv(data: Portfolio): string {
   const maps = lookupMaps(data);
+  const documentation = buildDocumentationIndex([], queueDocumentsForExport());
 
   const rows = data.policies.map((policy) => {
     const entity = maps.entities.get(policy.entityId);
@@ -135,6 +164,7 @@ function policiesCsv(data: Portfolio): string {
       policy.expiry,
       policy.currency,
       policy.status,
+      documentationState(policy.policyNo, documentation),
     ];
   });
 

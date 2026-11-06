@@ -1,13 +1,13 @@
 /// <reference types="vite/client" />
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { CSSProperties, JSX } from 'react';
+import type { ChangeEvent, CSSProperties, JSX } from 'react';
 
 import endorsementText from '../../../fixtures/documents/endorsement-property-1.txt?raw';
 import scheduleText from '../../../fixtures/documents/schedule-marine-3.txt?raw';
 import slipCyberText from '../../../fixtures/documents/slip-cyber-2.txt?raw';
 import slipPropertyText from '../../../fixtures/documents/slip-property-1.txt?raw';
 import wordingText from '../../../fixtures/documents/wording-cyber-2.txt?raw';
-import type { QueueItemSummary, PostedDocument } from '../../ingestion/queue';
+import type { QueueItemSummary, PostedDocument, QueueSource } from '../../ingestion/queue';
 import type { DocumentType } from '../../ingestion/schema';
 import type { Field, QueuedField, QueueReason, RejectedField } from '../../ingestion/validate';
 import { PageHeader } from '../components/PageHeader';
@@ -333,6 +333,78 @@ export function buildPostView(posted: PostedDocument): PostView {
   };
 }
 
+/* ------------------------------------------------------- manual questionnaire */
+
+/**
+ * The manual capture form, held as the strings the inputs contain. Numbers are
+ * parsed once, on submit, so a half-typed value never becomes `NaN` in state.
+ */
+export interface QuestionnaireForm {
+  policyNo: string;
+  siteName: string;
+  sumInsured: string;
+  currency: string;
+  businessInterruption: string;
+  deductible: string;
+  notes: string;
+}
+
+export const EMPTY_QUESTIONNAIRE_FORM: QuestionnaireForm = {
+  policyNo: '',
+  siteName: '',
+  sumInsured: '',
+  currency: 'SGD',
+  businessInterruption: '',
+  deductible: '',
+  notes: '',
+};
+
+/** A form with the four required fields filled; the rest stay optional. */
+export function questionnaireComplete(form: QuestionnaireForm): boolean {
+  return (
+    form.policyNo.trim() !== '' && form.siteName.trim() !== '' && form.sumInsured.trim() !== ''
+  );
+}
+
+/**
+ * Turn the form into the request body.
+ *
+ * An empty optional field is omitted rather than sent as `0`: a blank
+ * deductible means "not captured", and a zero would be a figure the person never
+ * typed. The server validates the result; this only avoids sending blanks.
+ */
+export function questionnaireBody(form: QuestionnaireForm): Record<string, unknown> {
+  const body: Record<string, unknown> = {
+    policyNo: form.policyNo.trim(),
+    siteName: form.siteName.trim(),
+    currency: form.currency.trim().toUpperCase(),
+  };
+
+  // A blank required figure is left out, so the server answers "sumInsured is
+  // required" rather than "must be greater than zero" about a 0 nobody typed.
+  const sumInsured = form.sumInsured.trim();
+  if (sumInsured !== '') body['sumInsured'] = Number(sumInsured);
+
+  const businessInterruption = form.businessInterruption.trim();
+  if (businessInterruption !== '') body['businessInterruption'] = Number(businessInterruption);
+
+  const deductible = form.deductible.trim();
+  if (deductible !== '') body['deductible'] = Number(deductible);
+
+  const notes = form.notes.trim();
+  if (notes !== '') body['notes'] = notes;
+
+  return body;
+}
+
+/** Where a value came from, as the review table labels it. */
+export type Origin = 'Model' | 'Rules' | 'Replay' | 'Questionnaire';
+
+/** Queue-source to the word the review tables use. Never "Model" for a person. */
+export function originLabel(source: QueueSource): Extract<Origin, 'Questionnaire'> | 'Document' {
+  return source === 'questionnaire' ? 'Questionnaire' : 'Document';
+}
+
 /* --------------------------------------------------------------------- api */
 
 interface CreateDocumentResponse extends QueueItemSummary {
@@ -350,6 +422,16 @@ interface UploadResponse extends CreateDocumentResponse {
     documentType: string;
     bytes: number;
   };
+}
+
+/**
+ * The questionnaire endpoint. Same queue shape as an extraction, plus the policy
+ * it was captured against and the note the person left.
+ */
+interface QuestionnaireResponse extends CreateDocumentResponse {
+  source: 'questionnaire';
+  policy: { id: string; policyNo: string; entityId: string; currency: string };
+  notes: string | null;
 }
 
 interface QueueListResponse {
@@ -479,6 +561,16 @@ const queueColumns: Array<Column<QueueItemSummary>> = [
     ),
   },
   {
+    key: 'source',
+    header: 'Origin',
+    width: '132px',
+    render: (item) => (
+      <Tag tone={item.source === 'questionnaire' ? 'accent' : 'neutral'}>
+        {originLabel(item.source)}
+      </Tag>
+    ),
+  },
+  {
     key: 'completeness',
     header: 'Completeness',
     numeric: true,
@@ -494,8 +586,8 @@ const queueColumns: Array<Column<QueueItemSummary>> = [
   },
 ];
 
-/** Where the accepted values came from: a model read or the rules matcher. */
-function acceptedColumns(origin: 'Model' | 'Rules' | 'Replay'): Array<Column<AcceptedRow>> {
+/** Where the accepted values came from: a model read, the rules matcher, a replay, or a person. */
+function acceptedColumns(origin: Origin): Array<Column<AcceptedRow>> {
   return [
   {
     key: 'key',
@@ -585,6 +677,9 @@ export function DocumentsPage(): JSX.Element {
   const [uploadInfo, setUploadInfo] = useState<UploadResponse['extraction'] | null>(null);
   const [uploading, setUploading] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const [origin, setOrigin] = useState<Origin>('Replay');
+  const [questionnaire, setQuestionnaire] = useState<QuestionnaireForm>(EMPTY_QUESTIONNAIRE_FORM);
+  const [capturing, setCapturing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [queuedValues, setQueuedValues] = useState<Record<string, string>>({});
   const [posted, setPosted] = useState<PostedDocument | null>(null);
@@ -619,21 +714,21 @@ export function DocumentsPage(): JSX.Element {
     queue?.documents.some((item) => item.documentId === fixtureId) ?? false;
 
   const postView = posted === null ? null : buildPostView(posted);
-  const busy = extracting || posting || acceptingKey !== null;
+  const busy = extracting || posting || acceptingKey !== null || capturing;
 
   /**
    * Fixture replay is neither a model read nor a rules read: it repeats a
    * checked-in answer, and saying otherwise in the Origin column would be the
-   * one misrepresentation this pipeline cannot afford.
+   * one misrepresentation this pipeline cannot afford. The same column says
+   * Questionnaire for a manual capture, because a person typed it.
    */
-  const extractionOrigin: 'Model' | 'Rules' | 'Replay' =
-    uploadInfo === null ? 'Replay' : uploadInfo.source === 'model' ? 'Model' : 'Rules';
 
   const loadDocument = () => {
     if (selectedFixture === undefined) return;
     setLoadedFixtureId(selectedFixture.id);
     setText(selectedFixture.text);
     setExtraction(null);
+    setOrigin('Replay');
     setPosted(null);
     setQueuedValues({});
     setFailure(null);
@@ -710,6 +805,7 @@ export function DocumentsPage(): JSX.Element {
         rejected: response.rejected,
       });
       setUploadInfo(response.extraction);
+      setOrigin(response.extraction.source === 'model' ? 'Model' : 'Rules');
       setQueuedValues(Object.fromEntries(rows.queued.map((row) => [row.key, row.value])));
       void loadQueue();
     } catch (cause) {
@@ -718,6 +814,58 @@ export function DocumentsPage(): JSX.Element {
       setUploading(false);
     }
   };
+
+  /**
+   * The manual path: no file, no model. The response is the same queue shape an
+   * extraction returns, so it fills the same review table, with Origin reading
+   * Questionnaire and 100% confidence on every figure the person typed.
+   */
+  const submitQuestionnaire = async () => {
+    if (busy || !questionnaireComplete(questionnaire)) return;
+
+    setCapturing(true);
+    setFailure(null);
+    try {
+      const response = await requestJson<QuestionnaireResponse>('/api/documents/questionnaire', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(questionnaireBody(questionnaire)),
+      });
+
+      const rows = splitFields(response.accepted, response.queued);
+      setLoadedFixtureId(null);
+      setText('');
+      setUploadInfo(null);
+      setOrigin('Questionnaire');
+      setExtraction({
+        documentId: response.documentId,
+        name: response.name,
+        documentType: response.documentType,
+        completeness: response.completeness,
+        accepted: rows.accepted,
+        queued: rows.queued,
+        rejected: response.rejected,
+      });
+      setQueuedValues(Object.fromEntries(rows.queued.map((row) => [row.key, row.value])));
+      setPosted(null);
+      // A manual capture cannot be replayed: refilling the form would queue a
+      // second record, so recovery is deliberately unavailable on this path.
+      sourceRef.current = null;
+      setQuestionnaire(EMPTY_QUESTIONNAIRE_FORM);
+      void loadQueue();
+    } catch (cause) {
+      setFailure(toFailure(cause));
+    } finally {
+      setCapturing(false);
+    }
+  };
+
+  const setQuestionnaireField =
+    (key: keyof QuestionnaireForm) =>
+    (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      const value = event.target.value;
+      setQuestionnaire((current) => ({ ...current, [key]: value }));
+    };
 
   /**
    * How the current draft got here, so it can be rebuilt if the server forgot
@@ -923,7 +1071,7 @@ export function DocumentsPage(): JSX.Element {
       <PageHeader
         eyebrow="Ingestion · P5"
         title="Document inbox"
-        subtitle="Upload a PDF, DOCX or text file: the server reads the text layer, extracts the labelled fields, and queues anything it cannot support. Correct what it was unsure about, then post an immutable version. Saved examples are still available as a replay."
+        subtitle="Upload a PDF, DOCX or text file: the server reads the text layer, extracts the labelled fields, and queues anything it cannot support. Correct what it was unsure about, then post an immutable version. No document at all? Enter the figures by hand at the bottom of this card and they land in the same queue. Saved examples are still available as a replay."
         actions={
           <Tag tone="accent" dot title="POST /api/documents/upload parses the file; POST /api/documents replays a checked-in fixture">
             Real upload · fixture replay available
@@ -1087,6 +1235,143 @@ export function DocumentsPage(): JSX.Element {
           rows={14}
           placeholder="Pick a sample above, then choose Load document."
         />
+
+        <details style={manualDisclosureStyle}>
+          <summary style={sampleSummaryStyle}>
+            <span style={sampleTitleStyle}>Enter without a document</span>{' '}
+            <span style={sampleMetaStyle}>
+              broker email or call · no file, no model · same review queue
+            </span>
+          </summary>
+
+          <p style={manualHintStyle}>
+            When the terms arrive in an email or on a call there is nothing to parse. The figures
+            below enter the draft at 100% confidence because a person typed them and the server
+            validated them; every other mandatory field is queued for review, exactly as it would
+            be after an extraction.
+          </p>
+
+          <div style={manualGridStyle}>
+            <label style={manualFieldStyle}>
+              <span className="sal-field__label">Policy number</span>
+              <input
+                type="text"
+                style={inputStyle}
+                value={questionnaire.policyNo}
+                placeholder="PRP-2026-0001"
+                autoComplete="off"
+                spellCheck={false}
+                disabled={busy}
+                onChange={setQuestionnaireField('policyNo')}
+              />
+            </label>
+
+            <label style={manualFieldStyle}>
+              <span className="sal-field__label">Site</span>
+              <input
+                type="text"
+                style={inputStyle}
+                value={questionnaire.siteName}
+                placeholder="Tuas DC-2"
+                autoComplete="off"
+                disabled={busy}
+                onChange={setQuestionnaireField('siteName')}
+              />
+            </label>
+
+            <label style={manualFieldStyle}>
+              <span className="sal-field__label">Sum insured</span>
+              <input
+                type="number"
+                style={inputStyle}
+                value={questionnaire.sumInsured}
+                placeholder="12000000"
+                min="0"
+                step="any"
+                inputMode="decimal"
+                disabled={busy}
+                onChange={setQuestionnaireField('sumInsured')}
+              />
+            </label>
+
+            <label style={manualFieldStyle}>
+              <span className="sal-field__label">Currency</span>
+              <input
+                type="text"
+                style={inputStyle}
+                value={questionnaire.currency}
+                placeholder="SGD"
+                maxLength={3}
+                autoComplete="off"
+                spellCheck={false}
+                disabled={busy}
+                onChange={setQuestionnaireField('currency')}
+              />
+              <span style={manualFieldHintStyle}>Must match the policy</span>
+            </label>
+
+            <label style={manualFieldStyle}>
+              <span className="sal-field__label">BI sum insured · optional</span>
+              <input
+                type="number"
+                style={inputStyle}
+                value={questionnaire.businessInterruption}
+                placeholder="Not captured"
+                min="0"
+                step="any"
+                inputMode="decimal"
+                disabled={busy}
+                onChange={setQuestionnaireField('businessInterruption')}
+              />
+            </label>
+
+            <label style={manualFieldStyle}>
+              <span className="sal-field__label">Deductible · optional</span>
+              <input
+                type="number"
+                style={inputStyle}
+                value={questionnaire.deductible}
+                placeholder="Not captured"
+                min="0"
+                step="any"
+                inputMode="decimal"
+                disabled={busy}
+                onChange={setQuestionnaireField('deductible')}
+              />
+            </label>
+          </div>
+
+          <label style={{ ...manualFieldStyle, marginTop: 'var(--space-md)' }}>
+            <span className="sal-field__label">Notes · optional</span>
+            <textarea
+              style={notesInputStyle}
+              value={questionnaire.notes}
+              rows={3}
+              maxLength={2000}
+              placeholder="Where the terms came from, or anything the reviewer should know."
+              disabled={busy}
+              onChange={setQuestionnaireField('notes')}
+            />
+            <span style={manualFieldHintStyle}>
+              {questionnaire.notes.length} / 2000 characters · kept on the audit event
+            </span>
+          </label>
+
+          <div style={toolbarStyle}>
+            <button
+              type="button"
+              className="sal-btn sal-btn--primary"
+              disabled={busy || !questionnaireComplete(questionnaire)}
+              onClick={() => void submitQuestionnaire()}
+            >
+              {capturing ? 'Queuing…' : 'Queue for review'}
+            </button>
+            <span style={metaStyle}>
+              POST /api/documents/questionnaire · the record is reviewed, posted and versioned like
+              any extraction
+            </span>
+          </div>
+        </details>
       </Card>
 
       <Card
@@ -1140,7 +1425,7 @@ export function DocumentsPage(): JSX.Element {
 
             <p style={sectionHeadingStyle}>Accepted fields</p>
             <DataTable
-              columns={acceptedColumns(extractionOrigin)}
+              columns={acceptedColumns(origin)}
               rows={extraction.accepted}
               rowKey={(row) => row.key}
               dense
@@ -1339,6 +1624,56 @@ const sampleMetaStyle: CSSProperties = {
   fontSize: 'var(--text-micro)',
   letterSpacing: '.03em',
   color: 'var(--muted)',
+};
+
+/**
+ * The manual capture sits at the bottom of the upload card, collapsed, so the
+ * file path stays the default without hiding the alternative.
+ */
+const manualDisclosureStyle: CSSProperties = {
+  marginTop: 'var(--space-xl)',
+  paddingTop: 'var(--space-md)',
+  borderTop: '1px solid var(--line)',
+};
+
+const manualHintStyle: CSSProperties = {
+  margin: 'var(--space-sm) 0 var(--space-lg)',
+  maxWidth: '78ch',
+  fontSize: 'var(--text-body-sm)',
+  lineHeight: 'var(--leading-relaxed)',
+  color: 'var(--muted)',
+};
+
+const manualGridStyle: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+  gap: 'var(--space-md)',
+};
+
+const manualFieldStyle: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 'var(--space-xxs)',
+};
+
+const manualFieldHintStyle: CSSProperties = {
+  fontFamily: 'var(--font-mono)',
+  fontSize: 'var(--text-micro)',
+  letterSpacing: '.03em',
+  color: 'var(--muted)',
+};
+
+const notesInputStyle: CSSProperties = {
+  width: '100%',
+  padding: '8px 10px',
+  border: '1px solid var(--line)',
+  borderRadius: 'var(--radius-sm)',
+  background: 'var(--card)',
+  color: 'var(--ink)',
+  fontFamily: 'var(--font-sans)',
+  fontSize: 'var(--text-body-sm)',
+  lineHeight: 'var(--leading-snug)',
+  resize: 'vertical',
 };
 
 const fixtureButtonStyle: CSSProperties = {

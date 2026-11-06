@@ -1,0 +1,251 @@
+/*
+ * Board summary / renewal review pack — screen layout and print rules.
+ *
+ * The page exists to be printed, so everything below `@media print` is the
+ * substance of the file. Every colour here is a `theme.css` token; print is the
+ * only place with literal black and white, which the brief requires.
+ *
+ * Print selectors are scoped with `.sal-app:has(.sal-report)` (or the page's own
+ * class) so importing this stylesheet does not change how any other screen
+ * prints. This module is imported from `routes.tsx`, so it is in the bundle on
+ * every screen.
+ */
+
+/* ------------------------------------------------------------------ screen */
+
+/*
+ * Block flow rather than the `.sal-page` flex column: print fragments block
+ * flow predictably, and `estimatePrintPages` measures the same margin it will
+ * see on paper. Spacing matches the flex gap it replaces.
+ */
+.sal-report {
+  display: block;
+  max-width: 980px;
+}
+
+.sal-report > * + * {
+  margin-top: var(--space-section);
+}
+
+.sal-report__head {
+  display: block;
+}
+
+.sal-report__meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-lg);
+  margin: var(--space-lg) 0 0;
+  padding: var(--space-lg) var(--space-xxl);
+  background: var(--card);
+  border: var(--border-hairline);
+  border-radius: var(--radius-lg);
+}
+
+.sal-report__meta-item {
+  min-width: 0;
+}
+
+.sal-report__meta dt {
+  font-size: var(--text-micro);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.sal-report__meta dd {
+  margin: 2px 0 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-body-sm);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.sal-report__scopenote {
+  margin: var(--space-sm) 0 0;
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+
+/*
+ * Five KPIs across the strip, on screen and on paper. Same rule in both media
+ * on purpose: the page-count estimate is a screen measurement at A4 width, so
+ * print may change colour and breaks but never type size or spacing. A rule
+ * that only exists inside `@media print` would make the estimate guess.
+ */
+/* Plain-language definitions: a board reader should not need the glossary to
+   read the numbers. Same tokens, no new palette. */
+.sal-report__dfn {
+  margin: var(--space-lg) 0 0;
+  font-size: var(--text-xs);
+  line-height: var(--leading-relaxed);
+  color: var(--muted);
+}
+
+.sal-report__dfn strong {
+  color: var(--ink);
+  font-weight: var(--weight-semibold);
+}
+
+.sal-report__cell-sub {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--text-micro);
+  color: var(--muted);
+}
+
+.sal-report__unavailable {
+  margin: 0;
+  padding: var(--space-lg) var(--space-xl);
+  background: var(--paper);
+  border-left: 3px solid var(--band-medium);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-body);
+  color: var(--ink);
+}
+
+.sal-report__provenance {
+  padding-top: var(--space-lg);
+  border-top: var(--border-hairline);
+}
+
+.sal-report__provenance-title {
+  margin: 0 0 var(--space-sm);
+  font-size: var(--text-micro);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.sal-report__provenance-list {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 4px var(--space-xl);
+  margin: 0;
+  font-size: var(--text-xs);
+}
+
+.sal-report__provenance-list dt {
+  font-weight: var(--weight-semibold);
+  color: var(--ink);
+}
+
+.sal-report__provenance-list dd {
+  margin: 0;
+  color: var(--muted);
+}
+
+/* ------------------------------------------------------------------- print */
+
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+  }
+
+  /* Shell chrome. Scoped to the report being mounted: the assistant rail, the
+     sidebar, the filter bar and the top bar are navigation, and navigation has
+     no meaning on a printed page. */
+  .sal-app:has(.sal-report) {
+    display: block;
+    min-height: 0;
+    background: #fff;
+  }
+
+  .sal-app:has(.sal-report) .sal-app__main,
+  .sal-app:has(.sal-report) .sal-app__body {
+    display: block;
+  }
+
+  .sal-app:has(.sal-report) .sal-topbar,
+  .sal-app:has(.sal-report) .sal-sidebar,
+  .sal-app:has(.sal-report) .sal-app__rail,
+  .sal-app:has(.sal-report) .sal-rail-stack,
+  .sal-app:has(.sal-report) .sal-filters {
+    display: none !important;
+  }
+
+  .sal-app:has(.sal-report) .sal-app__content {
+    padding: 0;
+  }
+
+  /* Black on white, no shadows, square edges: a printer has no use for a
+     drop shadow, and a tinted panel can print as an unreadable grey block. */
+  .sal-report,
+  .sal-report * {
+    color: #000 !important;
+    text-shadow: none !important;
+  }
+
+  .sal-report {
+    max-width: none;
+  }
+
+  .sal-report .sal-card,
+  .sal-report .sal-kpi,
+  .sal-report .sal-report__meta {
+    background: #fff !important;
+    border-color: var(--line-strong);
+    border-radius: 0;
+    box-shadow: none !important;
+  }
+
+  .sal-report .sal-tag {
+    padding: 0;
+    background: transparent !important;
+    border: 0;
+    font-weight: var(--weight-bold);
+  }
+
+  .sal-report .sal-tag__dot {
+    background: #000 !important;
+  }
+
+  /* Anything interactive exists only to drive the screen. */
+  .sal-app:has(.sal-report) button,
+  .sal-report .sal-btn,
+  .sal-report [data-screen-only] {
+    display: none !important;
+  }
+
+  /* Sections and rows are indivisible; a table header repeats when a long
+     table does have to continue, and rows themselves never split. */
+  .sal-report [data-report-section],
+  .sal-report .sal-card {
+    break-inside: avoid;
+  }
+
+  .sal-report tr,
+  .sal-report th,
+  .sal-report td,
+  .sal-report li {
+    break-inside: avoid;
+  }
+
+  .sal-report thead {
+    display: table-header-group;
+  }
+
+  .sal-report h1,
+  .sal-report h2,
+  .sal-report .sal-card__head {
+    break-after: avoid;
+  }
+
+  /* Reference numbers read as one token: a wrapped "Cl. 13.2" looks like two
+     data points. Width only, so the measured heights still hold. */
+  .sal-report__table td.sal-mono {
+    white-space: nowrap;
+  }
+
+  .sal-report .sal-table tbody tr:hover td {
+    background: transparent;
+  }
+}
