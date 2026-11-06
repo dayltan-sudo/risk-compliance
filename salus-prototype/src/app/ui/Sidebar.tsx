@@ -12,6 +12,11 @@ export interface SidebarItem {
   icon?: ReactNode;
   /** Optional count badge on the right of the item. */
   count?: number;
+  /**
+   * Destination. When present the item renders as a real anchor, so it can be
+   * opened in a new tab, copied as a link and announced as a link.
+   */
+  href?: string;
   badgeTone?: SidebarBadgeTone;
 }
 
@@ -76,30 +81,67 @@ export function Sidebar({
             <ul className="sal-sidebar__list">
               {section.items.map((item) => {
                 const active = item.id === activeId;
+                const className = cn('sal-sidebar__item', active && 'sal-sidebar__item--active');
+                const contents = (
+                  <>
+                    {item.icon ? (
+                      <span className="sal-sidebar__icon" aria-hidden="true">
+                        {item.icon}
+                      </span>
+                    ) : null}
+                    <span className="sal-sidebar__label">{item.label}</span>
+                    {typeof item.count === 'number' ? (
+                      <span
+                        className={cn(
+                          'sal-sidebar__badge',
+                          item.badgeTone === 'risk' && 'sal-sidebar__badge--risk',
+                        )}
+                      >
+                        {item.count}
+                      </span>
+                    ) : null}
+                  </>
+                );
+
+                if (item.href !== undefined) {
+                  return (
+                    <li key={item.id}>
+                      <a
+                        className={className}
+                        href={item.href}
+                        aria-current={active ? 'page' : undefined}
+                        onClick={(event) => {
+                          // Modified clicks belong to the browser: opening a new
+                          // tab must not be swallowed by the client router.
+                          if (onNavigate === undefined) return;
+                          if (
+                            event.metaKey ||
+                            event.ctrlKey ||
+                            event.shiftKey ||
+                            event.altKey ||
+                            event.button !== 0
+                          ) {
+                            return;
+                          }
+                          event.preventDefault();
+                          onNavigate(item);
+                        }}
+                      >
+                        {contents}
+                      </a>
+                    </li>
+                  );
+                }
+
                 return (
                   <li key={item.id}>
                     <button
                       type="button"
-                      className={cn('sal-sidebar__item', active && 'sal-sidebar__item--active')}
+                      className={className}
                       aria-current={active ? 'page' : undefined}
                       onClick={onNavigate ? () => onNavigate(item) : undefined}
                     >
-                      {item.icon ? (
-                        <span className="sal-sidebar__icon" aria-hidden="true">
-                          {item.icon}
-                        </span>
-                      ) : null}
-                      <span className="sal-sidebar__label">{item.label}</span>
-                      {typeof item.count === 'number' ? (
-                        <span
-                          className={cn(
-                            'sal-sidebar__badge',
-                            item.badgeTone === 'risk' && 'sal-sidebar__badge--risk',
-                          )}
-                        >
-                          {item.count}
-                        </span>
-                      ) : null}
+                      {contents}
                     </button>
                   </li>
                 );

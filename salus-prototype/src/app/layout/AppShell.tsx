@@ -68,7 +68,10 @@ function ShellLayout() {
   const criticalHotspots = summary.hotspots.filter((hotspot) => hotspot.band === 'Critical').length;
   const highHotspots = summary.hotspots.filter((hotspot) => hotspot.band === 'High').length;
 
-  const sections: SidebarSection[] = [
+  const pathForId = (id: string): string =>
+    Object.entries(PAGES).find(([, value]) => value.id === id)?.[0] ?? '/';
+
+  const rawSections: SidebarSection[] = [
     {
       id: 'monitor',
       label: 'Monitor',
@@ -108,6 +111,11 @@ function ShellLayout() {
       ],
     },
   ];
+
+  const sections: SidebarSection[] = rawSections.map((section) => ({
+    ...section,
+    items: section.items.map((item) => ({ ...item, href: pathForId(item.id) })),
+  }));
 
   const onNavigate = (item: SidebarItem) => {
     const target = Object.entries(PAGES).find(([, value]) => value.id === item.id)?.[0];

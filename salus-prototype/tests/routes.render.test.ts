@@ -21,6 +21,7 @@ const screens = [
   { path: '/renewals', heading: 'Renewal' },
   { path: '/audit', heading: 'Audit' },
   { path: '/documents', heading: 'Document' },
+  { path: '/report', heading: 'Portfolio position' },
 ];
 
 function render(path: string): string {
