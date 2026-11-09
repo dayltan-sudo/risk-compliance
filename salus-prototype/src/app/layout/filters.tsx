@@ -83,7 +83,13 @@ export function parseFilters(params: URLSearchParams): FilterState {
       const line = LINE_BY_SLUG.get(slug.trim());
       if (line !== undefined && !parsed.includes(line)) parsed.push(line);
     }
-    lines = normaliseLines(parsed);
+    // An empty value is the bar's explicit "No lines" selection, a real scope
+    // with no sites in it. Slugs that name no line come from a stale or
+    // hand-edited link, so they leave the filter off the way an unknown entity
+    // or renewal window does, rather than narrowing the view to nothing.
+    if (rawLine.trim() === '') lines = [];
+    else if (parsed.length === 0) lines = null;
+    else lines = normaliseLines(parsed);
   }
 
   const rawEntity = params.get('entity');
