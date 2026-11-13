@@ -5,10 +5,24 @@ import { Logomark } from "./Logo.js";
 import { AgentActivityPanel } from "./AgentActivityPanel.js";
 import { SCORECARD_VERSION } from "../data/config.js";
 import { api } from "../api/client.js";
+import { USERS } from "../data/users.js";
+import { useStore } from "../store/useStore.js";
 
 export function Layout() {
   const assessmentMatch = useMatch("/assessments/:assessmentId");
   const [agentPanelOpen, setAgentPanelOpen] = useState(true);
+  const currentUserId = useStore((s) => s.currentUserId);
+  const switchUser = useStore((s) => s.switchUser);
+  const [switching, setSwitching] = useState(false);
+  const [switchError, setSwitchError] = useState<string | null>(null);
+
+  async function handleSwitchUser(userId: string) {
+    setSwitching(true);
+    setSwitchError(null);
+    const result = await switchUser(userId);
+    if (!result.ok) setSwitchError(result.reason ?? "Could not switch user.");
+    setSwitching(false);
+  }
 
   async function handleLogout() {
     await api.logout();
@@ -46,7 +60,24 @@ export function Layout() {
                 Audit Trail
               </NavLink>
             </nav>
-            <div className="flex items-center gap-2 text-sm">
+            <div className="flex items-center gap-3 text-sm">
+              <label htmlFor="acting-user" className="sr-only">
+                Acting as
+              </label>
+              <select
+                id="acting-user"
+                value={currentUserId}
+                disabled={switching}
+                onChange={(e) => handleSwitchUser(e.target.value)}
+                title={switchError ?? "Actions are recorded under this name"}
+                className={`field text-[13px] py-1 ${switchError ? "border-[var(--crit)]" : ""}`}
+              >
+                {USERS.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name}
+                  </option>
+                ))}
+              </select>
               <button onClick={handleLogout} className="text-[13.5px] font-medium text-[var(--muted)] hover:text-[var(--ink)] transition-colors">
                 Log out
               </button>

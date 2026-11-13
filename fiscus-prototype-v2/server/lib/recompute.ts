@@ -48,9 +48,9 @@ export async function runIntegrityChecksAndRecency(assessmentId: string) {
  * Called after every confirm/amend/bulk-confirm/upload/relationship-type
  * change. No-ops silently while the gate doesn't hold, exactly like
  * useStore.ts's checkReviewCompleteAndRecompute. */
-export async function checkReviewCompleteAndRecompute(assessmentId: string) {
+export async function checkReviewCompleteAndRecompute(assessmentId: string): Promise<boolean> {
   const [assessment] = await db.select().from(assessments).where(eq(assessments.id, assessmentId));
-  if (!assessment) return;
+  if (!assessment) return false;
 
   const [rawFields, rawCriteria] = await Promise.all([
     db.select().from(extractedFields).where(eq(extractedFields.assessmentId, assessmentId)),
@@ -59,8 +59,8 @@ export async function checkReviewCompleteAndRecompute(assessmentId: string) {
   const allFields = asExtractedFields(rawFields);
   const allCriteria = asCriterionInputs(rawCriteria);
 
-  if (!reviewComplete(allFields, allCriteria, assessment)) return;
-  if (assessment.periods.length < 2) return;
+  if (!reviewComplete(allFields, allCriteria, assessment)) return false;
+  if (assessment.periods.length < 2) return false;
 
   const now = nowDate();
   const currentPeriod = assessment.periods[assessment.periods.length - 1];
@@ -103,5 +103,28 @@ export async function checkReviewCompleteAndRecompute(assessmentId: string) {
       .set({ supersededAt: now })
       .where(and(eq(riskCommentaries.assessmentId, assessmentId), isNull(riskCommentaries.supersededAt)));
     await tx.insert(riskCommentaries).values({ ...commentary, id: nextId("commentary") });
+  });
+  return true;
+}
+
+/** Field confirm/amend/bulk-confirm: the integrity checks read the field
+ * values, so they must be re-run before any rescore (FR3.8 gate + Flow C). */
+export async function refreshAfterFieldChange(assessmentId: string): Promise<boolean> {
+  await runIntegrityChecksAndRecency(assessmentId);
+  return checkReviewCompleteAndRecompute(assessmentId);
+}
+
+/** FR4.10/FR6.12 — when an input change leaves the review gate closed, the
+ * previously computed Ratios/Rating/Commentary no longer describe the
+ * assessment. Supersede (never delete) them so nothing stale is "live". */
+export async function supersedeLiveResults(assessmentId: string) {
+  const now = nowDate();
+  await db.transaction(async (tx) => {
+    await tx.update(ratios).set({ supersededAt: now }).where(and(eq(ratios.assessmentId, assessmentId), isNull(ratios.supersededAt)));
+    await tx.update(ratings).set({ supersededAt: now }).where(and(eq(ratings.assessmentId, assessmentId), isNull(ratings.supersededAt)));
+    await tx
+      .update(riskCommentaries)
+      .set({ supersededAt: now })
+      .where(and(eq(riskCommentaries.assessmentId, assessmentId), isNull(riskCommentaries.supersededAt)));
   });
 }

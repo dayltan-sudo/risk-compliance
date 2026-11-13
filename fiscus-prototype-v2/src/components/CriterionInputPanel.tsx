@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useStore } from "../store/useStore.js";
 import { Card, SectionHeading, Button } from "./Card.js";
 import { Badge } from "./Badge.js";
+import { parseNumberInput } from "../utils/parseNumber.js";
 import type { Assessment, CriterionInput, LitigationRecord, PromptPaymentRecord } from "../types.js";
 
 function CriterionCard({
@@ -57,11 +58,13 @@ export function CriterionInputPanel({ assessment, editable }: { assessment: Asse
   const c9 = criterionInputs.find((c) => c.criterionNumber === 9);
   const c11 = criterionInputs.find((c) => c.criterionNumber === 11);
 
-  const [f5, setF5] = useState({ paidUpCapital: c5?.paidUpCapital?.toString() ?? "", totalExposure: c5?.totalExposure?.toString() ?? "", currency: c5?.currency ?? "SGD" });
+  const [f5, setF5] = useState({ paidUpCapital: c5?.paidUpCapital?.toString() ?? "", totalExposure: c5?.totalExposure?.toString() ?? "", currency: c5?.currency ?? "" });
   const [f7, setF7] = useState({ yearRegisteredSg: c7?.yearRegisteredSg?.toString() ?? "" });
   const [f8, setF8] = useState({ litigationRecord: (c8?.litigationRecord ?? "Clean") as LitigationRecord, evidenceSource: c8?.evidenceSource ?? "", evidencePeriodOrDate: c8?.evidencePeriodOrDate ?? "" });
   const [f9, setF9] = useState({ changeInDirectors: c9?.changeInDirectors ?? false });
   const [f11, setF11] = useState({ promptPaymentRecord: (c11?.promptPaymentRecord ?? "Good") as PromptPaymentRecord, evidenceSource: c11?.evidenceSource ?? "", evidencePeriodOrDate: c11?.evidencePeriodOrDate ?? "" });
+
+  const f5Values = () => ({ paidUpCapital: parseNumberInput(f5.paidUpCapital), totalExposure: parseNumberInput(f5.totalExposure), currency: f5.currency.trim() || null });
 
   const [errors, setErrors] = useState<Record<number, string | null>>({});
 
@@ -80,8 +83,8 @@ export function CriterionInputPanel({ assessment, editable }: { assessment: Asse
         input={c5}
         editable={editable}
         error={errors[5]}
-        onConfirm={() => act(5, { paidUpCapital: Number(f5.paidUpCapital), totalExposure: Number(f5.totalExposure), currency: f5.currency }, false)}
-        onAmend={() => act(5, { paidUpCapital: Number(f5.paidUpCapital), totalExposure: Number(f5.totalExposure), currency: f5.currency }, true)}
+        onConfirm={() => act(5, f5Values(), false)}
+        onAmend={() => act(5, f5Values(), true)}
       >
         {c5?.source && <p className="text-xs text-[var(--muted)]">Prefill source: {c5.source} {c5.source !== "manual" && "— amending sets source to manual"}</p>}
         <div className="grid grid-cols-3 gap-3">
@@ -96,7 +99,7 @@ export function CriterionInputPanel({ assessment, editable }: { assessment: Asse
           </div>
           <div>
             <label className="block text-xs font-medium mb-1">Currency</label>
-            <input value={f5.currency} onChange={(e) => setF5({ ...f5, currency: e.target.value })} disabled={!editable} className="w-full field" />
+            <input value={f5.currency} onChange={(e) => setF5({ ...f5, currency: e.target.value })} placeholder="e.g. SGD" disabled={!editable} className="w-full field" />
           </div>
         </div>
       </CriterionCard>
@@ -107,8 +110,8 @@ export function CriterionInputPanel({ assessment, editable }: { assessment: Asse
         input={c7}
         editable={editable}
         error={errors[7]}
-        onConfirm={() => act(7, { yearRegisteredSg: Number(f7.yearRegisteredSg) }, false)}
-        onAmend={() => act(7, { yearRegisteredSg: Number(f7.yearRegisteredSg) }, true)}
+        onConfirm={() => act(7, { yearRegisteredSg: parseNumberInput(f7.yearRegisteredSg) }, false)}
+        onAmend={() => act(7, { yearRegisteredSg: parseNumberInput(f7.yearRegisteredSg) }, true)}
       >
         <div>
           <label className="block text-xs font-medium mb-1">Year first registered to operate in Singapore</label>

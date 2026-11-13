@@ -18,6 +18,7 @@ type Tab = "upload" | "review" | "criteria" | "results" | "commentary" | "approv
 
 export function AssessmentWorkspacePage() {
   const { assessmentId } = useParams<{ assessmentId: string }>();
+  const loaded = useStore((s) => s.loaded);
   const customers = useStore((s) => s.customers);
   const assessments = useStore((s) => s.assessments);
   const extractedFields = useStore((s) => s.extractedFields);
@@ -42,7 +43,7 @@ export function AssessmentWorkspacePage() {
   useEffect(() => {
     setSubmitError(null);
     setShowOverride(false);
-    if (assessmentId) loadAssessmentDetail(assessmentId);
+    if (assessmentId) loadAssessmentDetail(assessmentId).catch((err) => console.error("Could not load assessment", err));
   }, [assessmentId, loadAssessmentDetail]);
 
   // A brand-new assessment with no documents yet should land on Upload; one
@@ -58,8 +59,13 @@ export function AssessmentWorkspacePage() {
     setTab(assessment.periods.length > 0 ? "review" : "upload");
   }, [assessment]);
 
+  // On a reload or deep link the detail fetch can land before the bootstrap
+  // does, so the assessment may exist while its customer doesn't yet. Render
+  // nothing that dereferences either until the lists have loaded.
+  if (!loaded) return <p className="text-sm text-[var(--muted)]">Loading…</p>;
   if (!assessment) return <p>Assessment not found.</p>;
-  const customer = customers.find((c) => c.id === assessment.customerId)!;
+  const customer = customers.find((c) => c.id === assessment.customerId);
+  if (!customer) return <p>Customer for this assessment not found.</p>;
 
   const editable = assessment.state === "Draft";
   const returned = isReturnedForRevision(assessment, approvalDecisions);

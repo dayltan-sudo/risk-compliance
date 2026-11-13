@@ -122,34 +122,63 @@ export async function extractStatementFields(opts: { text: string; sessionId: st
 // FR5.8 — Flow D's paid-up capital prefill. Same extraction capability as
 // Flow B, scoped to one figure, used for both the registry document (tier 1)
 // and a statement's share-capital note (tier 2).
+//
+// The model reports the figure as printed plus the scale/currency it reads
+// from the document; scaling to an absolute value happens here in code (FR2.3
+// stores raw absolute numbers), so "S$2,000 thousand" cannot land as 2,000.
 const PaidUpCapitalSchema = z.object({
   value: z.number().nullable(),
+  scale: z.enum(["units", "thousands", "millions"]).nullable().optional(),
+  currency: z.string().nullable().optional(),
   confidence: z.number().min(0).max(100).nullable(),
   sourcePointer: z.string().nullable(),
 });
 
 export interface PaidUpCapitalCandidate {
+  /** Absolute value, already scaled. */
   value: number | null;
+  currency: string | null;
   confidence: number | null;
   sourcePointer: string | null;
+}
+
+const SCALE_MULTIPLIER: Record<PresentationScale, number> = { units: 1, thousands: 1_000, millions: 1_000_000 };
+
+export function toAbsoluteValue(printed: number, scale: PresentationScale | null | undefined): number {
+  return printed * SCALE_MULTIPLIER[scale ?? "units"];
 }
 
 export async function extractPaidUpCapital(opts: {
   text: string;
   documentKind: "registry" | "statement-note";
   sessionId: string;
+  /** Scale/currency already detected for the statement this note belongs to;
+   * a note inherits the statement's presentation. */
+  statementScale?: PresentationScale | null;
+  statementCurrency?: string | null;
 }): Promise<PaidUpCapitalCandidate> {
   const source = opts.documentKind === "registry" ? "an ACRA business registry extract" : "a financial statement's share-capital note";
   const system = `You are extracting a single figure from ${source}: the company's paid-up capital (also called "issued and paid-up share capital"), as at the date on the document.
 
 Respond with ONLY a single JSON object of this exact shape, no markdown fences, no commentary:
-{"value": number|null, "confidence": number|null, "sourcePointer": string|null}
+{"value": number|null, "scale": "units"|"thousands"|"millions"|null, "currency": string|null, "confidence": number|null, "sourcePointer": string|null}
 
-If the figure is not present, set all three fields to null. Never guess.`;
-  return callStructuredLLM({
+- value: the figure EXACTLY as printed. Do not apply any scale conversion yourself.
+- scale: the scale the printed figure is presented at (a header such as "(S$'000)" or "in thousands" means "thousands"; "in millions" means "millions"; no such indication means "units").
+- currency: the currency of the figure as an ISO code (e.g. "SGD", "USD"), read from the document (e.g. "S$'000" means SGD). Null only if genuinely undeterminable.
+
+If the figure is not present, set value, confidence and sourcePointer to null. Never guess.`;
+  const result = await callStructuredLLM({
     system,
     user: selectRelevantText(opts.text),
     schema: PaidUpCapitalSchema,
     sessionId: opts.sessionId,
   });
+  const scale = opts.documentKind === "statement-note" ? (opts.statementScale ?? result.scale) : result.scale;
+  return {
+    value: result.value === null ? null : toAbsoluteValue(result.value, scale),
+    currency: result.currency?.trim().toUpperCase() || opts.statementCurrency?.trim().toUpperCase() || null,
+    confidence: result.confidence,
+    sourcePointer: result.sourcePointer,
+  };
 }

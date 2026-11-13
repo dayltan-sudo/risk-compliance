@@ -84,7 +84,7 @@ documentsRoute.post("/:id/documents", async (c) => {
           if (candidate.value !== null) {
             await db
               .update(criterionInputs)
-              .set({ paidUpCapital: candidate.value, currency: "SGD", source: "registry", sourceDocumentId: docId })
+              .set({ paidUpCapital: candidate.value, currency: candidate.currency, source: "registry", sourceDocumentId: docId })
               .where(eq(criterionInputs.id, c5.id));
             await writeAudit({
               entityType: "CriterionInput",
@@ -92,7 +92,7 @@ documentsRoute.post("/:id/documents", async (c) => {
               actor: "system",
               action: "Paid-up capital prefilled from ACRA registry (FR5.8)",
               beforeValue: null,
-              afterValue: String(candidate.value),
+              afterValue: `${candidate.currency ?? "currency unknown"} ${candidate.value}`,
             });
             await setAgentStatus(assessmentId, "extraction", "done", `Paid-up capital found: ${candidate.value.toLocaleString()}`);
           } else {
@@ -217,11 +217,17 @@ documentsRoute.post("/:id/documents", async (c) => {
   if (c5 && c5.status === "Unconfirmed" && c5.paidUpCapital === null && documentText.trim().length > 0) {
     await setAgentStatus(assessmentId, "extraction", "running", "Checking statement's share-capital note for paid-up capital");
     try {
-      const candidate = await extractPaidUpCapital({ text: documentText, documentKind: "statement-note", sessionId: `paidup-note-${docId}` });
+      const candidate = await extractPaidUpCapital({
+        text: documentText,
+        documentKind: "statement-note",
+        sessionId: `paidup-note-${docId}`,
+        statementScale: extraction?.presentationScale ?? null,
+        statementCurrency: extraction?.presentationCurrency ?? null,
+      });
       if (candidate.value !== null) {
         await db
           .update(criterionInputs)
-          .set({ paidUpCapital: candidate.value, currency: "SGD", source: "statement-note", sourceDocumentId: docId })
+          .set({ paidUpCapital: candidate.value, currency: candidate.currency, source: "statement-note", sourceDocumentId: docId })
           .where(eq(criterionInputs.id, c5.id));
         await writeAudit({
           entityType: "CriterionInput",
@@ -229,7 +235,7 @@ documentsRoute.post("/:id/documents", async (c) => {
           actor: "system",
           action: "Paid-up capital prefilled from statement share-capital note (FR5.8)",
           beforeValue: null,
-          afterValue: String(candidate.value),
+          afterValue: `${candidate.currency ?? "currency unknown"} ${candidate.value}`,
         });
         await setAgentStatus(assessmentId, "extraction", "done", `Paid-up capital found in share-capital note: ${candidate.value.toLocaleString()}`);
       } else {

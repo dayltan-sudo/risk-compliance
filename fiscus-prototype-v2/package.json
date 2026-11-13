@@ -35,6 +35,7 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
     "@types/node": "^24.13.3",
     "@types/pg": "^8.23.1",
     "@types/react": "^19.2.17",
@@ -43,6 +44,7 @@
     "autoprefixer": "^10.5.4",
     "concurrently": "^10.0.5",
     "drizzle-kit": "^0.31.10",
+    "jsdom": "^30.1.2",
     "oxlint": "^1.75.0",
     "postcss": "^8.5.25",
     "tailwindcss": "^4.3.3",

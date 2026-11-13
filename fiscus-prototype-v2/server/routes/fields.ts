@@ -2,11 +2,12 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { db } from "../db/client.js";
-import { extractedFields } from "../db/schema.js";
+import { assessments, extractedFields } from "../db/schema.js";
 import { requireActor } from "../lib/actor.js";
 import { writeAudit } from "../lib/audit.js";
 import { nowStamp } from "../lib/ids.js";
-import { checkReviewCompleteAndRecompute } from "../lib/recompute.js";
+import { refreshAfterFieldChange } from "../lib/recompute.js";
+import { notDraftMessage } from "../lib/guards.js";
 import type { AmendmentHistoryEntry } from "../../src/types.js";
 
 export const fieldsRoute = new Hono();
@@ -26,6 +27,8 @@ fieldsRoute.post("/:fieldId/confirm", async (c) => {
 
   const [field] = await db.select().from(extractedFields).where(eq(extractedFields.id, fieldId));
   if (!field) return c.json({ error: "Field not found" }, 404);
+  const [assessment] = await db.select().from(assessments).where(eq(assessments.id, field.assessmentId));
+  if (assessment && assessment.state !== "Draft") return c.json({ error: notDraftMessage(assessment, "fields") }, 409);
   if (field.status !== "Unconfirmed") return c.json({ error: "Already reviewed — use Amend instead." }, 409);
 
   const confirmedValue = "value" in parsed.data && parsed.data.value !== undefined ? parsed.data.value : field.value;
@@ -40,7 +43,7 @@ fieldsRoute.post("/:fieldId/confirm", async (c) => {
     afterValue: confirmedValue === null ? "Confirmed absent" : "Confirmed",
   });
 
-  await checkReviewCompleteAndRecompute(field.assessmentId);
+  await refreshAfterFieldChange(field.assessmentId);
   return c.json({ ok: true });
 });
 
@@ -56,6 +59,8 @@ fieldsRoute.post("/:fieldId/amend", async (c) => {
 
   const [field] = await db.select().from(extractedFields).where(eq(extractedFields.id, fieldId));
   if (!field) return c.json({ error: "Field not found" }, 404);
+  const [assessment] = await db.select().from(assessments).where(eq(assessments.id, field.assessmentId));
+  if (assessment && assessment.state !== "Draft") return c.json({ error: notDraftMessage(assessment, "fields") }, 409);
 
   const entry: AmendmentHistoryEntry = {
     previousValue: field.value,
@@ -81,7 +86,7 @@ fieldsRoute.post("/:fieldId/amend", async (c) => {
     afterValue: String(parsed.data.value),
   });
 
-  await checkReviewCompleteAndRecompute(field.assessmentId);
+  await refreshAfterFieldChange(field.assessmentId);
   return c.json({ ok: true });
 });
 

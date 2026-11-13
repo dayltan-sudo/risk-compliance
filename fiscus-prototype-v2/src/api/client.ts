@@ -12,7 +12,6 @@ export class ApiError extends Error {
 
 interface RequestOptions {
   method?: string;
-  actor?: string;
   body?: unknown; // JSON-serializable, or a FormData instance for uploads
 }
 
@@ -23,7 +22,6 @@ async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
     credentials: "include",
     headers: {
       ...(opts.body && !isFormData ? { "Content-Type": "application/json" } : {}),
-      ...(opts.actor ? { "X-Actor": opts.actor } : {}),
     },
     body: opts.body === undefined ? undefined : isFormData ? (opts.body as FormData) : JSON.stringify(opts.body),
   });
@@ -39,9 +37,10 @@ async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
 }
 
 export const api = {
-  login: (password: string) => request<{ ok: boolean }>("/auth/login", { method: "POST", body: { password } }),
+  login: (password: string, userId: string) => request<{ ok: boolean }>("/auth/login", { method: "POST", body: { password, userId } }),
+  setActor: (userId: string) => request<{ ok: boolean }>("/auth/actor", { method: "POST", body: { userId } }),
   logout: () => request<{ ok: boolean }>("/auth/logout", { method: "POST" }),
-  session: () => request<{ authenticated: boolean }>("/auth/session"),
+  session: () => request<{ authenticated: boolean; userId: string | null }>("/auth/session"),
 
   bootstrap: () =>
     request<{
@@ -53,9 +52,9 @@ export const api = {
       auditLog: unknown[];
     }>("/bootstrap"),
 
-  createCustomer: (name: string, industry: string, actor: string) => request("/customers", { method: "POST", actor, body: { name, industry } }),
+  createCustomer: (name: string, industry: string) => request("/customers", { method: "POST", body: { name, industry } }),
 
-  startAssessment: (customerId: string, division: string, actor: string) => request("/assessments", { method: "POST", actor, body: { customerId, division } }),
+  startAssessment: (customerId: string, division: string) => request("/assessments", { method: "POST", body: { customerId, division } }),
 
   getAssessment: (id: string) => request(`/assessments/${id}`),
 
@@ -64,27 +63,27 @@ export const api = {
       `/assessments/${id}/agent-activity`,
     ),
 
-  overrideRelationshipType: (id: string, newValue: string, reason: string, actor: string) =>
-    request(`/assessments/${id}/relationship-type`, { method: "PATCH", actor, body: { newValue, reason } }),
+  overrideRelationshipType: (id: string, newValue: string, reason: string) =>
+    request(`/assessments/${id}/relationship-type`, { method: "PATCH", body: { newValue, reason } }),
 
-  submitAssessment: (id: string, actor: string) => request<{ ok: boolean; reason?: string }>(`/assessments/${id}/submit`, { method: "POST", actor, body: {} }),
+  submitAssessment: (id: string) => request<{ ok: boolean; reason?: string }>(`/assessments/${id}/submit`, { method: "POST", body: {} }),
 
-  decideAssessment: (id: string, action: "Approve" | "Reject" | "Return", comments: string, actor: string) =>
-    request<{ ok: boolean; reason?: string }>(`/assessments/${id}/decision`, { method: "POST", actor, body: { action, comments } }),
+  decideAssessment: (id: string, action: "Approve" | "Reject" | "Return", comments: string) =>
+    request<{ ok: boolean; reason?: string }>(`/assessments/${id}/decision`, { method: "POST", body: { action, comments } }),
 
-  uploadDocument: (assessmentId: string, form: FormData, actor: string) => request<{ id: string }>(`/assessments/${assessmentId}/documents`, { method: "POST", actor, body: form }),
+  uploadDocument: (assessmentId: string, form: FormData) => request<{ id: string }>(`/assessments/${assessmentId}/documents`, { method: "POST", body: form }),
 
-  bulkConfirmHigh: (assessmentId: string, actor: string) => request<{ ok: boolean; confirmed: number }>(`/assessments/${assessmentId}/bulk-confirm-high`, { method: "POST", actor, body: {} }),
+  bulkConfirmHigh: (assessmentId: string) => request<{ ok: boolean; confirmed: number }>(`/assessments/${assessmentId}/bulk-confirm-high`, { method: "POST", body: {} }),
 
-  confirmField: (fieldId: string, value: number | boolean | null | undefined, actor: string) =>
-    request<{ ok: boolean }>(`/fields/${fieldId}/confirm`, { method: "POST", actor, body: value === undefined ? {} : { value } }),
+  confirmField: (fieldId: string, value: number | boolean | null | undefined) =>
+    request<{ ok: boolean }>(`/fields/${fieldId}/confirm`, { method: "POST", body: value === undefined ? {} : { value } }),
 
-  amendField: (fieldId: string, value: number | boolean | null, reason: string, actor: string) =>
-    request<{ ok: boolean }>(`/fields/${fieldId}/amend`, { method: "POST", actor, body: { value, reason } }),
+  amendField: (fieldId: string, value: number | boolean | null, reason: string) =>
+    request<{ ok: boolean }>(`/fields/${fieldId}/amend`, { method: "POST", body: { value, reason } }),
 
-  confirmCriterion: (assessmentId: string, criterionNumber: number, values: object, actor: string) =>
-    request<{ ok: boolean; reason?: string }>(`/assessments/${assessmentId}/criteria/${criterionNumber}/confirm`, { method: "POST", actor, body: values }),
+  confirmCriterion: (assessmentId: string, criterionNumber: number, values: object) =>
+    request<{ ok: boolean; reason?: string }>(`/assessments/${assessmentId}/criteria/${criterionNumber}/confirm`, { method: "POST", body: values }),
 
-  amendCriterion: (assessmentId: string, criterionNumber: number, values: object, reason: string | undefined, actor: string) =>
-    request<{ ok: boolean; reason?: string }>(`/assessments/${assessmentId}/criteria/${criterionNumber}/amend`, { method: "POST", actor, body: { ...values, reason } }),
+  amendCriterion: (assessmentId: string, criterionNumber: number, values: object, reason: string | undefined) =>
+    request<{ ok: boolean; reason?: string }>(`/assessments/${assessmentId}/criteria/${criterionNumber}/amend`, { method: "POST", body: { ...values, reason } }),
 };

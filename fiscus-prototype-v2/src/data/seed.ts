@@ -13,7 +13,6 @@ import type {
   RiskCommentary,
   StandardFieldName,
   Ratio,
-  User,
 } from "../types.js";
 import { EXTRACTION_MODEL_VERSION, FIELD_DEFS } from "./config.js";
 import { synthesizeConfidence } from "./synthesize.js";
@@ -24,12 +23,7 @@ import { generateRiskCommentary } from "../engine/riskCommentary.js";
 
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
-export const USERS: User[] = [
-  { id: "u-alice", name: "Alice Chen" },
-  { id: "u-ben", name: "Ben Osei" },
-  { id: "u-priya", name: "Priya Nair" },
-];
-export const DEFAULT_USER_ID = "u-alice";
+export { USERS, DEFAULT_USER_ID } from "./users.js";
 
 export const customers: Customer[] = [
   { id: "c-meridian", name: "Meridian Steel Pte Ltd", industry: "Manufacturing", relationshipOwner: "u-alice" },

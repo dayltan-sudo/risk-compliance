@@ -5,6 +5,7 @@ import { fieldPeriodChange } from "../engine/ratios.js";
 import { Card, SectionHeading, Button } from "./Card.js";
 import { ConfidenceBadge, FieldStatusBadge, IntegrityCheckBadge, RecencyBadge } from "./Badge.js";
 import { CONFIDENCE_THRESHOLDS, FIELD_DEFS } from "../data/config.js";
+import { parseNumberInput } from "../utils/parseNumber.js";
 import { formatCurrency, formatChangePct } from "../utils/format.js";
 import type { Assessment, IntegrityCheckName, StatementSection } from "../types.js";
 
@@ -42,11 +43,13 @@ export function FieldReviewPanel({ assessment, editable }: { assessment: Assessm
   const [amendValue, setAmendValue] = useState("");
   const [amendBoolValue, setAmendBoolValue] = useState(true);
   const [amendReason, setAmendReason] = useState("");
+  const [amendError, setAmendError] = useState<string | null>(null);
 
   useEffect(() => {
     if (selected && typeof selected.value === "boolean") setAmendBoolValue(selected.value);
     setAmendValue(typeof selected?.value === "number" ? String(selected.value) : "");
     setAmendReason("");
+    setAmendError(null);
   }, [selectedId]);
 
   if (periods.length === 0) {
@@ -232,7 +235,10 @@ export function FieldReviewPanel({ assessment, editable }: { assessment: Assessm
                   ) : (
                     <input
                       value={amendValue}
-                      onChange={(e) => setAmendValue(e.target.value)}
+                      onChange={(e) => {
+                        setAmendValue(e.target.value);
+                        setAmendError(null);
+                      }}
                       type="number"
                       className="w-full field mb-2"
                     />
@@ -249,13 +255,15 @@ export function FieldReviewPanel({ assessment, editable }: { assessment: Assessm
                     onClick={() => {
                       if (selectedDef?.valueType === "boolean") amendField(selected.id, amendBoolValue, amendReason);
                       else {
-                        const v = Number(amendValue);
-                        if (!Number.isNaN(v)) amendField(selected.id, v, amendReason);
+                        const v = parseNumberInput(amendValue);
+                        if (v === null) setAmendError("Enter a number. To record that the line item is absent, use “Confirm absent”.");
+                        else amendField(selected.id, v, amendReason);
                       }
                     }}
                   >
                     Save amendment
                   </Button>
+                  {amendError && <p className="text-sm text-[var(--crit)] mt-2">{amendError}</p>}
                 </div>
               )}
 
